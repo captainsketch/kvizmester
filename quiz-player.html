@@ -71,6 +71,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   .menu-buttons { display:flex; flex-direction:column; gap:14px; width:100%; margin-bottom:16px; }
   .menu-btn-primary { width:100%; padding:20px; background:var(--accent); color:#000; border:none; border-radius:14px; font-family:var(--font-display); font-size:28px; letter-spacing:3px; cursor:pointer; transition:all 0.15s; box-shadow:0 4px 20px rgba(240,192,64,0.25); }
   .menu-btn-primary:active { transform:scale(0.97); opacity:0.9; }
+  .menu-btn-primary:disabled { opacity:0.35; cursor:not-allowed; box-shadow:none; }
+  .menu-btn-primary:disabled:active { transform:none; opacity:0.35; }
   .menu-btn-secondary { width:100%; padding:18px; background:transparent; color:var(--text); border:2px solid var(--border); border-radius:14px; font-family:var(--font-display); font-size:24px; letter-spacing:2px; cursor:pointer; transition:all 0.15s; }
   .menu-btn-secondary:active { border-color:var(--accent); color:var(--accent); transform:scale(0.97); }
   .menu-error { color:var(--red); font-size:13px; text-align:center; margin-top:8px; min-height:18px; }
@@ -135,6 +137,15 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   .cr-topic-opt.selected { border-color:var(--accent); background:rgba(240,192,64,0.1); color:var(--accent); }
   .cr-topic-opt:active { transform:scale(0.98); }
 
+  /* ── SZOBA JÁTÉKMÓD-VÁLASZTÓ (Új szoba képernyő) ─────────── */
+  .cr-mode-list { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .cr-mode-opt { display:flex; flex-direction:column; gap:3px; padding:14px 10px; background:var(--surface2); border:2px solid var(--border); border-radius:12px; cursor:pointer; transition:all 0.15s; text-align:center; -webkit-user-select:none; user-select:none; }
+  .cr-mode-opt.selected { border-color:var(--accent); background:rgba(240,192,64,0.1); }
+  .cr-mode-opt:active { transform:scale(0.97); }
+  .cr-mode-label { font-size:14px; font-weight:700; color:var(--text); }
+  .cr-mode-opt.selected .cr-mode-label { color:var(--accent); }
+  .cr-mode-desc { font-size:10.5px; color:var(--muted); line-height:1.3; }
+
   /* ── SZOBÁK LISTÁJA ───────────────────────── */
   #room-list-screen { display:none; flex-direction:column; width:100%; max-width:400px; margin:auto; padding:24px 0 48px; animation:fadeIn 0.3s ease; }
   .room-card { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:16px 18px; margin-bottom:12px; cursor:pointer; transition:all 0.15s; -webkit-user-select:none; user-select:none; }
@@ -146,6 +157,31 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   /* ── HOST-VEZÉRLŐ SÁV (váróterem, ha a szoba nyitója vagy) ── */
   #lobby-host-controls { width:100%; max-width:280px; margin-top:20px; }
   .lobby-joined-count { font-size:12px; color:var(--muted); margin-bottom:14px; text-align:center; }
+  .lobby-team-status-text { font-size:12px; font-weight:700; text-align:center; margin-bottom:10px; }
+
+  /* ── CSAPATOK BEOSZTÁSA (host-oldali képernyő) ───────────── */
+  #team-setup-screen { display:none; flex-direction:column; width:100%; max-width:420px; margin:auto; padding:24px 0 48px; animation:fadeIn 0.3s ease; }
+  .ts-summary-box { width:100%; padding:12px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; font-size:13px; text-align:center; margin-bottom:18px; }
+  .ts-team-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:12px; }
+  .ts-team-head { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .ts-team-name { font-family:var(--font-display); font-size:20px; letter-spacing:1px; color:var(--accent); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ts-team-name-input { flex:1; background:var(--bg); border:1px solid var(--accent); border-radius:8px; padding:6px 10px; color:var(--text); font-family:var(--font-display); font-size:16px; letter-spacing:1px; outline:none; min-width:0; }
+  .ts-icon-btn { width:28px; height:28px; border-radius:7px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; transition:all 0.15s; flex-shrink:0; }
+  .ts-rename-btn { background:rgba(240,192,64,0.15); color:var(--accent); }
+  .ts-rename-btn:active { background:var(--accent); color:#000; }
+  .ts-delete-btn { background:rgba(224,90,90,0.15); color:var(--red); }
+  .ts-delete-btn:active { background:var(--red); color:#fff; }
+  .ts-member-row { display:flex; flex-wrap:wrap; gap:6px; min-height:20px; }
+  .ts-member-chip { display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:5px 6px 5px 12px; font-size:12px; font-weight:600; }
+  .ts-member-remove { width:17px; height:17px; border-radius:50%; background:rgba(224,90,90,0.15); color:var(--red); border:none; font-size:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+  .ts-empty-note { font-size:12px; color:var(--muted); text-align:center; padding:6px 0; width:100%; }
+  .ts-add-team-btn { width:100%; padding:13px; background:rgba(62,207,142,0.08); border:1.5px dashed rgba(62,207,142,0.4); border-radius:12px; color:var(--green); font-size:14px; font-weight:700; cursor:pointer; margin-bottom:20px; transition:all 0.2s; text-align:center; }
+  .ts-add-team-btn:active { background:rgba(62,207,142,0.18); transform:scale(0.98); }
+  .ts-unassigned-card { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:8px; }
+  .ts-unassigned-name { font-size:14px; font-weight:700; margin-bottom:9px; }
+  .ts-assign-row { display:flex; flex-wrap:wrap; gap:7px; }
+  .ts-assign-btn { padding:7px 13px; background:transparent; border:1.5px solid var(--accent); color:var(--accent); border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.15s; -webkit-user-select:none; user-select:none; }
+  .ts-assign-btn:active { background:var(--accent); color:#000; transform:scale(0.96); }
 
   /* ── NEM ELÉRHETŐ ────────────────────────── */
   #unavailable-screen { display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; width:100%; max-width:360px; margin:auto; padding:40px 0; animation:fadeIn 0.4s ease; }
@@ -753,7 +789,11 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
 <div id="create-room-screen">
   <button class="guide-back" onclick="showMenu()">← Vissza</button>
   <div class="guide-title">ÚJ SZOBA</div>
-  <div class="guide-subtitle">Válassz témakört, és indíts</div>
+  <div class="guide-subtitle">Válassz játékmódot és témakört</div>
+  <div class="menu-name-wrap">
+    <label class="menu-name-label">Játékmód</label>
+    <div id="cr-mode-list" class="cr-mode-list"></div>
+  </div>
   <div class="menu-name-wrap">
     <label class="menu-name-label">Témakör</label>
     <div id="cr-topic-list" style="display:flex;flex-direction:column;gap:8px;"></div>
@@ -768,9 +808,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
       <option value="all">Mind</option>
     </select>
   </div>
-  <div style="width:100%;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6;">
-    🎯 Játékmód: <strong style="color:var(--text);">Egyéni verseny</strong><br>
-    <span style="opacity:0.75;">Csapat, Akasztófa és Blokus hamarosan választható lesz itt is.</span>
+  <div style="width:100%;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6;" id="cr-mode-note">
+    <span style="opacity:0.75;">Akasztófa és Blokus mód hamarosan választható lesz itt is.</span>
   </div>
   <button class="menu-btn-primary" onclick="confirmCreateRoom()">SZOBA LÉTREHOZÁSA</button>
   <div class="menu-error" id="cr-error"></div>
@@ -782,6 +821,25 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div class="guide-title">SZOBÁK</div>
   <div class="guide-subtitle">Nyitott szobák — koppints a csatlakozáshoz</div>
   <div id="room-list-content"></div>
+</div>
+
+<!-- CSAPATOK BEOSZTÁSA (csak a szoba nyitójának, csapatverseny módban) -->
+<div id="team-setup-screen">
+  <button class="guide-back" onclick="tsHideSetupScreen()">← Vissza a váróterembe</button>
+  <div class="guide-title">CSAPATOK</div>
+  <div class="guide-subtitle">Oszd be a játékosokat csapatokba</div>
+
+  <div class="ts-summary-box" id="ts-summary">—</div>
+
+  <div id="ts-teams-container"></div>
+  <button class="ts-add-team-btn" onclick="tsAddTeam()">➕ ÚJ CSAPAT</button>
+
+  <div class="guide-divider"></div>
+
+  <label class="menu-name-label" style="margin-bottom:10px;display:block;">BE NEM OSZTOTT JÁTÉKOSOK</label>
+  <div id="ts-unassigned-container"></div>
+
+  <button class="menu-btn-primary" onclick="tsHideSetupScreen()" style="margin-top:20px;">✓ KÉSZ — VISSZA A VÁRÓTEREMBE</button>
 </div>
 
 <!-- VERZIÓELŐZMÉNYEK -->
@@ -908,7 +966,9 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   </div>
   <div id="lobby-host-controls" class="hidden">
     <div class="lobby-joined-count" id="lobby-joined-count">0 játékos csatlakozott</div>
-    <button class="menu-btn-primary" style="font-size:22px;padding:16px;" onclick="hostStartQuiz()">▶ JÁTÉK INDÍTÁSA</button>
+    <div class="lobby-team-status-text hidden" id="lobby-team-status"></div>
+    <button class="menu-btn-secondary hidden" id="lobby-team-setup-btn" style="font-size:18px;padding:14px;margin-bottom:12px;" onclick="tsShowSetupScreen()">👥 CSAPATOK KEZELÉSE</button>
+    <button class="menu-btn-primary" id="lobby-start-btn" style="font-size:22px;padding:16px;" onclick="hostStartQuiz()">▶ JÁTÉK INDÍTÁSA</button>
   </div>
   <button class="btn-back-game" style="max-width:280px;margin-top:28px;" onclick="backToMenu()">↺ Vissza a főmenübe</button>
 </div>
@@ -1281,10 +1341,12 @@ const CIRCUMFERENCE = 175.9;
 // ── SZOBA-LÉTREHOZÁS ÉS -CSATLAKOZÁS (2. fázis) ──────────────
 let amIRoomHost = false;          // igaz, ha ÉN hoztam létre az aktuális szobát
 let crSelectedTopic = 'all';      // szoba-létrehozáskor kiválasztott témakör
+let crSelectedMode = 'normal';    // szoba-létrehozáskor kiválasztott játékmód ('normal' | 'teams')
 let crAvailableQuestions = [];    // a "kvizjatek" tartalom-szobából betöltött teljes kérdéslista
 let roomListListenerRef = null;   // a szobalista élő figyelője
 let hostRoomTopicLabel = 'Vegyes';
 // Host mini-motor: a szobanyitó ebből vezérli az alap kvíz kört
+let hostGameMode = 'normal';       // az aktuális szoba játékmódja ('normal' | 'teams') — ez alapján dolgozik a mini-motor
 let hostQuestionsPool = [];
 let hostCurrentQIndex = -1;
 let hostCorrectOptionIndex = -1;
@@ -1311,6 +1373,7 @@ let gameMode = 'normal';   // 'normal' | 'teams'
 let myTeamId = null;       // saját csapat Firebase ID
 let myTeamName = '';       // saját csapat neve
 let teamScores = {};       // { teamId: { name, score } }
+let tsEditingTeamId = null; // épp átnevezés alatt álló csapat ID (Csapatok beosztása képernyőn, host-oldalon)
 
 // Játékos státusz szinkron cache (async race condition elkerülése érdekében)
 let myPlayerStatus = 'lobby';
@@ -1329,7 +1392,7 @@ window.addEventListener('load', () => {
 // ── KÉPERNYŐ VÁLTÁS ──────────────────────────────────────────
 function hideAll() {
   ['auth-screen','pending-screen','rejected-screen',
-   'menu-screen','create-room-screen','room-list-screen',
+   'menu-screen','create-room-screen','room-list-screen','team-setup-screen',
    'guide-screen','unavailable-screen','lobby-screen',
    'waiting-screen','game-screen','result-screen','history-screen','changelog-screen',
    'hangman-screen','hangman-intro-screen','hangman-result-screen','blokus-screen']
@@ -1512,6 +1575,7 @@ function showLobby() {
     if (subEl) subEl.innerHTML = 'Te vagy a szoba irányítója.<br>Indítsd, ha mindenki csatlakozott!';
     if (hostControls) hostControls.classList.remove('hidden');
     updateLobbyJoinedCount();
+    tsUpdateLobbyControls();
   } else {
     if (subEl) subEl.innerHTML = 'A host hamarosan beenged a játékba.<br>Kérjük, várakozz türelmesen!';
     if (hostControls) hostControls.classList.add('hidden');
@@ -1743,7 +1807,10 @@ function setupListeners() {
     players = snap.val() || {};
     updateRank();
     updatePlayersChips(answeredNamesThisRound);
-    if (amIRoomHost) updateLobbyJoinedCount();
+    if (amIRoomHost) {
+      updateLobbyJoinedCount();
+      tsRefreshIfVisible();
+    }
   });
 
   // Csapatok figyelése (team módban)
@@ -1763,6 +1830,7 @@ function setupListeners() {
     if(gameMode==='teams'&&myTeamId&&teamScores[myTeamId]){
       document.getElementById('my-score').textContent = teamScores[myTeamId].score||0;
     }
+    if (amIRoomHost) tsRefreshIfVisible();
   });
 
   roomRef.child('answers').on('child_added', snap => {
@@ -2564,6 +2632,7 @@ function backToMenu() {
     roomRef.child('hangmanState').off();
     roomRef.child('hangmanHintRequests').off();
     roomRef.child('hangmanResults').off();
+    roomRef.child('teams').off();
     if (playerId) {
       roomRef.child('votes').child(playerId).remove();
       roomRef.child('players').child(playerId).child('status').off();
@@ -2593,6 +2662,7 @@ function backToMenu() {
   hostQuestionsPool = []; hostCurrentQIndex = -1; hostCorrectOptionIndex = -1;
   hostAnsweredPlayers = new Set(); hostAnswerOrder = 0; hostCorrectAnswerOrder = 0;
   hostGamePhase = 'waiting'; hostAutoAdvanceRunning = false; hostScoringListenerAttached = false;
+  hostGameMode = 'normal'; crSelectedMode = 'normal'; tsEditingTeamId = null;
   if (roomListListenerRef) { roomListListenerRef.off(); roomListListenerRef = null; }
   document.getElementById('my-score').textContent = '0';
   document.getElementById('my-rank').textContent = '#—';
@@ -2617,6 +2687,8 @@ function showCreateRoom() {
   document.getElementById('create-room-screen').style.display = 'flex';
   document.getElementById('cr-error').textContent = '';
   window.scrollTo({top:0});
+  crRenderModeOptions();
+  crSelectMode('normal');
   loadTopicOptionsForCreate();
 }
 
@@ -2713,11 +2785,12 @@ async function confirmCreateRoom() {
     const questionsObj = {};
     selected.forEach((q, i) => { questionsObj['q' + i] = q; });
     hostRoomTopicLabel = crSelectedTopic === 'all' ? 'Vegyes' : crSelectedTopic;
+    hostGameMode = crSelectedMode;
 
     await newRoomRef.child('questions').set(questionsObj);
     await newRoomRef.child('gameState').set({
       phase: 'waiting',
-      mode: 'normal',
+      mode: hostGameMode,
       topicLabel: hostRoomTopicLabel,
       hostName: playerName
     });
@@ -2780,7 +2853,8 @@ function buildRoomCard(code, room) {
   card.className = 'room-card';
   const topicEl = document.createElement('div');
   topicEl.className = 'room-card-topic';
-  topicEl.textContent = (room.gameState && room.gameState.topicLabel) || 'Vegyes';
+  const modeIcon = (room.gameState && room.gameState.mode === 'teams') ? '👥 ' : '🎯 ';
+  topicEl.textContent = modeIcon + ((room.gameState && room.gameState.topicLabel) || 'Vegyes');
   const playerCount = room.players ? Object.keys(room.players).length : 0;
   const metaEl = document.createElement('div');
   metaEl.className = 'room-card-meta';
@@ -2848,13 +2922,269 @@ function updateLobbyJoinedCount() {
 }
 
 // ══════════════════════════════════════════════════════════════
+// CSAPATMÓD — szoba-létrehozási mód-választó + host-oldali csapatbeosztás
+// ══════════════════════════════════════════════════════════════
+
+function escHtml(s) {
+  return (s == null ? '' : String(s))
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Játékmód-választó (Új szoba képernyő) ─────────────────────
+const CR_MODES = [
+  { id: 'normal', label: '🎯 Egyéni verseny', desc: 'Mindenki egyénileg versenyez' },
+  { id: 'teams',  label: '👥 Csapatverseny',  desc: 'Csapatokra osztva versenyeztek' }
+];
+
+function crRenderModeOptions() {
+  const list = document.getElementById('cr-mode-list');
+  if (!list) return;
+  list.innerHTML = CR_MODES.map(m => `
+    <div class="cr-mode-opt" data-mode="${m.id}" onclick="crSelectMode('${m.id}')">
+      <div class="cr-mode-label">${m.label}</div>
+      <div class="cr-mode-desc">${m.desc}</div>
+    </div>`).join('');
+  crUpdateModeSelection();
+}
+function crSelectMode(mode) {
+  crSelectedMode = mode;
+  crUpdateModeSelection();
+  const note = document.getElementById('cr-mode-note');
+  if (note) {
+    note.innerHTML = mode === 'teams'
+      ? '👥 A csapatok beosztását a szoba létrehozása <strong style="color:var(--text);">után</strong>, a váróteremben végezheted el.<br><span style="opacity:0.75;">Akasztófa és Blokus mód hamarosan itt is választható lesz.</span>'
+      : '<span style="opacity:0.75;">Akasztófa és Blokus mód hamarosan választható lesz itt is.</span>';
+  }
+}
+function crUpdateModeSelection() {
+  document.querySelectorAll('.cr-mode-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.mode === crSelectedMode);
+  });
+}
+
+// ── Segédfüggvény: melyik csapatban van a megadott játékos? ───
+function tsGetPlayerTeam(pid) {
+  for (const [tid, t] of Object.entries(teamScores)) {
+    if (t.members && t.members[pid]) return tid;
+  }
+  return null;
+}
+
+// ── Indítás-készenlét ellenőrzése csapatmódban ─────────────────
+// Legalább 2, tagokkal rendelkező csapat KELL, és minden váróteremben
+// lévő játékosnak be kell lennie osztva valamelyikbe — enélkül a
+// "JÁTÉK INDÍTÁSA" gomb végig letiltva marad, hogy ne ragadhasson be
+// egy be nem osztott játékos a kör közepén.
+function tsIsSetupReady() {
+  if (hostGameMode !== 'teams') return true;
+  const teamEntries = Object.entries(teamScores);
+  if (teamEntries.length < 2) return false;
+  const lobbyPids = Object.entries(players).filter(([,p]) => p.status === 'lobby').map(([pid]) => pid);
+  if (lobbyPids.length === 0) return false;
+  const allAssigned = lobbyPids.every(pid => !!tsGetPlayerTeam(pid));
+  if (!allAssigned) return false;
+  return teamEntries.every(([,t]) => Object.keys(t.members||{}).length > 0);
+}
+
+// ── Váróterem: host-oldali csapat-vezérlők állapotának frissítése ──
+function tsUpdateLobbyControls() {
+  const teamBtn  = document.getElementById('lobby-team-setup-btn');
+  const startBtn = document.getElementById('lobby-start-btn');
+  const statusEl = document.getElementById('lobby-team-status');
+  if (hostGameMode === 'teams') {
+    if (teamBtn)  teamBtn.classList.remove('hidden');
+    if (statusEl) statusEl.classList.remove('hidden');
+    tsRenderLobbyStatus();
+    if (startBtn) startBtn.disabled = !tsIsSetupReady();
+  } else {
+    if (teamBtn)  teamBtn.classList.add('hidden');
+    if (statusEl) statusEl.classList.add('hidden');
+    if (startBtn) startBtn.disabled = false;
+  }
+}
+
+function tsRenderLobbyStatus() {
+  const el = document.getElementById('lobby-team-status');
+  if (!el) return;
+  const teamEntries = Object.entries(teamScores);
+  const teamCount = teamEntries.length;
+  const lobbyPids = Object.entries(players).filter(([,p]) => p.status === 'lobby').map(([pid]) => pid);
+  const assignedCount = lobbyPids.filter(pid => !!tsGetPlayerTeam(pid)).length;
+  const emptyTeams = teamEntries.filter(([,t]) => Object.keys(t.members||{}).length === 0).length;
+
+  if (teamCount < 2) {
+    el.textContent = '⚠️ Hozz létre legalább 2 csapatot';
+    el.style.color = 'var(--accent2)';
+  } else if (assignedCount < lobbyPids.length) {
+    el.textContent = `⚠️ ${assignedCount}/${lobbyPids.length} játékos van beosztva`;
+    el.style.color = 'var(--accent2)';
+  } else if (emptyTeams > 0) {
+    el.textContent = `⚠️ ${emptyTeams} csapatban nincs még játékos`;
+    el.style.color = 'var(--accent2)';
+  } else {
+    el.textContent = `✓ ${teamCount} csapat · ${assignedCount}/${lobbyPids.length} játékos beosztva`;
+    el.style.color = 'var(--green)';
+  }
+}
+
+// Firebase players/teams listenerekből hívva — csak akkor dolgozik,
+// ha a host éppen a váróteremben vagy a csapatbeosztás képernyőn van.
+function tsRefreshIfVisible() {
+  if (hostGameMode !== 'teams') return;
+  const lobbyEl = document.getElementById('lobby-screen');
+  const setupEl = document.getElementById('team-setup-screen');
+  if (lobbyEl && lobbyEl.style.display !== 'none') tsUpdateLobbyControls();
+  if (setupEl && setupEl.style.display !== 'none') tsRenderAll();
+}
+
+// ── Csapatok beosztása képernyő ────────────────────────────────
+function tsShowSetupScreen() {
+  hideAll();
+  document.getElementById('team-setup-screen').style.display = 'flex';
+  window.scrollTo({top:0});
+  tsRenderAll();
+}
+function tsHideSetupScreen() {
+  showLobby();
+}
+
+function tsRenderAll() {
+  tsRenderSummary();
+  tsRenderTeams();
+  tsRenderUnassigned();
+}
+
+function tsRenderSummary() {
+  const el = document.getElementById('ts-summary');
+  if (!el) return;
+  const teamCount = Object.keys(teamScores).length;
+  const lobbyPids = Object.entries(players).filter(([,p]) => p.status === 'lobby').map(([pid]) => pid);
+  const assignedCount = lobbyPids.filter(pid => !!tsGetPlayerTeam(pid)).length;
+  const allDone = teamCount >= 2 && assignedCount === lobbyPids.length && lobbyPids.length > 0;
+  el.innerHTML = `<strong style="color:var(--accent);">${teamCount}</strong> csapat &nbsp;·&nbsp; <strong style="color:${allDone ? 'var(--green)' : 'var(--accent2)'};">${assignedCount}/${lobbyPids.length}</strong> játékos beosztva`;
+}
+
+function tsRenderTeams() {
+  const container = document.getElementById('ts-teams-container');
+  if (!container) return;
+  const entries = Object.entries(teamScores);
+  if (entries.length === 0) {
+    container.innerHTML = '<div class="ts-empty-note">Még nincs csapat — hozz létre legalább kettőt a lenti gombbal!</div>';
+    return;
+  }
+  container.innerHTML = entries.map(([tid, t]) => {
+    const memberPids = Object.keys(t.members || {}).filter(pid => players[pid]);
+    const chips = memberPids.map(pid => {
+      const p = players[pid];
+      return `<div class="ts-member-chip"><span>${escHtml(p.name||'Névtelen')}</span><button class="ts-member-remove" onclick="tsUnassign('${pid}')">✕</button></div>`;
+    }).join('');
+    const isEditing = tsEditingTeamId === tid;
+    const nameHtml = isEditing
+      ? `<input class="ts-team-name-input" id="ts-name-input-${tid}" value="${escHtml(t.name)}"
+           onclick="event.stopPropagation()"
+           onkeydown="if(event.key==='Enter')tsSaveRename('${tid}')"
+           onblur="tsSaveRename('${tid}')">`
+      : `<div class="ts-team-name">${escHtml(t.name||'Csapat')}</div>`;
+    return `<div class="ts-team-card">
+      <div class="ts-team-head">
+        ${nameHtml}
+        <button class="ts-icon-btn ts-rename-btn" onclick="tsStartRename('${tid}')" title="Átnevezés">✎</button>
+        <button class="ts-icon-btn ts-delete-btn" onclick="tsDeleteTeam('${tid}')" title="Törlés">✕</button>
+      </div>
+      <div class="ts-member-row">${chips || '<div class="ts-empty-note">Még nincs tagja</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function tsRenderUnassigned() {
+  const container = document.getElementById('ts-unassigned-container');
+  if (!container) return;
+  const lobbyEntries = Object.entries(players).filter(([,p]) => p.status === 'lobby');
+  const unassigned = lobbyEntries.filter(([pid]) => !tsGetPlayerTeam(pid));
+  if (unassigned.length === 0) {
+    container.innerHTML = lobbyEntries.length === 0
+      ? '<div class="ts-empty-note">Még senki nem csatlakozott a szobához.</div>'
+      : '<div class="ts-empty-note" style="color:var(--green);">✓ Mindenki be van osztva egy csapatba!</div>';
+    return;
+  }
+  const teamEntries = Object.entries(teamScores);
+  container.innerHTML = unassigned.map(([pid, p]) => {
+    const btns = teamEntries.map(([tid, t]) =>
+      `<button class="ts-assign-btn" onclick="tsAssign('${pid}','${tid}')">${escHtml(t.name||'Csapat')}</button>`
+    ).join('');
+    return `<div class="ts-unassigned-card">
+      <div class="ts-unassigned-name">${escHtml(p.name||'Névtelen')}${pid===playerId?' (te)':''}</div>
+      <div class="ts-assign-row">${btns || '<span class="ts-empty-note" style="padding:0;">Előbb hozz létre egy csapatot fent</span>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function tsAddTeam() {
+  if (!roomRef) return;
+  const count = Object.keys(teamScores).length;
+  if (count >= 5) { alert('Legfeljebb 5 csapat hozható létre.'); return; }
+  const defaultName = (count + 1) + '. csapat';
+  roomRef.child('teams').push({ name: defaultName, score: 0, members: {} });
+}
+
+function tsStartRename(tid) {
+  tsEditingTeamId = tid;
+  tsRenderTeams();
+  setTimeout(() => {
+    const inp = document.getElementById('ts-name-input-' + tid);
+    if (inp) { inp.focus(); inp.select(); }
+  }, 30);
+}
+function tsSaveRename(tid) {
+  if (tsEditingTeamId !== tid) return;
+  const inp = document.getElementById('ts-name-input-' + tid);
+  tsEditingTeamId = null;
+  if (!inp) { tsRenderTeams(); return; }
+  const name = inp.value.trim();
+  if (name && roomRef) roomRef.child('teams').child(tid).child('name').set(name.slice(0,30));
+  tsRenderTeams();
+}
+function tsDeleteTeam(tid) {
+  if (!roomRef) return;
+  const team = teamScores[tid];
+  if (!confirm('Törlöd ezt a csapatot? A tagjai visszakerülnek a be nem osztott listába.')) return;
+  // Előbb a tagok teamId-ját töröljük, csak utána a csapat node-ot —
+  // különben "árva" teamId maradna a players/{pid} alatt egy nemlétező csapatra mutatva.
+  const memberPids = team && team.members ? Object.keys(team.members) : [];
+  memberPids.forEach(pid => roomRef.child('players').child(pid).child('teamId').remove());
+  roomRef.child('teams').child(tid).remove();
+}
+function tsAssign(pid, tid) {
+  if (!roomRef) return;
+  const prevTid = tsGetPlayerTeam(pid);
+  if (prevTid && prevTid !== tid) {
+    roomRef.child('teams').child(prevTid).child('members').child(pid).remove();
+  }
+  roomRef.child('teams').child(tid).child('members').child(pid).set(true);
+  roomRef.child('players').child(pid).child('teamId').set(tid);
+}
+function tsUnassign(pid) {
+  if (!roomRef) return;
+  const tid = tsGetPlayerTeam(pid);
+  if (!tid) return;
+  roomRef.child('teams').child(tid).child('members').child(pid).remove();
+  roomRef.child('players').child(pid).child('teamId').remove();
+}
+
+// ══════════════════════════════════════════════════════════════
 // HOST MINI-MOTOR — a szobanyitó ebből vezérli az alap kvíz kört.
-// Csak 'normal' (alap kvíz) módra készült egyelőre; csapat/akasztófa/
-// blokus vezérlése külön, következő lépésben kerül ide.
+// 'normal' és 'teams' módra is működik (hostGameMode dönti el);
+// akasztófa/blokus vezérlése külön, következő lépésben kerül ide.
 // ══════════════════════════════════════════════════════════════
 
 async function hostStartQuiz() {
   if (!amIRoomHost || !roomRef) return;
+  // Csapatmód: extra ellenőrzés indítás előtt — védelem esetleges race condition ellen
+  // (pl. ha valaki épp a gomb megnyomásának pillanatában csatlakozik be nem osztottként)
+  if (hostGameMode === 'teams' && !tsIsSetupReady()) {
+    alert('A csapatok beosztása még nem kész — nyisd meg a "Csapatok kezelése" gombot a váróteremben!');
+    return;
+  }
   if (hostQuestionsPool.length === 0) {
     const qsnap = await roomRef.child('questions').once('value');
     hostQuestionsPool = qsnap.val() ? Object.values(qsnap.val()) : [];
@@ -2892,7 +3222,7 @@ function hostNextQuestion() {
 
   const gsData = {
     phase: 'question',
-    mode: 'normal',
+    mode: hostGameMode,
     questionIndex: hostCurrentQIndex,
     question: { text: q.text, options: q.options, category: q.category, type: q.type || 'egyéb', time: q.time || 30, num: q.num || 0 },
     correctAnswer: q.correct,
@@ -2935,7 +3265,14 @@ function hostSetupScoringListener() {
     else if (isCorrect) { hostCorrectAnswerOrder++; pts = Math.max(2, 6 - hostCorrectAnswerOrder); }
     else { pts = 1; }
 
-    if (pts > 0) roomRef.child('players').child(pid).child('score').transaction(cur => (cur||0) + pts);
+    if (pts > 0) {
+      roomRef.child('players').child(pid).child('score').transaction(cur => (cur||0) + pts);
+      // Csapatmódban a csapat összpontszáma is nő — a players cache-ből olvassuk ki,
+      // melyik csapathoz tartozik (ezt a Csapatok beosztása képernyőn állítottuk be).
+      if (hostGameMode === 'teams' && players[pid] && players[pid].teamId) {
+        roomRef.child('teams').child(players[pid].teamId).child('score').transaction(cur => (cur||0) + pts);
+      }
+    }
 
     roomRef.child('players').once('value', psnap => {
       const allPlayers = psnap.val() || {};
@@ -2974,7 +3311,7 @@ function hostEndGame() {
   if (!amIRoomHost || !roomRef) return;
   clearInterval(hostTimerInterval);
   hostGamePhase = 'ended';
-  roomRef.child('gameState').update({ phase: 'ended', mode: 'normal' });
+  roomRef.child('gameState').update({ phase: 'ended', mode: hostGameMode });
 }
 
 // ============================================================
@@ -3342,12 +3679,13 @@ function updatePlayersChips(answeredSet) {
   if (!container) return;
   let displayPlayers;
   if(gameMode === 'teams' && myTeamId){
-    // Csak a saját csapat tagjait mutatjuk (magunkat kizárva)
+    // Csak a saját csapat tagjait mutatjuk (magunkat kizárva) — pid (Firebase UID) alapján,
+    // NEM név alapján, mert két játékosnak lehet azonos a neve.
     const myTeam = teamScores[myTeamId];
     const memberIds = myTeam ? Object.keys(myTeam.members||{}) : [];
-    displayPlayers = Object.values(players).filter(p =>
-      p.status === 'active' && memberIds.some(mid => players[mid]&&players[mid].name===p.name) && p.name !== playerName
-    );
+    displayPlayers = Object.entries(players)
+      .filter(([pid, p]) => p.status === 'active' && memberIds.includes(pid) && pid !== playerId)
+      .map(([, p]) => p);
     // Ha üres a lista (csak mi vagyunk a csapatban), ne mutassunk semmit
   } else {
     displayPlayers = Object.values(players).filter(p => p.status === 'active');
