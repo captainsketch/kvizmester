@@ -2073,6 +2073,16 @@ function startGame() {
   document.getElementById('btn-hangman').classList.add('hidden');
   document.getElementById('btn-blokus').classList.add('hidden');
   document.getElementById('btn-end').classList.remove('hidden');
+  // FONTOS BIZTONSÁGI ELV: a kör összes helyes válasza itt, előre kerül a védett
+  // answerKeys ágba — ez BIZTONSÁGOS, mert az answerKeys/{index} olvasása bármely
+  // NEM adminisztrátor/host játékosnak csak azután engedélyezett, hogy az adott
+  // kérdés ténylegesen felfedésre került (lásd database.rules.json, revealedQuestions).
+  if(db){
+    const akObj={};
+    activeQuestions.forEach((q,i)=>{ akObj[i]={correct:q.correct}; });
+    roomRef.child('answerKeys').set(akObj);
+    roomRef.child('revealedQuestions').remove();
+  }
   nextQuestion();
 }
 
@@ -2082,19 +2092,18 @@ function nextQuestion() {
   if(currentQIndex>=activeQuestions.length){endGame();return;}
   const q=activeQuestions[currentQIndex];
   if(q.id)usedQuestionIds.add(q.id);
-  const prevCorrectIndex = correctOptionIndex; // előző kérdés helyes válasza (felülírás előtt mentjük)
   correctOptionIndex=q.correct;
   answeredPlayers.clear();answerCounts=[0,0,0,0];answerOrder=0;correctAnswerOrder=0;
   if(db){
     // KRITIKUS: előbb töröljük a régi válaszokat, MAJD küldjük az új kérdést.
     // .finally() garantálja hogy a gameState.set() sikertelen remove() esetén is lefut.
+    // A gameState SOHA nem tartalmazza a helyes választ — az answerKeys ágban él
+    // (előre feltöltve a startGame()-ben), onnan olvassák ki a játékosok felfedéskor.
     const gsData={
       phase:'question',
       mode: gameMode,
       questionIndex:currentQIndex,
       question:{text:q.text,options:q.options,category:q.category,type:q.type||'egyéb',time:q.time,num:q.num||0},
-      correctAnswer:q.correct,
-      lastCorrectAnswer: prevCorrectIndex >= 0 ? prevCorrectIndex : null,
       startTime:firebase.database.ServerValue.TIMESTAMP
     };
     roomRef.child('answers').remove()
@@ -2142,7 +2151,12 @@ function startTimer(seconds) {
 function revealAnswer(fromTimer=false) {
   clearInterval(currentTimerInterval);gamePhase='revealed';
   document.querySelectorAll('.answer-card').forEach((card,i)=>card.classList.add(i===correctOptionIndex?'correct':'wrong'));
-  if(db)roomRef.child('gameState').update({phase:'revealed',mode:gameMode,correctAnswer:correctOptionIndex,revealedForIndex:currentQIndex});
+  if(db){
+    roomRef.child('gameState').update({phase:'revealed',mode:gameMode,revealedForIndex:currentQIndex});
+    // Ez a jelző nyitja meg az answerKeys/{index} olvasását a játékosok számára —
+    // a helyes válasz maga sosem kerül a gameState-be, lásd database.rules.json.
+    roomRef.child('revealedQuestions').child(currentQIndex).set(true);
+  }
   document.getElementById('btn-reveal').classList.add('hidden');
   document.getElementById('btn-next').classList.remove('hidden');
   document.getElementById('phase-label').textContent='MEGOLDÁS MEGJELENÍTVE';
@@ -2197,6 +2211,8 @@ function newGame() {
     roomRef.child('players').remove();
     roomRef.child('votes').remove();
     roomRef.child('voteResult').remove();
+    roomRef.child('answerKeys').remove();
+    roomRef.child('revealedQuestions').remove();
     roomRef.child('hangmanGuesses').remove();
     roomRef.child('hangmanState').remove();
     roomRef.child('hangmanHintRequests').remove();

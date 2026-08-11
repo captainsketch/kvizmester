@@ -1377,8 +1377,6 @@ let tsEditingTeamId = null; // épp átnevezés alatt álló csapat ID (Csapatok
 
 // Játékos státusz szinkron cache (async race condition elkerülése érdekében)
 let myPlayerStatus = 'lobby';
-// Az utoljára ismert helyes válasz indexe — fallback ha a revealAnswers előbb fut mint pendingQuestion beállítódik
-let lastKnownCorrectAnswer = -1;
 // "Vissza a játékba" gomb: csak akkor aktív ha a host már visszalépett (phase:'waiting')
 let hostReadyForRejoin = false;
 
@@ -1718,15 +1716,14 @@ function setupListeners() {
         }
       }
       if (myPlayerStatus === 'active') {
-        const prevCorrect = (typeof state.lastCorrectAnswer === 'number') ? state.lastCorrectAnswer : -1;
         currentQIndex = state.questionIndex;
         hasAnswered = false;
         answeredNamesThisRound = new Set();
-        showQuestion(state.question, state.questionIndex, prevCorrect, state.correctAnswer);
+        showQuestion(state.question, state.questionIndex);
       }
     } else if (state.phase === 'revealed') {
       const revealIdx = typeof state.revealedForIndex === 'number' ? state.revealedForIndex : state.questionIndex;
-      revealAnswers(state.correctAnswer, revealIdx);
+      fetchAnswerKey(revealIdx).then(correctIdx => revealAnswers(correctIdx, revealIdx));
     } else if (state.phase === 'hangman-intro') {
       // Új akasztófa kör kezdődik — visszaállítjuk a gomb állapotot
       hostReadyForRejoin = false;
@@ -1880,11 +1877,25 @@ function setupListeners() {
 }
 
 // ── UI FÜGGVÉNYEK ─────────────────────────────────────────────
-// currentCorrectAnswer: az AKTUÁLIS kérdés helyes válaszának indexe — közvetlenül a
-// 'question' fázis gameState-jéből érkezik (state.correctAnswer). Ezzel az azonnali
-// tárolással megszüntetjük a függőséget a 'revealed' Firebase eseménytől, amely gyors
-// 2 játékos esetén batch-elve érkezhet és soha nem fut le külön.
-function showQuestion(q, idx, prevCorrectAnswer, currentCorrectAnswer) {
+// ── Helyes válasz lekérdezése a védett answerKeys ágból ────────
+// Ezt a klienst SOHA nem kapja meg a helyes választ a gameState-en keresztül —
+// mindig ezt a függvényt hívja, amikor ténylegesen szüksége van rá (felfedéskor,
+// vagy egy elmaradt felfedés utólagos pótlásakor). A Firebase Rules gondoskodik
+// róla, hogy ez csak azután adjon vissza értéket, ha a kérdés már fel lett fedve
+// (vagy mi magunk vagyunk a szoba hostja).
+async function fetchAnswerKey(qIndex) {
+  if (!db || !roomRef || typeof qIndex !== 'number' || qIndex < 0) return -1;
+  try {
+    const snap = await roomRef.child('answerKeys').child(qIndex).once('value');
+    const data = snap.val();
+    return (data && typeof data.correct === 'number') ? data.correct : -1;
+  } catch (e) {
+    console.warn('[QuizMaster] answerKeys olvasási hiba:', e);
+    return -1;
+  }
+}
+
+function showQuestion(q, idx) {
   hideAll();
   document.getElementById('game-screen').style.display = 'flex';
   document.getElementById('q-cat-player').textContent = q.category || '';
@@ -1897,31 +1908,30 @@ function showQuestion(q, idx, prevCorrectAnswer, currentCorrectAnswer) {
   document.querySelectorAll('.wait-reveal').forEach(el => el.remove());
 
   // Ha volt lezáratlan pending kérdés (a 'revealed' esemény kimaradt vagy késett),
-  // zárjuk le a prevCorrectAnswer alapján (= state.lastCorrectAnswer az új kérdés
-  // gameState-jéből, ami mindig az előző kérdés helyes válaszát tartalmazza).
+  // az answerKeys-ből pótlólag lekérjük a helyes választ, mielőtt előzményezzük —
+  // ez mindig megbízható, mert egy állandó, bármikor lekérdezhető Firebase-értéket
+  // olvas (nem egy tranziens eseményt, amit esetleg el lehetett szalasztani).
   if (pendingQuestion) {
-    if (pendingQuestion.correctAnswer === -1) {
-      const bestCorrect = (typeof prevCorrectAnswer === 'number' && prevCorrectAnswer >= 0)
-        ? prevCorrectAnswer
-        : lastKnownCorrectAnswer;
-      if (bestCorrect >= 0) pendingQuestion.correctAnswer = bestCorrect;
-    }
-    myQuestionHistory.push({...pendingQuestion});
+    const pq = pendingQuestion;
     pendingQuestion = null;
+    if (pq.correctAnswer === -1 && typeof pq.qIndex === 'number') {
+      fetchAnswerKey(pq.qIndex).then(correctIdx => {
+        pq.correctAnswer = correctIdx;
+        myQuestionHistory.push(pq);
+      });
+    } else {
+      myQuestionHistory.push(pq);
+    }
   }
 
-  // Az aktuális kérdés helyes válaszát AZONNAL tároljuk a gameState 'question' fázisából.
-  // Ez a legmegbízhatóbb forrás — nem függünk a 'revealed' esemény megérkezésétől.
-  const knownCorrect = (typeof currentCorrectAnswer === 'number' && currentCorrectAnswer >= 0)
-    ? currentCorrectAnswer : -1;
-
-  // Kérdés rögzítése tracking célra
+  // Kérdés rögzítése tracking célra — a helyes válasz még ismeretlen (-1), csak
+  // felfedéskor derül ki (lásd revealAnswers / fetchAnswerKey).
   pendingQuestion = {
     qText: q.text,
     qNum: q.num || 0,
     options: q.options,
     myAnswer: -1,
-    correctAnswer: knownCorrect,
+    correctAnswer: -1,
     pts: 0,
     qIndex: idx
   };
@@ -1971,18 +1981,6 @@ function submitAnswer(idx) {
 function revealAnswers(correctIdx, forQuestionIndex) {
   stopTimer();
 
-  // lastKnownCorrectAnswer frissítése — csak akkor, ha az index egyezik az aktuális
-  // kérdéssel (megakadályozzuk, hogy egy stale/késő reveal felülírja a helyes értéket)
-  if (typeof correctIdx === 'number' && correctIdx >= 0) {
-    const currentPendingIdx = pendingQuestion ? pendingQuestion.qIndex : -1;
-    const revealMatchesCurrent = typeof forQuestionIndex !== 'number'
-      || currentPendingIdx === -1
-      || currentPendingIdx === forQuestionIndex;
-    if (revealMatchesCurrent) {
-      lastKnownCorrectAnswer = correctIdx;
-    }
-  }
-
   // History-push: csak ha a reveal az aktuális kérdéshez tartozik
   if (pendingQuestion) {
     const indexMatch = typeof forQuestionIndex !== 'number'
@@ -1990,7 +1988,6 @@ function revealAnswers(correctIdx, forQuestionIndex) {
       || pendingQuestion.qIndex === forQuestionIndex;
 
     if (indexMatch) {
-      // A correctAnswer már be lehet állítva a 'question' fázisból — megerősítjük/frissítjük
       pendingQuestion.correctAnswer = correctIdx;
       myQuestionHistory.push({...pendingQuestion});
       pendingQuestion = null;
@@ -2014,11 +2011,16 @@ function showResults() {
   stopTimer();
 
   if (pendingQuestion) {
-    if (pendingQuestion.correctAnswer === -1 && lastKnownCorrectAnswer >= 0) {
-      pendingQuestion.correctAnswer = lastKnownCorrectAnswer;
-    }
-    myQuestionHistory.push({...pendingQuestion});
+    const pq = pendingQuestion;
     pendingQuestion = null;
+    if (pq.correctAnswer === -1 && typeof pq.qIndex === 'number') {
+      fetchAnswerKey(pq.qIndex).then(correctIdx => {
+        pq.correctAnswer = correctIdx;
+        myQuestionHistory.push(pq);
+      });
+    } else {
+      myQuestionHistory.push(pq);
+    }
   }
 
   hideAll();
@@ -2108,6 +2110,11 @@ function showHistory() {
   hideAll();
   document.getElementById('history-screen').style.display = 'block';
   window.scrollTo({top:0, behavior:'smooth'});
+
+  // Defenzív rendezés: a helyes válaszok aszinkron (answerKeys) lekérdezésből
+  // kerülnek az előzménybe, ezért qIndex szerint rendezünk, hogy a megjelenítési
+  // sorrend mindig helyes legyen, függetlenül a lekérdezések befejeződési sorrendjétől.
+  myQuestionHistory.sort((a, b) => (a.qIndex ?? 0) - (b.qIndex ?? 0));
 
   const total = myQuestionHistory.length;
   const correct = myQuestionHistory.filter(h => h.myAnswer !== -1 && h.myAnswer === h.correctAnswer).length;
@@ -2359,7 +2366,6 @@ async function returnToGame() {
     pendingQuestion = null;
     myVoteCat = null; myVoteMode = null; myVoteSubtype = null; myVoteSubmitted = false;
     myPlayerStatus = 'active';
-    lastKnownCorrectAnswer = -1;
     hostReadyForRejoin = false;
     myScore = 0;
     myQuestionHistory = [];
@@ -2640,12 +2646,17 @@ function backToMenu() {
       roomRef.child('players').child(playerId).remove();
     }
   }
+  // Ha a szoba nyitója vagyunk, de még el sem indítottuk a játékot (pl. meggondoltuk
+  // magunkat és visszalépünk), a szoba-index bejegyzést is töröljük — különben egy
+  // "szellem" szoba maradna a listán, amit már senki nem tud elindítani.
+  if (amIRoomHost && db && roomCode) {
+    db.ref('roomIndex/' + roomCode).remove().catch(() => {});
+  }
   hasAnswered = false; myScore = 0; currentQIndex = -1;
   players = {}; questions = []; answeredNamesThisRound = new Set();
   myQuestionHistory = []; pendingQuestion = null;
   myVoteCat = null; myVoteMode = null; myVoteSubtype = null; myVoteSubmitted = false;
   myPlayerStatus = 'lobby';
-  lastKnownCorrectAnswer = -1;
   hostReadyForRejoin = false;
   gameMode = 'normal'; myTeamId = null; myTeamName = ''; teamScores = {};
   hmKeyboardDisabled = false;
@@ -2783,17 +2794,37 @@ async function confirmCreateRoom() {
     await newRoomRef.child('createdAt').set(firebase.database.ServerValue.TIMESTAMP);
 
     const questionsObj = {};
-    selected.forEach((q, i) => { questionsObj['q' + i] = q; });
+    const answerKeysObj = {};
+    selected.forEach((q, i) => {
+      // KRITIKUS BIZTONSÁGI SZÉTVÁLASZTÁS: a 'correct' mező SOHA nem kerül bele a
+      // mindenki által szabadon olvasható questions ágba — külön, felfedésig zárolt
+      // answerKeys ágba kerül (lásd database.rules.json).
+      const { correct, ...publicFields } = q;
+      questionsObj['q' + i] = publicFields;
+      answerKeysObj[i] = { correct: typeof correct === 'number' ? correct : 0 };
+    });
     hostRoomTopicLabel = crSelectedTopic === 'all' ? 'Vegyes' : crSelectedTopic;
     hostGameMode = crSelectedMode;
 
     await newRoomRef.child('questions').set(questionsObj);
+    await newRoomRef.child('answerKeys').set(answerKeysObj);
     await newRoomRef.child('gameState').set({
       phase: 'waiting',
       mode: hostGameMode,
       topicLabel: hostRoomTopicLabel,
       hostName: playerName
     });
+
+    // Nyilvános szoba-index bejegyzés — csak nem-titkos mezőket tartalmaz, hogy a
+    // szobalista NE kelljen a teljes rooms fát olvasnia (lásd database.rules.json).
+    const roomIndexRef = db.ref('roomIndex/' + newCode);
+    await roomIndexRef.set({
+      topicLabel: hostRoomTopicLabel,
+      mode: hostGameMode,
+      hostName: playerName,
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    roomIndexRef.onDisconnect().remove();
 
     amIRoomHost = true;
     hostQuestionsPool = selected;
@@ -2830,13 +2861,14 @@ function loadRoomList() {
 
   if (roomListListenerRef) roomListListenerRef.off();
   if (!db) db = firebase.database();
-  roomListListenerRef = db.ref('rooms');
+  // A teljes 'rooms' fa NEM olvasható tömegesen (lásd database.rules.json — ez szándékos,
+  // a helyes válaszok védelme miatt). A szobalista ezért a külön, biztonságos roomIndex
+  // "kirakatból" épül fel, ami csak a nem-titkos mezőket tartalmazza.
+  roomListListenerRef = db.ref('roomIndex');
   roomListListenerRef.on('value', snap => {
     const all = snap.val() || {};
     content.innerHTML = '';
-    const openRooms = Object.entries(all).filter(([code, room]) =>
-      code !== 'kvizjatek' && room && room.gameState && room.gameState.phase === 'waiting'
-    );
+    const openRooms = Object.entries(all).filter(([code, entry]) => code !== 'kvizjatek' && entry);
     if (openRooms.length === 0) {
       const empty = document.createElement('div');
       empty.style.cssText = 'color:var(--muted);font-size:14px;text-align:center;padding:30px 20px;line-height:1.7;';
@@ -2844,28 +2876,33 @@ function loadRoomList() {
       content.appendChild(empty);
       return;
     }
-    openRooms.forEach(([code, room]) => content.appendChild(buildRoomCard(code, room)));
+    openRooms.forEach(([code, entry]) => content.appendChild(buildRoomCard(code, entry)));
   });
 }
 
-function buildRoomCard(code, room) {
+function buildRoomCard(code, entry) {
   const card = document.createElement('div');
   card.className = 'room-card';
   const topicEl = document.createElement('div');
   topicEl.className = 'room-card-topic';
-  const modeIcon = (room.gameState && room.gameState.mode === 'teams') ? '👥 ' : '🎯 ';
-  topicEl.textContent = modeIcon + ((room.gameState && room.gameState.topicLabel) || 'Vegyes');
-  const playerCount = room.players ? Object.keys(room.players).length : 0;
+  const modeIcon = entry.mode === 'teams' ? '👥 ' : '🎯 ';
+  topicEl.textContent = modeIcon + (entry.topicLabel || 'Vegyes');
   const metaEl = document.createElement('div');
   metaEl.className = 'room-card-meta';
-  metaEl.textContent = playerCount + (playerCount === 1 ? ' játékos csatlakozott' : ' játékos csatlakozott');
+  metaEl.textContent = 'Betöltés...';
   const hostEl = document.createElement('div');
   hostEl.className = 'room-card-host';
-  hostEl.textContent = '👤 ' + ((room.gameState && room.gameState.hostName) || 'Ismeretlen');
+  hostEl.textContent = '👤 ' + (entry.hostName || 'Ismeretlen');
   card.appendChild(topicEl);
   card.appendChild(metaEl);
   card.appendChild(hostEl);
   card.onclick = () => joinExistingRoom(code);
+  // Élő játékosszám: célzott, biztonságos olvasás KONKRÉTAN erre a szobára —
+  // a players ág nem titkos, bármely jóváhagyott felhasználó olvashatja (lásd Rules).
+  db.ref('rooms/' + code + '/players').once('value').then(psnap => {
+    const n = psnap.val() ? Object.keys(psnap.val()).length : 0;
+    if (metaEl.isConnected) metaEl.textContent = n + (n === 1 ? ' játékos csatlakozott' : ' játékos csatlakozott');
+  }).catch(() => { if (metaEl.isConnected) metaEl.textContent = ''; });
   return card;
 }
 
@@ -3186,8 +3223,24 @@ async function hostStartQuiz() {
     return;
   }
   if (hostQuestionsPool.length === 0) {
-    const qsnap = await roomRef.child('questions').once('value');
-    hostQuestionsPool = qsnap.val() ? Object.values(qsnap.val()) : [];
+    // Fallback helyreállítás (pl. oldal-frissülés után elveszett helyi állapotra):
+    // a questions (nyilvános mezők) és answerKeys (védett, de a hostnak mindig olvasható)
+    // párosítása index szerint, hogy hostQuestionsPool ismét tartalmazza a .correct-ot.
+    const [qsnap, aksnap] = await Promise.all([
+      roomRef.child('questions').once('value'),
+      roomRef.child('answerKeys').once('value')
+    ]);
+    const qObj = qsnap.val() || {};
+    const akObj = aksnap.val() || {};
+    const qKeys = Object.keys(qObj).sort((a, b) => {
+      const na = parseInt(a.replace(/\D/g, ''), 10) || 0;
+      const nb = parseInt(b.replace(/\D/g, ''), 10) || 0;
+      return na - nb;
+    });
+    hostQuestionsPool = qKeys.map((k, i) => ({
+      ...qObj[k],
+      correct: (akObj[i] && typeof akObj[i].correct === 'number') ? akObj[i].correct : 0
+    }));
   }
   if (hostQuestionsPool.length === 0) { alert('Nincs kérdés ebben a szobában!'); return; }
 
@@ -3198,6 +3251,10 @@ async function hostStartQuiz() {
     if (allPlayers[pid].status === 'lobby') updates['players/' + pid + '/status'] = 'active';
   });
   if (Object.keys(updates).length > 0) await roomRef.update(updates);
+
+  // A szoba lekerül a nyilvános listáról, amint elindul a játék — a Rules szerint ezt is
+  // csak a szoba hostUid-ja (mi) tehetjük meg.
+  if (db && roomCode) db.ref('roomIndex/' + roomCode).remove().catch(() => {});
 
   hostCurrentQIndex = -1;
   hostCorrectOptionIndex = -1;
@@ -3213,20 +3270,21 @@ function hostNextQuestion() {
   if (hostCurrentQIndex >= hostQuestionsPool.length) { hostEndGame(); return; }
 
   const q = hostQuestionsPool[hostCurrentQIndex];
-  const prevCorrect = hostCorrectOptionIndex;
   hostCorrectOptionIndex = q.correct;
   hostAnsweredPlayers = new Set();
   hostAnswerOrder = 0;
   hostCorrectAnswerOrder = 0;
   hostGamePhase = 'question';
 
+  // FONTOS BIZTONSÁGI ELV: a helyes válasz indexe SOHA nem kerül a gameState-be —
+  // az answerKeys ág (amit a szoba létrehozásakor előre feltöltöttünk) tárolja,
+  // és csak felfedés után válik olvashatóvá bárki más számára. A hostCorrectOptionIndex
+  // helyi (nem Firebase-be írt) változó elég a saját pontozásunkhoz.
   const gsData = {
     phase: 'question',
     mode: hostGameMode,
     questionIndex: hostCurrentQIndex,
     question: { text: q.text, options: q.options, category: q.category, type: q.type || 'egyéb', time: q.time || 30, num: q.num || 0 },
-    correctAnswer: q.correct,
-    lastCorrectAnswer: prevCorrect >= 0 ? prevCorrect : null,
     topicLabel: hostRoomTopicLabel,
     hostName: playerName,
     startTime: firebase.database.ServerValue.TIMESTAMP
@@ -3290,8 +3348,11 @@ function hostRevealAnswer(fromTimer) {
   clearInterval(hostTimerInterval);
   hostGamePhase = 'revealed';
   roomRef.child('gameState').update({
-    phase: 'revealed', correctAnswer: hostCorrectOptionIndex, revealedForIndex: hostCurrentQIndex
+    phase: 'revealed', revealedForIndex: hostCurrentQIndex
   });
+  // Ez a jelző nyitja meg az answerKeys/{index} olvasását mindenki más (nem host) számára —
+  // a host maga eddig is olvashatta, hiszen ő futtatja ezt a szobát.
+  roomRef.child('revealedQuestions').child(hostCurrentQIndex).set(true);
   roomRef.child('players').once('value', psnap => {
     const allPlayers = psnap.val() || {};
     const activeCount = Object.values(allPlayers).filter(p => p.status === 'active').length;
