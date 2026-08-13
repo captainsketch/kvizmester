@@ -774,7 +774,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     <label class="menu-name-label">A neved</label>
     <input type="text" class="menu-name-input" id="menu-name-input"
       placeholder="pl. Anna" maxlength="20" autocomplete="off"
-      onkeydown="if(event.key==='Enter')startGame()">
+      onkeydown="if(event.key==='Enter')this.blur()">
   </div>
   <div class="menu-buttons">
     <button class="menu-btn-primary" onclick="showCreateRoom()">➕ ÚJ SZOBA</button>
@@ -847,7 +847,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showMenu()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">2.5</div><div><div class="cl-desc">Akasztófa játékmódhoz szó adatbázis és indítási felület átdolgozása — Firebase-alapú, perzisztens szó adatbázis a host felületen. Kategóriák szabadon meghatározhatók, átnevezhetők, egyedi színnel jelölhetők. Szavakhoz 2 opcionális segítség adható. Az Akasztófa indítása modál átdolgozva: kategória grid, 1–50 szó, session-szintű kijátszott-szó nyomkövetés.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">2.6</div><div><div class="cl-desc">Önkiszolgáló szobában is működik az „Új kör indítása" — a szoba irányítója az eredmény képernyőn a „🔄 ÚJ KÖR INDÍTÁSA" gombbal új kört kezdhet ugyanabban a szobában, friss kérdés-mintával, anélkül hogy új szobát kéne nyitnia (eddig a „Vissza a játékba" gomb önkiszolgáló szobában sosem aktiválódott). Javítva: a főmenü névmezőjén Enter és a „Nem elérhető" képernyő „Újrapróbálás" gombja mostantól a ténylegesen megcélzott szobát próbálja újra, nem a régi, fix admin-szobát. Útmutató frissítve: pontosított leírás az önkiszolgáló szoba-létrehozásról és -csatlakozásról, az Akasztófa jelenlegi, élő alkalmakhoz kötött elérhetőségéről, a 2. segítség tényleges működéséről és a csapatverseny indítási feltételéről.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">2.5</div><div><div class="cl-desc">Akasztófa játékmódhoz szó adatbázis és indítási felület átdolgozása — Firebase-alapú, perzisztens szó adatbázis a host felületen. Kategóriák szabadon meghatározhatók, átnevezhetők, egyedi színnel jelölhetők. Szavakhoz 2 opcionális segítség adható. Az Akasztófa indítása modál átdolgozva: kategória grid, 1–50 szó, session-szintű kijátszott-szó nyomkövetés.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.4</div><div><div class="cl-desc">Akasztófa játékmód következetesség javítása — Segítség kérés: 2 alkalom, mindkettő −1 életet von le. Első segítség szöveges tipp, második véletlen betű. Solo módban csak az aktuális tippelő kérhet segítséget.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.3</div><div><div class="cl-desc">Akasztófa játékmód játék vége menüpont átdolgozása — Külön eredmény képernyő: túlélők és elesettek, személyes kiemelés, statisztika. „Vissza a játékba" gomb a host visszatérésekor aktiválódik.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.2</div><div><div class="cl-desc">Akasztófa játékmód intro bevezetése — ~16 másodperces filmszerű bevezető animáció a játékosoknál a játék indításakor (sztori 3 mondatban, fekete háttéren).</div></div></div>
@@ -893,14 +894,20 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div class="guide-subtitle">Hogyan működik a QuizMaster?</div>
   <div class="guide-notice">
     Ezt a játékot azért hoztam létre, hogy <strong>többen együtt tudjunk játszani.</strong>
-    Ezért jelenleg csak úgy működik, ha én <strong>manuálisan elindítom.</strong>
-    Ha a játék nem elérhető, gyere vissza később! 🙂
+    Jóváhagyott játékosként bármikor <strong>te magad is nyithatsz szobát</strong> az ➕ ÚJ SZOBA gombbal,
+    vagy csatlakozhatsz valaki más nyitott szobájához a 🚪 CSATLAKOZÁS SZOBÁHOZ listából — nem kell megvárnod senkit! 🙂
   </div>
   <div class="guide-divider"></div>
   <div class="guide-section">
     <div class="guide-section-title">🎯 A játék lényege</div>
-    <p>A QuizMaster egy <strong style="color:var(--text)">valós idejű multiplayer játék,</strong> ahol egyszerre akár 20 játékos verseng egymással. A hostnak 3 különböző játékmódot kínál: <strong style="color:var(--text)">Egyéni verseny</strong>, <strong style="color:var(--text)">Csapatverseny</strong> és <strong style="color:var(--text)">Akasztófa.</strong></p>
+    <p>A QuizMaster egy <strong style="color:var(--text)">valós idejű multiplayer játék,</strong> ahol egyszerre akár 20 játékos verseng egymással. Szoba-létrehozáskor jelenleg az <strong style="color:var(--text)">Egyéni verseny</strong> és a <strong style="color:var(--text)">Csapatverseny</strong> játékmód közül választhatsz. Az <strong style="color:var(--text)">Akasztófa</strong> egyelőre csak élő, egy teremben tartott alkalmakon érhető el, amit én vezénylek — hamarosan ez is bekerül az önálló szoba-létrehozásba.</p>
     <p>Az Egyéni versenyhez és Csapatversenyhez kérdések különböző témakörökből érkeznek: Bibliai, Filmek, Történelem, Földrajz, Tudomány és még sok más.</p>
+  </div>
+  <div class="guide-section">
+    <div class="guide-section-title">🚪 Szoba indítása / csatlakozás</div>
+    <p><strong style="color:var(--text)">➕ Új szoba:</strong> Bárki jóváhagyott játékos nyithat szobát. Válaszd ki a játékmódot, a témakört és a kérdésszámot — a szoba azonnal létrejön, és te leszel az <strong style="color:var(--text)">irányítója</strong>, miközben egyben te is részt veszel a játékban.</p>
+    <p><strong style="color:var(--text)">🚪 Csatlakozás szobához:</strong> A nyitott szobák automatikusan megjelennek egy listában — nincs szükség kódra, csak koppints arra, amelyikhez csatlakozni szeretnél.</p>
+    <p><strong style="color:var(--text)">Szoba irányítójaként</strong> a váróteremben nálad jelenik meg a „▶ JÁTÉK INDÍTÁSA" gomb (csapatmódban előbb a „👥 CSAPATOK KEZELÉSE" is) — utána minden automatikusan zajlik, nincs szükség kézi vezérlésre a kérdések között.</p>
   </div>
   <div class="guide-section">
     <div class="guide-section-title">📋 Egyéni verseny — Játékmenet</div>
@@ -910,7 +917,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     <p><strong style="color:var(--text)">4.</strong> A játék végén megjelenik a ranglista.</p>
     <p><strong style="color:var(--text)">5.</strong> A játék után az <strong style="color:var(--text)">Eredményeim</strong> gombbal visszanézheted az összes kérdést: melyiket találtad el, melyiket nem, és hány pontot szereztél kérdésenként.</p>
     <p><strong style="color:var(--text)">6.</strong> Ha hibás kérdést találsz, a 🚩 <strong style="color:var(--text)">Jelentés</strong> gombbal visszajelzést küldhetsz.</p>
-    <p><strong style="color:var(--text)">7.</strong> A ranglista képernyőn a <strong style="color:var(--text)">Vissza a játékba</strong> gomb akkor válik aktívvá, ha a host visszalépett a főmenübe és készen áll a következő körre.</p>
+    <p><strong style="color:var(--text)">7.</strong> A ranglista képernyőn a <strong style="color:var(--text)">Vissza a játékba</strong> gomb akkor válik aktívvá, ha a szoba irányítója elindítja a következő kört (önkiszolgáló szobában a „🔄 ÚJ KÖR INDÍTÁSA" gombbal).</p>
   </div>
   <div class="guide-divider"></div>
   <div class="guide-section">
@@ -919,15 +926,15 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     <p><strong style="color:var(--text)">Hogyan működik?</strong> A host a játék indítása előtt csapatokba osztja a játékosokat. Minden csapatnak egyedi neve van. A kérdések ugyanúgy jelennek meg mint normál módban — te egyénileg válaszolsz, de a pontjaid a <strong style="color:var(--text)">csapatod összpontszámába</strong> kerülnek, nem az egyéni ranglistádba.</p>
     <p><strong style="color:var(--text)">Mit látsz játék közben?</strong> A bal felső sarokban <strong style="color:var(--text)">„Csapat pontunk"</strong> felirat jelenik meg a csapatod aktuális összpontszámával. A játékosok panelen a <strong style="color:var(--text)">„Csapattársak"</strong> felirat alatt csak a saját csapatod tagjait látod — és azt, hogy ki válaszolt már.</p>
     <p><strong style="color:var(--text)">Eredmény képernyő:</strong> A játék végén egy csapat dobogó jelenik meg az összes csapat végeredményével. Alatta látható a saját csapatod részletes teljesítménye — ki mennyi pontot hozott a közös győzelemhez.</p>
-    <p><strong style="color:var(--text)">Fontos:</strong> Ha a host csapatversenyt indít, de valaki nincs csapatba osztva, az a játékos a váróteremben marad amíg a host be nem osztja valamelyik csapatba.</p>
+    <p><strong style="color:var(--text)">Fontos:</strong> A „▶ JÁTÉK INDÍTÁSA" gomb csak akkor válik nyomhatóvá, ha legalább 2 csapat létrejött, és a váróteremben lévő minden játékos be van osztva valamelyikbe — így nem fordulhat elő, hogy valaki kimarad egy induló körből.</p>
   </div>
   <div class="guide-divider"></div>
   <div class="guide-section">
     <div class="guide-section-title">🔤 Akasztófa játékmód</div>
-    <p>Az <strong style="color:var(--text)">Akasztófa</strong> egy teljesen különálló játékmód a szokásos kérdés-válasz formátumtól. A host egy szót választ, ti pedig betűnként próbáljátok kitalálni — minden tévesztett betűvel eggyel kevesebb életetek marad. <strong style="color:var(--text)">6 tévesztés</strong> esetén a szó elvész.</p>
+    <p>Az <strong style="color:var(--text)">Akasztófa</strong> egy teljesen különálló játékmód a szokásos kérdés-válasz formátumtól — jelenleg csak élő, egy teremben tartott alkalmakon érhető el. A host egy szót választ, ti pedig betűnként próbáljátok kitalálni — minden tévesztett betűvel eggyel kevesebb életetek marad. <strong style="color:var(--text)">6 tévesztés</strong> esetén a szó elvész.</p>
     <p><strong style="color:var(--text)">Kooperatív mód:</strong> Mindenki <strong style="color:var(--text)">együtt</strong> tippelhet minden szónál. Ha sikerül kitalálni a szót, mindenki túléli azt a kört — ha nem, mindenki elesik. A végén az összes játékos ugyanolyan sorsra jut.</p>
     <p><strong style="color:var(--text)">Solo kör mód:</strong> Minden játékosnak <strong style="color:var(--text)">saját szava</strong> van, és egyedül tippelhet. A képernyőn látható, hogy éppen ki következik. Akinek a saját szavát sikerül kitalálnia, az <strong style="color:var(--text)">megmenekül</strong> — aki nem tudja kitalálni, az <strong style="color:var(--text)">elesik.</strong></p>
-    <p><strong style="color:var(--text)">💡 Segítség:</strong> Minden szónál legfeljebb <strong style="color:var(--text)">2-szer</strong> kérhetsz segítséget a 💡 gombbal. Fontos: minden segítség kérés <strong style="color:var(--text)">−1 életet von le.</strong> Az 1. segítség egy szöveges tippet ad (ha a host megadott ilyet a szóhoz), a 2. segítség egy véletlenszerű ismeretlen betűt fed fel. Solo módban csak az aktuális tippelő kérhet segítséget.</p>
+    <p><strong style="color:var(--text)">💡 Segítség:</strong> Minden szónál legfeljebb <strong style="color:var(--text)">2-szer</strong> kérhetsz segítséget a 💡 gombbal. Fontos: minden segítség kérés <strong style="color:var(--text)">−1 életet von le.</strong> Az 1. segítség az adott szóhoz megadott első szöveges tippet mutatja, a 2. segítség a másodikat — ha egy szóhoz nincs ennyi tipp megadva, helyette egy véletlenszerű, még ki nem talált betűt fed fel. Solo módban csak az aktuális tippelő kérhet segítséget.</p>
     <p><strong style="color:var(--text)">Játék vége:</strong> Minden szó lejátszása után egy eredmény képernyő jelenik meg, ahol látható ki menekült meg és ki esett el. A saját eredményed (megmenekültél / elesettél) kiemelve jelenik meg. A „Vissza a játékba" gomb akkor aktiválódik, ha a host készen áll egy új körre.</p>
     <p><strong style="color:var(--text)">Bevezető:</strong> Az Akasztófa játék indításakor egy rövid filmszerű bevezető animáció jelenik meg, amely felvázolja a játék hangulatát.</p>
   </div>
@@ -951,7 +958,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div class="unavail-icon">🎮</div>
   <div class="unavail-title">NEM ELÉRHETŐ</div>
   <div class="unavail-text">Jelenleg a játék nem elérhető,<br>kérjük gyere vissza később.</div>
-  <button class="unavail-btn" onclick="startGame()">↺ ÚJRAPRÓBÁLÁS</button>
+  <button class="unavail-btn" onclick="retryJoinRoom()">↺ ÚJRAPRÓBÁLÁS</button>
   <button class="unavail-back" onclick="showMenu()">← Vissza a főmenübe</button>
 </div>
 
@@ -1123,6 +1130,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div class="result-scoreboard" id="result-scoreboard"></div>
   <button class="btn-lobby" onclick="showHistory()" style="background:rgba(62,207,142,0.08);border-color:var(--green);color:var(--green);">📊 EREDMÉNYEIM</button>
   <button class="btn-lobby" id="btn-return-to-game" onclick="returnToGame()" disabled>⏳ VÁRAKOZÁS A HOST-RA...</button>
+  <button class="btn-lobby" id="btn-host-new-round" onclick="hostStartNewRound()" style="display:none;">🔄 ÚJ KÖR INDÍTÁSA</button>
   <button class="btn-lobby" onclick="backToMenu()">↺ VISSZA A FŐMENÜBE</button>
 </div>
 
@@ -1593,77 +1601,21 @@ function showWaiting() {
   resetVoteUI();
 }
 
-// ── ÚJ JÁTÉK gomb ────────────────────────────────────────────
-async function startGame() {
-  const name = document.getElementById('menu-name-input').value.trim();
-  const err = document.getElementById('menu-error');
-  err.textContent = '';
-
-  if (!name || name.length < 2) {
-    err.textContent = 'Adj meg legalább 2 karakteres nevet!';
-    document.getElementById('menu-name-input').focus();
-    return;
-  }
-
-  playerName = name;
-  roomCode = getParam('room') || (typeof DEFAULT_ROOM !== 'undefined' ? DEFAULT_ROOM : 'kvizjatek');
-  // FONTOS: a playerId mostantól a valódi, bejelentkezett Firebase Auth UID —
-  // nem egy véletlen, munkamenet-szintű string. Ez kell ahhoz, hogy a Rules
-  // (auth.uid === $uid) helyesen engedjen be bármely jóváhagyott játékost,
-  // nem csak az admin-fiókot.
-  const currentUser = firebase.auth().currentUser;
-  if (!currentUser) {
-    err.textContent = 'Nincs bejelentkezve. Frissítsd az oldalt és jelentkezz be újra.';
-    return;
-  }
-  playerId = currentUser.uid;
-  myColor = COLORS[Math.floor(Math.random() * COLORS.length)];
-  localStorage.setItem('quizPlayerName', name);
-
-  // Új játék kezdetekor töröljük az előző előzményt
-  myQuestionHistory = [];
-  pendingQuestion = null;
-
-  err.textContent = 'Kapcsolódás...';
-
+// ── "NEM ELÉRHETŐ" képernyő — újrapróbálás ───────────────────
+// BUGFIX: korábban ez (és a főmenü névmezőjén az Enter is) a régi, fix
+// startGame()-et hívta, ami mindig a DEFAULT_ROOM-ot ("kvizjatek") próbálta
+// megnyitni — tehát ha valaki egy barátja szobájához nem tudott csatlakozni,
+// az "Újrapróbálás" nem AZT a szobát próbálta újra, hanem egy azzal semmilyen
+// kapcsolatban nem álló, fix admin-szobát, ami szinte biztos hogy megint
+// sikertelen lett volna. Ez a függvény a ténylegesen megcélzott szobát
+// (a globális roomCode-ot, amit connectAsPlayerToRoom() a hívás elején beállít,
+// még a sikertelen ellenőrzés előtt) próbálja újra.
+async function retryJoinRoom() {
+  if (!roomCode) { showMenu(); return; }
   try {
-    if (!firebase.apps.length) {
-      err.textContent = 'Firebase nincs beállítva!';
-      return;
-    }
-
-    if (roomRef) {
-      roomRef.child('gameState').off();
-      roomRef.child('players').off();
-      roomRef.child('answers').off();
-    }
-
-    db = firebase.database();
-    roomRef = db.ref('rooms/' + roomCode);
-
-    const snap = await roomRef.child('gameState').once('value');
-    const gameState = snap.val();
-
-    if (!gameState) {
-      showUnavailable();
-      return;
-    }
-
-    await roomRef.child('players').child(playerId).set({
-      name: playerName,
-      score: 0,
-      color: myColor,
-      status: 'lobby',
-      joinedAt: firebase.database.ServerValue.TIMESTAMP
-    });
-
-    roomRef.child('players').child(playerId).onDisconnect().remove();
-
-    setupListeners();
-    showLobby();
-
+    await connectAsPlayerToRoom(roomCode);
   } catch(e) {
-    err.textContent = 'Hiba: ' + e.message;
+    alert('Nem sikerült csatlakozni: ' + e.message);
     console.error(e);
   }
 }
@@ -2031,6 +1983,21 @@ function showResults() {
     showTeamResults();
   } else {
     showNormalResults();
+  }
+
+  // Önkiszolgáló szoba irányítója saját maga indíthat új kört ugyanabban a
+  // szobában — neki nem a "Vissza a játékba" várakozó gombot mutatjuk, hanem
+  // az "Új kör indítása" gombot (lásd hostStartNewRound()). Akasztófa/Blokus
+  // (mindkettő ma még csak a régi, quiz-host.html-es élő rendszerben fut)
+  // esetén amIRoomHost úgyis mindig false, tehát ott a viselkedés változatlan.
+  const btnReturn = document.getElementById('btn-return-to-game');
+  const btnNewRound = document.getElementById('btn-host-new-round');
+  const isSelfServiceHost = amIRoomHost && (hostGameMode === 'normal' || hostGameMode === 'teams');
+  if (btnReturn) btnReturn.style.display = isSelfServiceHost ? 'none' : '';
+  if (btnNewRound) {
+    btnNewRound.style.display = isSelfServiceHost ? '' : 'none';
+    btnNewRound.disabled = false;
+    btnNewRound.textContent = '🔄 ÚJ KÖR INDÍTÁSA';
   }
 
   hostReadyForRejoin = false;
@@ -3375,6 +3342,133 @@ function hostEndGame() {
   roomRef.child('gameState').update({ phase: 'ended', mode: hostGameMode });
 }
 
+// ── ÚJ KÖR INDÍTÁSA (önkiszolgáló szoba) ──────────────────────
+// BUGFIX: a "Vissza a játékba" gomb bárkinél csak akkor aktiválódik, ha
+// gameState.phase ismét 'waiting' lesz. A régi quiz-host.html-ben ezt a
+// newGame() írja vissza, amikor a host az "↺ FŐMENÜBE VISSZA"-t nyomja —
+// az önkiszolgáló host-mini-motorban viszont eddig SEMMI nem tette ezt meg
+// kör végén (hostEndGame() csak 'ended'-et ír), így ez a gomb önkiszolgáló
+// szobában örökre "VÁRAKOZÁS A HOST-RA" állapotban ragadt. Ez a függvény
+// pótolja a hiányzó lépést: a szobanyitó ezzel indíthat új kört UGYANABBAN
+// a szobában, anélkül hogy új szobát kéne nyitnia és a kódot újra megosztania.
+async function hostStartNewRound() {
+  if (!amIRoomHost || !roomRef || !db) return;
+  const btn = document.getElementById('btn-host-new-round');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Új kör előkészítése...'; }
+
+  try {
+    // Friss kérdés-minta húzása ugyanabból a témakörből és ugyanannyi
+    // kérdéssel, amivel a szoba eredetileg indult — hogy ne pontosan
+    // ugyanazokat a kérdéseket kapják vissza a játékosok, mint az előző körben.
+    const desiredCount = hostQuestionsPool.length || questions.length || 10;
+    let pool = [];
+    try {
+      const bankSnap = await db.ref('rooms/kvizjatek/questions').once('value');
+      const allBank = bankSnap.val() ? Object.values(bankSnap.val()) : [];
+      pool = (!hostRoomTopicLabel || hostRoomTopicLabel === 'Vegyes')
+        ? allBank
+        : allBank.filter(q => q && q.category === hostRoomTopicLabel);
+    } catch (e) {
+      console.warn('[QuizMaster] Friss kérdés-készlet lekérése sikertelen, a korábbi marad:', e);
+    }
+
+    let selected;
+    if (pool.length > 0) {
+      const shuffled = [...pool].sort(() => Math.random() - 0.5);
+      selected = shuffled.slice(0, Math.min(desiredCount, shuffled.length));
+    } else if (hostQuestionsPool.length > 0) {
+      selected = hostQuestionsPool; // fallback: nem sikerült frissíteni, marad a régi készlet
+    } else {
+      // Legvégső fallback: a szoba saját questions/answerKeys ágából állítjuk
+      // vissza (ugyanaz a minta, mint amit hostStartQuiz() is használ).
+      const [qsnap, aksnap] = await Promise.all([
+        roomRef.child('questions').once('value'),
+        roomRef.child('answerKeys').once('value')
+      ]);
+      const qObj = qsnap.val() || {};
+      const akObj = aksnap.val() || {};
+      selected = Object.keys(qObj).map((k, i) => ({
+        ...qObj[k],
+        correct: (akObj[i] && typeof akObj[i].correct === 'number') ? akObj[i].correct : 0
+      }));
+    }
+    if (!selected || selected.length === 0) {
+      alert('Nem sikerült új kérdéskészletet előkészíteni. Próbáld újra, vagy hozz létre új szobát.');
+      if (btn) { btn.disabled = false; btn.textContent = '🔄 ÚJ KÖR INDÍTÁSA'; }
+      return;
+    }
+
+    const questionsObj = {};
+    const answerKeysObj = {};
+    selected.forEach((q, i) => {
+      const { correct, ...publicFields } = q;
+      questionsObj['q' + i] = publicFields;
+      answerKeysObj[i] = { correct: typeof correct === 'number' ? correct : 0 };
+    });
+
+    // Csapatmódban: a teams struktúra és a members bejegyzések megmaradnak
+    // (a players törlése ezeket nem érinti), csak a pontszámok nullázódnak —
+    // pontosan úgy, ahogy a régi quiz-host.html newGame() függvénye is teszi.
+    if (hostGameMode === 'teams') {
+      const teamsSnap = await roomRef.child('teams').once('value');
+      const teamsVal = teamsSnap.val() || {};
+      const teamUpdates = {};
+      Object.keys(teamsVal).forEach(tid => { teamUpdates['teams/' + tid + '/score'] = 0; });
+      if (Object.keys(teamUpdates).length) await roomRef.update(teamUpdates);
+    }
+
+    await roomRef.child('questions').set(questionsObj);
+    await roomRef.child('answerKeys').set(answerKeysObj);
+    await roomRef.child('revealedQuestions').remove();
+    await roomRef.child('answers').remove();
+    await roomRef.child('votes').remove();
+    await roomRef.child('voteResult').remove();
+    await roomRef.child('players').remove();
+    await roomRef.child('gameState').set({
+      phase: 'waiting',
+      mode: hostGameMode,
+      topicLabel: hostRoomTopicLabel,
+      hostName: playerName
+    });
+
+    hostQuestionsPool = selected;
+    hostCurrentQIndex = -1;
+    hostCorrectOptionIndex = -1;
+    hostGamePhase = 'waiting';
+    hostAutoAdvanceRunning = false;
+    hostAnsweredPlayers = new Set();
+    hostAnswerOrder = 0;
+    hostCorrectAnswerOrder = 0;
+    clearInterval(hostTimerInterval);
+
+    // A szobanyitó saját magát 'lobby' státusszal írja vissza — pontosan úgy,
+    // mint egy vadonatúj szoba létrehozásakor —, hogy a váróteremben újra
+    // lássa a "▶ JÁTÉK INDÍTÁSA" (csapatmódban a "👥 CSAPATOK KEZELÉSE" is)
+    // gombot, és maga döntse el, mikor induljon a következő kérdés.
+    const rejoinData = {
+      name: playerName, score: 0, color: myColor, status: 'lobby',
+      joinedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+    if (hostGameMode === 'teams' && myTeamId) rejoinData.teamId = myTeamId;
+    await roomRef.child('players').child(playerId).set(rejoinData);
+    roomRef.child('players').child(playerId).onDisconnect().remove();
+
+    hasAnswered = false; currentQIndex = -1; answeredNamesThisRound = new Set();
+    pendingQuestion = null; myScore = 0; myQuestionHistory = [];
+    myVoteCat = null; myVoteMode = null; myVoteSubtype = null; myVoteSubmitted = false;
+    myPlayerStatus = 'lobby'; hostReadyForRejoin = false;
+    document.getElementById('my-score').textContent = '0';
+    document.getElementById('my-rank').textContent = '#—';
+    updateGameModeUI();
+    showLobby();
+
+  } catch (e) {
+    console.error('[QuizMaster] hostStartNewRound hiba:', e);
+    alert('Hiba történt az új kör indításakor: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 ÚJ KÖR INDÍTÁSA'; }
+  }
+}
+
 // ============================================================
 // AKASZTÓFA — JÁTÉKOS OLDAL
 // ============================================================
@@ -4556,7 +4650,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 2.5</div>
+<div class="version-badge">Játék verzió: 2.6</div>
 
 </body>
 </html>
