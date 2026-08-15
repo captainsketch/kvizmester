@@ -318,45 +318,6 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   .hist-pts-val.pts-wrong { color:var(--red); }
   .hist-pts-val.pts-zero { color:var(--muted); }
 
-  /* ── SZAVAZÓ FELÜLET ─────────────────────── */
-  #vote-section { width:100%; max-width:380px; margin:20px auto 0; animation:fadeIn 0.4s ease; }
-  .vote-title { font-family:var(--font-display); font-size:22px; letter-spacing:2px; color:var(--accent); text-align:center; margin-bottom:4px; }
-  .vote-subtitle { font-size:11px; color:var(--muted); text-align:center; letter-spacing:2px; text-transform:uppercase; margin-bottom:16px; }
-  .vote-option-row { display:flex; gap:10px; margin-bottom:8px; }
-  .vote-radio-btn { flex:1; display:flex; align-items:center; gap:10px; background:var(--surface2); border:2px solid var(--border); border-radius:12px; padding:12px 14px; cursor:pointer; transition:all 0.2s; -webkit-user-select:none; user-select:none; }
-  .vote-radio-btn.selected { border-color:var(--accent); background:rgba(240,192,64,0.1); }
-  .vote-radio-btn.skip-btn { justify-content:center; flex:none; width:100%; margin-bottom:12px; border-color:var(--border); }
-  .vote-radio-btn.skip-btn.selected { border-color:var(--muted); background:rgba(107,107,138,0.12); }
-  .vote-circle { width:20px; height:20px; border-radius:50%; border:2px solid var(--border); flex-shrink:0; transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
-  .vote-radio-btn.selected .vote-circle { border-color:var(--accent); background:var(--accent); }
-  .vote-radio-btn.selected .vote-circle::after { content:''; width:8px; height:8px; border-radius:50%; background:#000; }
-  .vote-radio-btn.skip-btn.selected .vote-circle { border-color:var(--muted); background:var(--muted); }
-  .vote-radio-btn.skip-btn.selected .vote-circle::after { content:''; width:8px; height:8px; border-radius:50%; background:#000; }
-  .vote-label { font-size:14px; font-weight:600; flex:1; }
-  .vote-expand-icon { font-size:11px; color:var(--muted); transition:transform 0.2s; flex-shrink:0; }
-  .vote-expand-icon.open { transform:rotate(90deg); }
-  .vote-subcats { display:none; padding:4px 0 4px 16px; flex-direction:column; gap:6px; }
-  .vote-subcats.open { display:flex; }
-  .vote-subcat-item { display:flex; align-items:center; gap:10px; padding:9px 12px; background:var(--surface); border:1px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.2s; -webkit-user-select:none; user-select:none; }
-  .vote-subcat-item.selected { border-color:var(--accent); background:rgba(240,192,64,0.08); }
-  .vote-subcat-circle { width:16px; height:16px; border-radius:50%; border:2px solid var(--border); flex-shrink:0; transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
-  .vote-subcat-item.selected .vote-subcat-circle { border-color:var(--accent); background:var(--accent); }
-  .vote-subcat-item.selected .vote-subcat-circle::after { content:''; width:6px; height:6px; border-radius:50%; background:#000; }
-  .vote-subcat-label { font-size:13px; font-weight:500; }
-  .vote-submit-btn { width:100%; padding:16px; background:var(--accent); color:#000; border:none; border-radius:12px; font-family:var(--font-display); font-size:22px; letter-spacing:2px; cursor:pointer; transition:all 0.15s; margin-top:16px; box-shadow:0 4px 16px rgba(240,192,64,0.2); }
-  .vote-submit-btn:active { transform:scale(0.97); opacity:0.9; }
-  .vote-submit-btn:disabled { opacity:0.4; cursor:not-allowed; }
-  .vote-sent-box { background:rgba(62,207,142,0.08); border:1px solid rgba(62,207,142,0.3); border-radius:12px; padding:16px; margin-top:8px; text-align:center; }
-  .vote-sent-title { font-family:var(--font-display); font-size:18px; color:var(--green); letter-spacing:2px; margin-bottom:6px; }
-  .vote-sent-sub { font-size:12px; color:var(--muted); margin-bottom:12px; }
-  .vote-results-list { text-align:left; display:flex; flex-direction:column; gap:5px; margin-top:8px; }
-  .vote-result-row { display:flex; align-items:center; justify-content:space-between; padding:7px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; font-size:12px; }
-  .vote-result-row.leader { border-color:var(--accent); background:rgba(240,192,64,0.08); }
-  .vote-result-name { flex:1; font-weight:500; }
-  .vote-result-count { font-family:var(--font-display); font-size:16px; color:var(--accent); }
-  .vote-waiting-more { font-size:12px; color:var(--muted); text-align:center; margin-top:8px; }
-  .vote-divider { height:1px; background:var(--border); margin:16px 0; }
-
   .hidden { display:none !important; }
 
   /* ── BLOKUS KÉPERNYŐ ───────────────────────────────────── */
@@ -568,34 +529,6 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   .cl-ver.current { color:var(--green); }
   .cl-desc { font-size:13px; color:var(--text); line-height:1.6; }
   .cl-date { font-size:11px; color:var(--muted); margin-top:3px; }
-
-  /* ── JÁTÉKMÓD KÁRTYÁK a szavazóban ─────────────── */
-  .vote-mode-card {
-    background:var(--surface2); border:2px solid var(--border); border-radius:14px;
-    padding:16px 10px 12px; text-align:center; cursor:pointer;
-    transition:all .15s; -webkit-user-select:none; user-select:none;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
-  }
-  .vote-mode-card:active { transform:scale(0.94); }
-  .vote-mode-card.selected-quiz    { border-color:var(--accent);  background:rgba(240,192,64,0.12); }
-  .vote-mode-card.selected-teams   { border-color:var(--blue);    background:rgba(90,143,224,0.12); }
-  .vote-mode-card.selected-hangman { border-color:var(--accent2); background:rgba(224,90,43,0.12); }
-  .vote-mode-card.selected-blokus  { border-color:var(--green);   background:rgba(62,207,142,0.12); }
-  .vmc-icon { font-size:28px; line-height:1; }
-  .vmc-label {
-    font-family:var(--font-display); font-size:13px; letter-spacing:1.5px;
-    color:var(--text); line-height:1;
-  }
-  .vote-mode-card.selected-quiz    .vmc-label { color:var(--accent); }
-  .vote-mode-card.selected-teams   .vmc-label { color:var(--blue); }
-  .vote-mode-card.selected-hangman .vmc-label { color:var(--accent2); }
-  .vote-mode-card.selected-blokus  .vmc-label { color:var(--green); }
-  .vote-cat-reveal {
-    overflow:hidden; max-height:0;
-    transition:max-height .35s cubic-bezier(0.4,0,0.2,1), opacity .25s;
-    opacity:0;
-  }
-  .vote-cat-reveal.open { max-height:700px; opacity:1; }
 
   /* ── JELENTÉS MODAL ──────────────────────────────── */
   .report-modal-overlay {
@@ -847,7 +780,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showMenu()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">2.6</div><div><div class="cl-desc">Önkiszolgáló szobában is működik az „Új kör indítása" — a szoba irányítója az eredmény képernyőn a „🔄 ÚJ KÖR INDÍTÁSA" gombbal új kört kezdhet ugyanabban a szobában, friss kérdés-mintával, anélkül hogy új szobát kéne nyitnia (eddig a „Vissza a játékba" gomb önkiszolgáló szobában sosem aktiválódott). Javítva: a főmenü névmezőjén Enter és a „Nem elérhető" képernyő „Újrapróbálás" gombja mostantól a ténylegesen megcélzott szobát próbálja újra, nem a régi, fix admin-szobát. Útmutató frissítve: pontosított leírás az önkiszolgáló szoba-létrehozásról és -csatlakozásról, az Akasztófa jelenlegi, élő alkalmakhoz kötött elérhetőségéről, a 2. segítség tényleges működéséről és a csapatverseny indítási feltételéről.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">2.7</div><div><div class="cl-desc">Hibajavítás — a régi, quiz-host.html-es élő alkalmakhoz készült játékmód-szavazó felület véglegesen eltávolítva a játékos oldalról. A várakozási képernyő (a „Vissza a játékba" és az „Új kör indítása" utáni visszatéréskor is) minden alkalommal felvillantotta ezt a kártyás szavazót, annak ellenére, hogy az önkiszolgáló szoba-motor sosem olvasta vagy dolgozta fel a leadott szavazatokat — ez a felület kizárólag a régi, host-felügyelt váróteremhez tartozott. A quiz-host.html saját, élő alkalmakra szánt szavazás-figyelője (jobb oldali „Szavazás" panel) változatlanul, érintetlenül megmaradt.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">2.6</div><div><div class="cl-desc">Önkiszolgáló szobában is működik az „Új kör indítása" — a szoba irányítója az eredmény képernyőn a „🔄 ÚJ KÖR INDÍTÁSA" gombbal új kört kezdhet ugyanabban a szobában, friss kérdés-mintával, anélkül hogy új szobát kéne nyitnia (eddig a „Vissza a játékba" gomb önkiszolgáló szobában sosem aktiválódott). Javítva: a főmenü névmezőjén Enter és a „Nem elérhető" képernyő „Újrapróbálás" gombja mostantól a ténylegesen megcélzott szobát próbálja újra, nem a régi, fix admin-szobát. Útmutató frissítve: pontosított leírás az önkiszolgáló szoba-létrehozásról és -csatlakozásról, az Akasztófa jelenlegi, élő alkalmakhoz kötött elérhetőségéről, a 2. segítség tényleges működéséről és a csapatverseny indítási feltételéről.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.5</div><div><div class="cl-desc">Akasztófa játékmódhoz szó adatbázis és indítási felület átdolgozása — Firebase-alapú, perzisztens szó adatbázis a host felületen. Kategóriák szabadon meghatározhatók, átnevezhetők, egyedi színnel jelölhetők. Szavakhoz 2 opcionális segítség adható. Az Akasztófa indítása modál átdolgozva: kategória grid, 1–50 szó, session-szintű kijátszott-szó nyomkövetés.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.4</div><div><div class="cl-desc">Akasztófa játékmód következetesség javítása — Segítség kérés: 2 alkalom, mindkettő −1 életet von le. Első segítség szöveges tipp, második véletlen betű. Solo módban csak az aktuális tippelő kérhet segítséget.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.3</div><div><div class="cl-desc">Akasztófa játékmód játék vége menüpont átdolgozása — Külön eredmény képernyő: túlélők és elesettek, személyes kiemelés, statisztika. „Vissza a játékba" gomb a host visszatérésekor aktiválódik.</div></div></div>
@@ -989,98 +923,6 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     <div class="dot"></div><div class="dot"></div><div class="dot"></div>
   </div>
   <div class="waiting-msg" id="waiting-msg">Várakozás az új játék kezdésére...</div>
-
-  <!-- SZAVAZÓ FELÜLET -->
-  <div id="vote-section">
-    <div class="vote-divider"></div>
-    <div class="vote-title" style="font-size:16px;">🎮 MI LEGYEN A KÖVETKEZŐ JÁTÉKMÓD?</div>
-    <div class="vote-subtitle">Szavazz a következő körre</div>
-
-    <!-- Játékmód kártyák — 3+1 elrendezés -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
-      <div class="vote-mode-card" id="vmc-quiz" onclick="selectMode('quiz')">
-        <div class="vmc-icon">🎯</div>
-        <div class="vmc-label">EGYÉNI</div>
-      </div>
-      <div class="vote-mode-card" id="vmc-teams" onclick="selectMode('teams')">
-        <div class="vmc-icon">👥</div>
-        <div class="vmc-label">CSAPAT</div>
-      </div>
-      <div class="vote-mode-card" id="vmc-hangman" onclick="selectMode('hangman')">
-        <div class="vmc-icon">🔤</div>
-        <div class="vmc-label">AKASZTÓFA</div>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
-      <div class="vote-mode-card" id="vmc-blokus" onclick="selectMode('blokus')">
-        <div class="vmc-icon">⬛</div>
-        <div class="vmc-label">BLOKUS</div>
-      </div>
-      <div></div><div></div>
-    </div>
-
-    <!-- Kategória szavazás — csak Egyéni mód esetén nyílik ki -->
-    <div class="vote-cat-reveal" id="vote-cat-reveal">
-      <div style="height:1px;background:var(--border);margin:0 0 14px;"></div>
-      <div class="vote-title" style="font-size:15px;">🗳 MELYIK KATEGÓRIÁT?</div>
-      <div class="vote-subtitle">Szavazz a témakörre</div>
-
-      <!-- BÁRMELYIK MEGFELEL -->
-      <div class="vote-radio-btn skip-btn" id="vote-skip-cat-btn" onclick="selectVote('any', null)" style="margin-bottom:10px;">
-        <div class="vote-circle" id="vote-circle-any"></div>
-        <div class="vote-label" style="text-align:center;color:var(--muted);">Bármelyik kategória megfelel</div>
-      </div>
-
-      <!-- FŐ KATEGÓRIÁK -->
-      <div class="vote-option-row">
-        <!-- BIBLIAI -->
-        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
-          <div class="vote-radio-btn" id="vote-main-Bibliai" onclick="selectVote('Bibliai', null)">
-            <div class="vote-circle" id="vote-circle-Bibliai"></div>
-            <div class="vote-label">📖 Bibliai</div>
-            <div class="vote-expand-icon" id="vote-expand-Bibliai" onclick="event.stopPropagation();toggleSubcats('Bibliai')">▶</div>
-          </div>
-          <div class="vote-subcats" id="vote-subcats-Bibliai">
-            <div class="vote-subcat-item" id="vote-sub-Bibliai-vers" onclick="selectVote('Bibliai','vers')"><div class="vote-subcat-circle"></div><div class="vote-subcat-label">📖 Vers felismerés</div></div>
-            <div class="vote-subcat-item" id="vote-sub-Bibliai-személy" onclick="selectVote('Bibliai','személy')"><div class="vote-subcat-circle"></div><div class="vote-subcat-label">👤 Személy</div></div>
-            <div class="vote-subcat-item" id="vote-sub-Bibliai-évszám" onclick="selectVote('Bibliai','évszám')"><div class="vote-subcat-circle"></div><div class="vote-subcat-label">📅 Évszám</div></div>
-            <div class="vote-subcat-item" id="vote-sub-Bibliai-helység" onclick="selectVote('Bibliai','helység')"><div class="vote-subcat-circle"></div><div class="vote-subcat-label">📍 Helység</div></div>
-            <div class="vote-subcat-item" id="vote-sub-Bibliai-esemény" onclick="selectVote('Bibliai','esemény')"><div class="vote-subcat-circle"></div><div class="vote-subcat-label">⚡ Esemény</div></div>
-          </div>
-        </div>
-        <!-- FILMEK -->
-        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
-          <div class="vote-radio-btn" id="vote-main-Filmek" onclick="selectVote('Filmek', null)">
-            <div class="vote-circle" id="vote-circle-Filmek"></div>
-            <div class="vote-label">🎬 Filmek</div>
-            <div class="vote-expand-icon" id="vote-expand-Filmek" onclick="event.stopPropagation();toggleSubcats('Filmek')">▶</div>
-          </div>
-          <div class="vote-subcats" id="vote-subcats-Filmek">
-            <div class="vote-subcat-item" id="vote-sub-Filmek-idézet" onclick="selectVote('Filmek','idézet')"><div class="vote-subcat-circle"></div><div class="vote-subcat-label">💬 Idézet</div></div>
-            <div class="vote-subcat-item" id="vote-sub-Filmek-személy" onclick="selectVote('Filmek','személy')"><div class="vote-subcat-circle"></div><div class="vote-subcat-label">👤 Személy</div></div>
-            <div class="vote-subcat-item" id="vote-sub-Filmek-évszám/időpont" onclick="selectVote('Filmek','évszám/időpont')"><div class="vote-subcat-circle"></div><div class="vote-subcat-label">📅 Évszám/Időpont</div></div>
-            <div class="vote-subcat-item" id="vote-sub-Filmek-helység" onclick="selectVote('Filmek','helység')"><div class="vote-subcat-circle"></div><div class="vote-subcat-label">📍 Helység</div></div>
-            <div class="vote-subcat-item" id="vote-sub-Filmek-esemény" onclick="selectVote('Filmek','esemény')"><div class="vote-subcat-circle"></div><div class="vote-subcat-label">⚡ Esemény</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Nem szavazok link -->
-    <div style="text-align:center;margin-bottom:10px;">
-      <span id="vote-skip-link" onclick="selectMode('skip')" style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:3px;">⏭ Nem szeretnék szavazni</span>
-    </div>
-
-    <button class="vote-submit-btn" id="vote-submit-btn" onclick="submitVote()" disabled>🗳 SZAVAZÁS</button>
-
-    <!-- SZAVAZAT ELKÜLDVE — eredmény panel -->
-    <div class="vote-sent-box hidden" id="vote-sent-box">
-      <div class="vote-sent-title">✓ SZAVAZAT ELKÜLDVE</div>
-      <div class="vote-sent-sub" id="vote-sent-choice">—</div>
-      <div class="vote-results-list" id="vote-results-list"></div>
-      <div class="vote-waiting-more" id="vote-waiting-more"></div>
-    </div>
-  </div>
 
   <button class="btn-back-game" style="max-width:280px;margin-top:28px;" onclick="backToMenu()">↺ Vissza a főmenübe</button>
 </div>
@@ -1370,12 +1212,6 @@ let hostScoringListenerAttached = false;
 let myQuestionHistory = [];   // [{qText, options, myAnswer, correctAnswer, pts, qIndex}]
 let pendingQuestion = null;   // az éppen folyamatban lévő kérdés adatai
 
-// Szavazás state
-let myVoteMode = null;     // 'quiz'|'teams'|'hangman'|'blokus'|'skip'
-let myVoteCat = null;      // pl. 'Bibliai', 'Filmek', 'any' — csak quiz módban
-let myVoteSubtype = null;  // pl. 'vers', null
-let myVoteSubmitted = false;
-
 // ── CSAPATVERSENY STATE ──────────────────────────────────────
 let gameMode = 'normal';   // 'normal' | 'teams'
 let myTeamId = null;       // saját csapat Firebase ID
@@ -1597,8 +1433,6 @@ function showWaiting() {
   document.getElementById('w-avatar').style.color = myColor;
   document.getElementById('w-name').textContent = playerName;
   document.getElementById('w-room').textContent = roomCode;
-  // Szavazó felület reset
-  resetVoteUI();
 }
 
 // ── "NEM ELÉRHETŐ" képernyő — újrapróbálás ───────────────────
@@ -1801,11 +1635,6 @@ function setupListeners() {
   roomRef.child('questions').once('value', snap => {
     questions = Object.values(snap.val() || {});
     updateProgress();
-  });
-
-  // Szavazás eredmény figyelése (valós idejű frissítés)
-  roomRef.child('voteResult').on('value', snap => {
-    if (myVoteSubmitted) updateVoteResultsDisplay();
   });
 
   // ── AKASZTÓFA: hangmanState figyelése ────────────────────
@@ -2331,7 +2160,6 @@ async function returnToGame() {
     currentQIndex = -1;
     answeredNamesThisRound = new Set();
     pendingQuestion = null;
-    myVoteCat = null; myVoteMode = null; myVoteSubtype = null; myVoteSubmitted = false;
     myPlayerStatus = 'active';
     hostReadyForRejoin = false;
     myScore = 0;
@@ -2348,220 +2176,6 @@ async function returnToGame() {
     if (btn) { btn.disabled = false; btn.textContent = '🎮 VISSZA A JÁTÉKBA'; }
   }
 }
-
-// ── SZAVAZÁS ─────────────────────────────────────────────────
-const VOTE_LABELS_PLAYER = {
-  'mode|quiz':    '🎯 Egyéni verseny',
-  'mode|teams':   '👥 Csapatverseny',
-  'mode|hangman': '🔤 Akasztófa',
-  'mode|blokus':  '⬛ Blokus',
-  'mode|skip':    '⏭ Nem szavazott',
-  'Bibliai': '📖 Bibliai (összes)',
-  'Bibliai|vers': '📖 Bibliai — Vers felismerés',
-  'Bibliai|személy': '📖 Bibliai — Személy',
-  'Bibliai|évszám': '📖 Bibliai — Évszám',
-  'Bibliai|helység': '📖 Bibliai — Helység',
-  'Bibliai|esemény': '📖 Bibliai — Esemény',
-  'Filmek': '🎬 Filmek (összes)',
-  'Filmek|idézet': '🎬 Filmek — Idézet',
-  'Filmek|személy': '🎬 Filmek — Személy',
-  'Filmek|évszám/időpont': '🎬 Filmek — Évszám/Időpont',
-  'Filmek|helység': '🎬 Filmek — Helység',
-  'Filmek|esemény': '🎬 Filmek — Esemény',
-  'any': '🎲 Bármelyik kategória',
-  'skip': 'Nem szavazott',
-};
-
-function resetVoteUI() {
-  myVoteMode = null;
-  myVoteCat = null;
-  myVoteSubtype = null;
-  myVoteSubmitted = false;
-  // Mode card selections törlése
-  ['quiz','teams','hangman','blokus'].forEach(m => {
-    const el = document.getElementById('vmc-'+m);
-    if(el) el.className = 'vote-mode-card';
-  });
-  // Kategória szekció bezárása
-  const catReveal = document.getElementById('vote-cat-reveal');
-  if(catReveal) catReveal.classList.remove('open');
-  // Radio / subcat selections törlése
-  document.querySelectorAll('.vote-radio-btn.selected').forEach(el => el.classList.remove('selected'));
-  document.querySelectorAll('.vote-subcat-item.selected').forEach(el => el.classList.remove('selected'));
-  // Subcats bezárása
-  document.querySelectorAll('.vote-subcats.open').forEach(el => el.classList.remove('open'));
-  document.querySelectorAll('.vote-expand-icon.open').forEach(el => el.classList.remove('open'));
-  // Skip link visszaállítása
-  const skipLink = document.getElementById('vote-skip-link');
-  if(skipLink) { skipLink.style.color=''; skipLink.style.fontWeight=''; }
-  // Submit gomb
-  const btn = document.getElementById('vote-submit-btn');
-  if(btn) { btn.disabled = true; btn.style.display = ''; }
-  // Sent box elrejtése
-  const sent = document.getElementById('vote-sent-box');
-  if(sent) sent.classList.add('hidden');
-  // Vote section megjelenítése
-  const section = document.getElementById('vote-section');
-  if(section) section.style.display = '';
-}
-
-// ── JÁTÉKMÓD KÁRTYA KIVÁLASZTÁS ──────────────────────────────
-function selectMode(mode) {
-  if(myVoteSubmitted) return;
-  myVoteMode = mode;
-
-  // Mode kártyák reset
-  ['quiz','teams','hangman','blokus'].forEach(m => {
-    const el = document.getElementById('vmc-'+m);
-    if(el) el.className = 'vote-mode-card';
-  });
-  // Skip link reset
-  const skipLink = document.getElementById('vote-skip-link');
-  if(skipLink) { skipLink.style.color=''; skipLink.style.fontWeight=''; }
-
-  // Kiválasztott kártya kiemelése
-  if(mode !== 'skip') {
-    const card = document.getElementById('vmc-'+mode);
-    if(card) card.className = 'vote-mode-card selected-'+mode;
-  } else {
-    if(skipLink) { skipLink.style.color='var(--accent)'; skipLink.style.fontWeight='700'; }
-  }
-
-  // Kategória szekció megjelenítése/elrejtése
-  const catReveal = document.getElementById('vote-cat-reveal');
-  if(catReveal) {
-    if(mode === 'quiz') {
-      catReveal.classList.add('open');
-    } else {
-      catReveal.classList.remove('open');
-      // Kategória szavazatot töröljük ha nem quiz mód
-      myVoteCat = null;
-      myVoteSubtype = null;
-      document.querySelectorAll('.vote-radio-btn.selected').forEach(el => el.classList.remove('selected'));
-      document.querySelectorAll('.vote-subcat-item.selected').forEach(el => el.classList.remove('selected'));
-      document.querySelectorAll('.vote-subcats.open').forEach(el => el.classList.remove('open'));
-      document.querySelectorAll('.vote-expand-icon.open').forEach(el => el.classList.remove('open'));
-    }
-  }
-
-  // Submit gomb engedélyezése
-  const btn = document.getElementById('vote-submit-btn');
-  if(btn) btn.disabled = false;
-}
-
-function selectVote(cat, subtype) {
-  if (myVoteSubmitted) return;
-  myVoteCat = cat;
-  myVoteSubtype = subtype;
-
-  // Összes kijelölés törlése
-  document.querySelectorAll('.vote-radio-btn').forEach(el => el.classList.remove('selected'));
-  document.querySelectorAll('.vote-subcat-item').forEach(el => el.classList.remove('selected'));
-
-  if (cat === 'any') {
-    document.getElementById('vote-skip-cat-btn')?.classList.add('selected');
-  } else if (subtype) {
-    const subEl = document.getElementById('vote-sub-' + cat + '-' + subtype);
-    if (subEl) subEl.classList.add('selected');
-    const mainEl = document.getElementById('vote-main-' + cat);
-    if (mainEl) mainEl.style.borderColor = 'rgba(240,192,64,0.4)';
-  } else {
-    const mainEl = document.getElementById('vote-main-' + cat);
-    if (mainEl) mainEl.classList.add('selected');
-  }
-}
-
-function toggleSubcats(cat) {
-  const subcats = document.getElementById('vote-subcats-' + cat);
-  const icon = document.getElementById('vote-expand-' + cat);
-  if (!subcats || !icon) return;
-  const isOpen = subcats.classList.contains('open');
-  // Zárjuk be a másik kategória subcats-ját
-  document.querySelectorAll('.vote-subcats.open').forEach(el => el.classList.remove('open'));
-  document.querySelectorAll('.vote-expand-icon.open').forEach(el => el.classList.remove('open'));
-  if (!isOpen) {
-    subcats.classList.add('open');
-    icon.classList.add('open');
-  }
-}
-
-function submitVote() {
-  if (!myVoteMode || myVoteSubmitted) return;
-  myVoteSubmitted = true;
-
-  // Firebase struktúra: cat = játékmód, subtype = kategória (quiz módban)
-  // Kompatibilis a meglévő votes validate rules-szal (cat és ts kötelező)
-  const catField = myVoteMode;
-  let subtypeField = null;
-  if (myVoteMode === 'quiz' && myVoteCat) {
-    subtypeField = myVoteSubtype ? myVoteCat + '|' + myVoteSubtype : myVoteCat;
-  }
-
-  if (db && roomRef) {
-    roomRef.child('votes').child(playerId).set({
-      cat: catField,
-      subtype: subtypeField,
-      playerName: playerName,
-      ts: firebase.database.ServerValue.TIMESTAMP
-    });
-  }
-
-  // Submit gomb + skip link elrejtése
-  const btn = document.getElementById('vote-submit-btn');
-  if (btn) btn.style.display = 'none';
-  const skipLink = document.getElementById('vote-skip-link');
-  if (skipLink) skipLink.style.display = 'none';
-
-  // Sent box megjelenítése
-  const sent = document.getElementById('vote-sent-box');
-  if (sent) sent.classList.remove('hidden');
-
-  let choiceLabel = VOTE_LABELS_PLAYER['mode|' + myVoteMode] || myVoteMode;
-  if (myVoteMode === 'quiz' && subtypeField) {
-    choiceLabel += ' — ' + (VOTE_LABELS_PLAYER[subtypeField] || subtypeField);
-  }
-  const choiceEl = document.getElementById('vote-sent-choice');
-  if (choiceEl) choiceEl.textContent = 'Szavazatod: ' + choiceLabel;
-
-  updateVoteResultsDisplay();
-}
-
-function updateVoteResultsDisplay() {
-  if (!myVoteSubmitted) return;
-  // Firebase-ből olvassuk a voteResult-ot
-  if (db && roomRef) {
-    roomRef.child('voteResult').once('value', snap => {
-      const result = snap.val();
-      const listEl = document.getElementById('vote-results-list');
-      const waitEl = document.getElementById('vote-waiting-more');
-      if (!listEl || !waitEl) return;
-
-      if (!result || !result.tally) {
-        listEl.innerHTML = '';
-        waitEl.textContent = 'Várakozás a többi szavazatra...';
-        return;
-      }
-
-      // Tally megjelenítése
-      listEl.innerHTML = result.tally
-        .filter(r => r.key !== 'skip')
-        .map(r => {
-          const isLeader = r.key === result.winner;
-          return `<div class="vote-result-row${isLeader ? ' leader' : ''}">
-            <span class="vote-result-name">${r.label || r.key}${isLeader ? ' 🏆' : ''}</span>
-            <span class="vote-result-count">${r.count}</span>
-          </div>`;
-        }).join('');
-
-      if (result.winner) {
-        waitEl.textContent = '';
-      } else {
-        waitEl.textContent = 'Várakozás a többi szavazatra...';
-      }
-    });
-  }
-}
-
 
 // ── CSAPATVERSENY UI ─────────────────────────────────────────
 function updateGameModeUI() {
@@ -2601,13 +2215,11 @@ function backToMenu() {
     roomRef.child('gameState').off();
     roomRef.child('players').off();
     roomRef.child('answers').off();
-    roomRef.child('voteResult').off();
     roomRef.child('hangmanState').off();
     roomRef.child('hangmanHintRequests').off();
     roomRef.child('hangmanResults').off();
     roomRef.child('teams').off();
     if (playerId) {
-      roomRef.child('votes').child(playerId).remove();
       roomRef.child('players').child(playerId).child('status').off();
       roomRef.child('players').child(playerId).child('score').off();
       roomRef.child('players').child(playerId).remove();
@@ -2622,7 +2234,6 @@ function backToMenu() {
   hasAnswered = false; myScore = 0; currentQIndex = -1;
   players = {}; questions = []; answeredNamesThisRound = new Set();
   myQuestionHistory = []; pendingQuestion = null;
-  myVoteCat = null; myVoteMode = null; myVoteSubtype = null; myVoteSubmitted = false;
   myPlayerStatus = 'lobby';
   hostReadyForRejoin = false;
   gameMode = 'normal'; myTeamId = null; myTeamName = ''; teamScores = {};
@@ -3455,7 +3066,6 @@ async function hostStartNewRound() {
 
     hasAnswered = false; currentQIndex = -1; answeredNamesThisRound = new Set();
     pendingQuestion = null; myScore = 0; myQuestionHistory = [];
-    myVoteCat = null; myVoteMode = null; myVoteSubtype = null; myVoteSubmitted = false;
     myPlayerStatus = 'lobby'; hostReadyForRejoin = false;
     document.getElementById('my-score').textContent = '0';
     document.getElementById('my-rank').textContent = '#—';
@@ -4650,7 +4260,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 2.6</div>
+<div class="version-badge">Játék verzió: 2.7</div>
 
 </body>
 </html>
