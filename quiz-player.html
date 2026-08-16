@@ -3042,6 +3042,23 @@ async function hostStartNewRound() {
       hostName: playerName
     });
 
+    // A szoba ismét bekerül a "Csatlakozás szobához" listába — enélkül a
+    // hostStartQuiz()-beli roomIndex-törlés óta a szoba "szellem" maradt volna:
+    // gameState.phase='waiting' (tehát valójában csatlakozásra nyitott), de a
+    // roomIndex bejegyzés hiányában új játékos nem talált volna rá, csak a kör
+    // korábbi résztvevői térhettek volna vissza (playerId alapján, "Vissza a
+    // játékba" gombbal). Ugyanazt az invariánst állítjuk helyre, amit
+    // confirmCreateRoom() a szoba első létrehozásakor felállít: roomIndex
+    // bejegyzés akkor és csak akkor létezik, ha gameState.phase === 'waiting'.
+    const roomIndexRef = db.ref('roomIndex/' + roomCode);
+    await roomIndexRef.set({
+      topicLabel: hostRoomTopicLabel,
+      mode: hostGameMode,
+      hostName: playerName,
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    roomIndexRef.onDisconnect().remove();
+
     hostQuestionsPool = selected;
     hostCurrentQIndex = -1;
     hostCorrectOptionIndex = -1;
