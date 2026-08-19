@@ -728,10 +728,10 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     <div id="cr-mode-list" class="cr-mode-list"></div>
   </div>
   <div class="menu-name-wrap">
-    <label class="menu-name-label">Témakör</label>
+    <label class="menu-name-label" id="cr-topic-label">Témakör</label>
     <div id="cr-topic-list" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
-  <div class="menu-name-wrap">
+  <div class="menu-name-wrap" id="cr-count-wrap">
     <label class="menu-name-label">Kérdések száma</label>
     <select class="menu-name-input" id="cr-count-select" style="text-align:center;">
       <option value="5">5 kérdés</option>
@@ -741,12 +741,26 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
       <option value="all">Mind</option>
     </select>
   </div>
+  <div class="menu-name-wrap hidden" id="cr-hangman-fields">
+    <label class="menu-name-label">Játékstílus</label>
+    <div id="cr-hangman-mode-list" class="cr-mode-list" style="margin-bottom:18px;"></div>
+    <label class="menu-name-label">Szavak száma (1–50)</label>
+    <input type="number" class="menu-name-input" id="cr-hangman-count" min="1" max="50" value="5" style="text-align:center;margin-bottom:18px;">
+    <label class="menu-name-label">Időkorlát szavanként</label>
+    <select class="menu-name-input" id="cr-hangman-time" style="text-align:center;">
+      <option value="30">30 másodperc</option>
+      <option value="60" selected>60 másodperc</option>
+      <option value="90">90 másodperc</option>
+      <option value="120">120 másodperc</option>
+    </select>
+  </div>
   <div style="width:100%;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6;" id="cr-mode-note">
-    <span style="opacity:0.75;">Akasztófa és Blokus mód hamarosan választható lesz itt is.</span>
+    <span style="opacity:0.75;">Blokus mód hamarosan választható lesz itt is.</span>
   </div>
   <button class="menu-btn-primary" onclick="confirmCreateRoom()">SZOBA LÉTREHOZÁSA</button>
   <div class="menu-error" id="cr-error"></div>
 </div>
+
 
 <!-- SZOBÁK LISTÁJA -->
 <div id="room-list-screen">
@@ -780,7 +794,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showMenu()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">2.7</div><div><div class="cl-desc">Hibajavítás — a régi, quiz-host.html-es élő alkalmakhoz készült játékmód-szavazó felület véglegesen eltávolítva a játékos oldalról. A várakozási képernyő (a „Vissza a játékba" és az „Új kör indítása" utáni visszatéréskor is) minden alkalommal felvillantotta ezt a kártyás szavazót, annak ellenére, hogy az önkiszolgáló szoba-motor sosem olvasta vagy dolgozta fel a leadott szavazatokat — ez a felület kizárólag a régi, host-felügyelt váróteremhez tartozott. A quiz-host.html saját, élő alkalmakra szánt szavazás-figyelője (jobb oldali „Szavazás" panel) változatlanul, érintetlenül megmaradt.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">2.8</div><div><div class="cl-desc">Akasztófa játékmód átemelve az önkiszolgáló rendszerbe — szoba-létrehozáskor mostantól az Akasztófa is választható, kooperatív vagy solo stílusban, egyedi szószámmal (1–50) és időkorláttal (30/60/90/120 mp), teljesen automatikus lebonyolítással (nincs szükség kézi vezénylésre a szavak között). Minden korábbi funkció megmaradt: legfeljebb 2 segítség kérhető szavanként (mindegyik −1 élet), 6 tévesztésig van lehetőség, solo módban a játékosok körbeforgva kapják meg a szavakat, a végén többségi szabály dönt a túlélésről. Biztonsági javítás: a helyes szó és mindkét segítség szövege mostantól sosem kerül nyersen a nyilvánosan olvasható Firebase-ágba — csak a már ténylegesen kitalált vagy felfedett betűk válnak láthatóvá, ugyanazt az elvet követve, mint a kvíz helyes válaszainak védelménél.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">2.7</div><div><div class="cl-desc">Hibajavítás — a régi, quiz-host.html-es élő alkalmakhoz készült játékmód-szavazó felület véglegesen eltávolítva a játékos oldalról. A várakozási képernyő (a „Vissza a játékba" és az „Új kör indítása" utáni visszatéréskor is) minden alkalommal felvillantotta ezt a kártyás szavazót, annak ellenére, hogy az önkiszolgáló szoba-motor sosem olvasta vagy dolgozta fel a leadott szavazatokat — ez a felület kizárólag a régi, host-felügyelt váróteremhez tartozott. A quiz-host.html saját, élő alkalmakra szánt szavazás-figyelője (jobb oldali „Szavazás" panel) változatlanul, érintetlenül megmaradt.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.6</div><div><div class="cl-desc">Önkiszolgáló szobában is működik az „Új kör indítása" — a szoba irányítója az eredmény képernyőn a „🔄 ÚJ KÖR INDÍTÁSA" gombbal új kört kezdhet ugyanabban a szobában, friss kérdés-mintával, anélkül hogy új szobát kéne nyitnia (eddig a „Vissza a játékba" gomb önkiszolgáló szobában sosem aktiválódott). Javítva: a főmenü névmezőjén Enter és a „Nem elérhető" képernyő „Újrapróbálás" gombja mostantól a ténylegesen megcélzott szobát próbálja újra, nem a régi, fix admin-szobát. Útmutató frissítve: pontosított leírás az önkiszolgáló szoba-létrehozásról és -csatlakozásról, az Akasztófa jelenlegi, élő alkalmakhoz kötött elérhetőségéről, a 2. segítség tényleges működéséről és a csapatverseny indítási feltételéről.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.5</div><div><div class="cl-desc">Akasztófa játékmódhoz szó adatbázis és indítási felület átdolgozása — Firebase-alapú, perzisztens szó adatbázis a host felületen. Kategóriák szabadon meghatározhatók, átnevezhetők, egyedi színnel jelölhetők. Szavakhoz 2 opcionális segítség adható. Az Akasztófa indítása modál átdolgozva: kategória grid, 1–50 szó, session-szintű kijátszott-szó nyomkövetés.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.4</div><div><div class="cl-desc">Akasztófa játékmód következetesség javítása — Segítség kérés: 2 alkalom, mindkettő −1 életet von le. Első segítség szöveges tipp, második véletlen betű. Solo módban csak az aktuális tippelő kérhet segítséget.</div></div></div>
@@ -834,7 +849,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div class="guide-divider"></div>
   <div class="guide-section">
     <div class="guide-section-title">🎯 A játék lényege</div>
-    <p>A QuizMaster egy <strong style="color:var(--text)">valós idejű multiplayer játék,</strong> ahol egyszerre akár 20 játékos verseng egymással. Szoba-létrehozáskor jelenleg az <strong style="color:var(--text)">Egyéni verseny</strong> és a <strong style="color:var(--text)">Csapatverseny</strong> játékmód közül választhatsz. Az <strong style="color:var(--text)">Akasztófa</strong> egyelőre csak élő, egy teremben tartott alkalmakon érhető el, amit én vezénylek — hamarosan ez is bekerül az önálló szoba-létrehozásba.</p>
+    <p>A QuizMaster egy <strong style="color:var(--text)">valós idejű multiplayer játék,</strong> ahol egyszerre akár 20 játékos verseng egymással. Szoba-létrehozáskor az <strong style="color:var(--text)">Egyéni verseny</strong>, a <strong style="color:var(--text)">Csapatverseny</strong> és az <strong style="color:var(--text)">Akasztófa</strong> játékmód közül választhatsz.</p>
     <p>Az Egyéni versenyhez és Csapatversenyhez kérdések különböző témakörökből érkeznek: Bibliai, Filmek, Történelem, Földrajz, Tudomány és még sok más.</p>
   </div>
   <div class="guide-section">
@@ -865,7 +880,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div class="guide-divider"></div>
   <div class="guide-section">
     <div class="guide-section-title">🔤 Akasztófa játékmód</div>
-    <p>Az <strong style="color:var(--text)">Akasztófa</strong> egy teljesen különálló játékmód a szokásos kérdés-válasz formátumtól — jelenleg csak élő, egy teremben tartott alkalmakon érhető el. A host egy szót választ, ti pedig betűnként próbáljátok kitalálni — minden tévesztett betűvel eggyel kevesebb életetek marad. <strong style="color:var(--text)">6 tévesztés</strong> esetén a szó elvész.</p>
+    <p>Az <strong style="color:var(--text)">Akasztófa</strong> egy teljesen különálló játékmód a szokásos kérdés-válasz formátumtól — a szoba irányítója egy szót választ ki (a szoba létrehozásakor kiválasztott kategóriából), ti pedig betűnként próbáljátok kitalálni — minden tévesztett betűvel eggyel kevesebb életetek marad. <strong style="color:var(--text)">6 tévesztés</strong> esetén a szó elvész.</p>
     <p><strong style="color:var(--text)">Kooperatív mód:</strong> Mindenki <strong style="color:var(--text)">együtt</strong> tippelhet minden szónál. Ha sikerül kitalálni a szót, mindenki túléli azt a kört — ha nem, mindenki elesik. A végén az összes játékos ugyanolyan sorsra jut.</p>
     <p><strong style="color:var(--text)">Solo kör mód:</strong> Minden játékosnak <strong style="color:var(--text)">saját szava</strong> van, és egyedül tippelhet. A képernyőn látható, hogy éppen ki következik. Akinek a saját szavát sikerül kitalálnia, az <strong style="color:var(--text)">megmenekül</strong> — aki nem tudja kitalálni, az <strong style="color:var(--text)">elesik.</strong></p>
     <p><strong style="color:var(--text)">💡 Segítség:</strong> Minden szónál legfeljebb <strong style="color:var(--text)">2-szer</strong> kérhetsz segítséget a 💡 gombbal. Fontos: minden segítség kérés <strong style="color:var(--text)">−1 életet von le.</strong> Az 1. segítség az adott szóhoz megadott első szöveges tippet mutatja, a 2. segítség a másodikat — ha egy szóhoz nincs ennyi tipp megadva, helyette egy véletlenszerű, még ki nem talált betűt fed fel. Solo módban csak az aktuális tippelő kérhet segítséget.</p>
@@ -1023,6 +1038,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   </div>
 
   <button class="btn-lobby" id="hmr-btn-return" onclick="returnToGame()" disabled>⏳ VÁRAKOZÁS A HOST-RA...</button>
+  <button class="btn-lobby" id="hmr-btn-new-round" onclick="hostStartNewHangmanRound()" style="display:none;">🔄 ÚJ KÖR INDÍTÁSA</button>
   <button class="btn-lobby" onclick="backToMenu()">↺ VISSZA A FŐMENÜBE</button>
 </div>
 
@@ -1207,6 +1223,30 @@ let hostGamePhase = 'waiting';
 let hostAutoAdvanceRunning = false;
 let hostTimerInterval = null;
 let hostScoringListenerAttached = false;
+
+// ── AKASZTÓFA HOST MINI-MOTOR STATE ──────────────────────────
+// A titkot (a nyers szó és a segítség-szövegek) SOSEM tartalmazza a Firebase-be
+// írt publikus hangmanState — csak ez a host-lokális pool, illetve a védett
+// rooms/{code}/hangmanWords ág (l. database_rules.json, 1. fázis).
+let hostHangmanWordsPool = [];              // [{word,hint1,hint2,category}] — a jelenlegi kör(sorozat) mintavételezett szavai
+let hostHangmanWordIndex = -1;              // aktuális szó indexe a poolban
+let hostHangmanMode = 'coop';               // 'coop' | 'solo' — szoba-létrehozáskor dől el (3. fázis)
+let hostHangmanTimeLimit = 60;              // mp/szó — szoba-létrehozáskor dől el (3. fázis)
+let hostHangmanPhase = 'waiting';           // 'waiting' | 'active' | 'revealed' | 'ended'
+let hostHangmanCurrentWord = '';
+let hostHangmanCurrentHints = { hint1: '', hint2: '' };
+let hostHangmanCurrentCategory = '';
+let hostHangmanGuessedLetters = new Set();  // helyesen kitalált betűk az aktuális szónál
+let hostHangmanWrongLetters = {};           // { letter: true } — hibás tippek + segítség-büntetők (_H1,_H2)
+let hostHangmanHintsUsed = 0;
+let hostHangmanTimerInterval = null;
+let hostHangmanAutoAdvanceRunning = false;
+let hostHangmanPlayerQueue = [];            // solo módban: aktív játékosok sorrendje (körbeforgó kiosztáshoz)
+let hostHangmanAssignedPid = null;
+let hostHangmanAssignedName = '';
+let hostHangmanPlayerResults = {};          // { pid: {name,color,word,solvedCount,failedCount,survived} } — végeredményhez gyűjtve
+let hostHangmanListenersAttached = false;
+let hostHangmanProcessedLetters = new Set(); // védőháló a hangmanGuesses duplikált feldolgozása ellen
 
 // [FIX #3] Kérdés előzmény tracking
 let myQuestionHistory = [];   // [{qText, options, myAnswer, correctAnswer, pts, qIndex}]
@@ -1816,9 +1856,11 @@ function showResults() {
 
   // Önkiszolgáló szoba irányítója saját maga indíthat új kört ugyanabban a
   // szobában — neki nem a "Vissza a játékba" várakozó gombot mutatjuk, hanem
-  // az "Új kör indítása" gombot (lásd hostStartNewRound()). Akasztófa/Blokus
-  // (mindkettő ma még csak a régi, quiz-host.html-es élő rendszerben fut)
-  // esetén amIRoomHost úgyis mindig false, tehát ott a viselkedés változatlan.
+  // az "Új kör indítása" gombot (lásd hostStartNewRound()). Ez a képernyő
+  // (result-screen) kizárólag 'normal'/'teams' módban jelenik meg — az Akasztófa
+  // a saját, külön hangman-result-screen-jét használja, saját isSelfServiceHost
+  // ellenőrzéssel (lásd showHangmanResults()). Blokus egyelőre sehonnan sem
+  // indítható önkiszolgáló módon, l. PROJEKT_ALLAPOT.md 8. szakasz.
   const btnReturn = document.getElementById('btn-return-to-game');
   const btnNewRound = document.getElementById('btn-host-new-round');
   const isSelfServiceHost = amIRoomHost && (hostGameMode === 'normal' || hostGameMode === 'teams');
@@ -1987,6 +2029,21 @@ function showHangmanResults() {
   screen.style.display = 'flex';
   screen.style.flexDirection = 'column';
   window.scrollTo({top: 0, behavior: 'smooth'});
+
+  // Önkiszolgáló szoba irányítója saját maga indíthat új kört ugyanabban a
+  // szobában — neki nem a "Vissza a játékba" várakozó gombot mutatjuk, hanem
+  // az "Új kör indítása" gombot, pontosan a kvíz showResults()-ának mintájára.
+  const btnReturn = document.getElementById('hmr-btn-return');
+  const btnNewRound = document.getElementById('hmr-btn-new-round');
+  const isSelfServiceHost = amIRoomHost && hostGameMode === 'hangman';
+  if (btnReturn) btnReturn.style.display = isSelfServiceHost ? 'none' : '';
+  if (btnNewRound) {
+    btnNewRound.style.display = isSelfServiceHost ? '' : 'none';
+    btnNewRound.disabled = false;
+    btnNewRound.textContent = '🔄 ÚJ KÖR INDÍTÁSA';
+  }
+
+  hostReadyForRejoin = false;
   updateHangmanReturnBtn();
   // Adatok lekérése Firebase-ből
   if (db && roomRef) {
@@ -2216,6 +2273,7 @@ function backToMenu() {
     roomRef.child('players').off();
     roomRef.child('answers').off();
     roomRef.child('hangmanState').off();
+    roomRef.child('hangmanGuesses').off();
     roomRef.child('hangmanHintRequests').off();
     roomRef.child('hangmanResults').off();
     roomRef.child('teams').off();
@@ -2251,7 +2309,17 @@ function backToMenu() {
   hostQuestionsPool = []; hostCurrentQIndex = -1; hostCorrectOptionIndex = -1;
   hostAnsweredPlayers = new Set(); hostAnswerOrder = 0; hostCorrectAnswerOrder = 0;
   hostGamePhase = 'waiting'; hostAutoAdvanceRunning = false; hostScoringListenerAttached = false;
-  hostGameMode = 'normal'; crSelectedMode = 'normal'; tsEditingTeamId = null;
+  hostGameMode = 'normal'; crSelectedMode = 'normal'; crSelectedHangmanMode = 'coop'; tsEditingTeamId = null;
+  // Akasztófa host-motor állapot resetje
+  clearInterval(hostHangmanTimerInterval);
+  hostHangmanWordsPool = []; hostHangmanWordIndex = -1; hostHangmanPhase = 'waiting';
+  hostHangmanMode = 'coop'; hostHangmanTimeLimit = 60;
+  hostHangmanCurrentWord = ''; hostHangmanCurrentHints = { hint1: '', hint2: '' };
+  hostHangmanCurrentCategory = ''; hostHangmanGuessedLetters = new Set();
+  hostHangmanWrongLetters = {}; hostHangmanHintsUsed = 0;
+  hostHangmanPlayerQueue = []; hostHangmanAssignedPid = null; hostHangmanAssignedName = '';
+  hostHangmanPlayerResults = {}; hostHangmanAutoAdvanceRunning = false;
+  hostHangmanProcessedLetters = new Set(); hostHangmanListenersAttached = false;
   if (roomListListenerRef) { roomListListenerRef.off(); roomListListenerRef = null; }
   document.getElementById('my-score').textContent = '0';
   document.getElementById('my-rank').textContent = '#—';
@@ -2278,7 +2346,6 @@ function showCreateRoom() {
   window.scrollTo({top:0});
   crRenderModeOptions();
   crSelectMode('normal');
-  loadTopicOptionsForCreate();
 }
 
 async function loadTopicOptionsForCreate() {
@@ -2332,6 +2399,7 @@ function updateCrTopicSelection() {
 }
 
 async function confirmCreateRoom() {
+  if (crSelectedMode === 'hangman') { await confirmCreateHangmanRoom(); return; }
   const errEl = document.getElementById('cr-error');
   errEl.textContent = '';
   const currentUser = firebase.auth().currentUser;
@@ -2421,6 +2489,103 @@ async function confirmCreateRoom() {
   }
 }
 
+// ── ÚJ AKASZTÓFA SZOBA — a confirmCreateRoom() Akasztófa-ága ──────────────
+// Ugyanazt a mintát követi, mint a kvíz szoba-létrehozása, de a válaszkulcsok
+// (answerKeys) helyett a védett hangmanWords/{roundIndex} ágba írja a mintavételezett
+// szavakat (l. database_rules.json, 1. fázis) — a nyers szó és a segítség-szövegek
+// sosem kerülnek a nyilvánosan olvasható gameState-be vagy hangmanState-be.
+async function confirmCreateHangmanRoom() {
+  const errEl = document.getElementById('cr-error');
+  errEl.textContent = '';
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) { errEl.textContent = 'Nincs bejelentkezve. Frissítsd az oldalt!'; return; }
+
+  const nameInput = document.getElementById('menu-name-input');
+  if (nameInput && nameInput.value.trim().length >= 2) playerName = nameInput.value.trim();
+  if (!playerName) { errEl.textContent = 'Hiányzik a neved — lépj vissza a főmenübe!'; return; }
+
+  let pool = crSelectedTopic === 'all'
+    ? crAvailableHangmanWords
+    : crAvailableHangmanWords.filter(w => w && w.category === crSelectedTopic);
+  if (pool.length === 0) { errEl.textContent = 'Nincs szó ebben a kategóriában!'; return; }
+
+  const countInput = document.getElementById('cr-hangman-count');
+  let count = parseInt(countInput ? countInput.value : '5', 10);
+  if (!count || count < 1) count = 1;
+  if (count > 50) count = 50;
+  if (count > pool.length) count = pool.length;
+
+  const timeSelect = document.getElementById('cr-hangman-time');
+  const timeLimit = parseInt(timeSelect ? timeSelect.value : '60', 10) || 60;
+
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const selected = shuffled.slice(0, count).map(w => ({
+    word: (w.word || '').toUpperCase(),
+    hint1: w.hint1 || '',
+    hint2: w.hint2 || '',
+    category: w.category || ''
+  }));
+
+  errEl.textContent = 'Szoba létrehozása...';
+  const btn = document.querySelector('#create-room-screen .menu-btn-primary');
+  if (btn) btn.disabled = true;
+
+  try {
+    if (!db) db = firebase.database();
+    let newCode = generateRoomCode();
+    for (let tries = 0; tries < 5; tries++) {
+      const existsSnap = await db.ref('rooms/' + newCode + '/hostUid').once('value');
+      if (!existsSnap.exists()) break;
+      newCode = generateRoomCode();
+    }
+    const newRoomRef = db.ref('rooms/' + newCode);
+
+    await newRoomRef.child('hostUid').set(currentUser.uid);
+    await newRoomRef.child('createdAt').set(firebase.database.ServerValue.TIMESTAMP);
+
+    // A nyers szó és a segítségek KIZÁRÓLAG a védett hangmanWords ágba kerülnek —
+    // ugyanaz a szétválasztási elv, mint a kvíz questions/answerKeys párosánál.
+    const wordsObj = {};
+    selected.forEach((w, i) => { wordsObj[i] = { word: w.word, hint1: w.hint1, hint2: w.hint2 }; });
+
+    hostRoomTopicLabel = crSelectedTopic === 'all' ? 'Vegyes' : crSelectedTopic;
+    hostGameMode = 'hangman';
+    hostHangmanMode = crSelectedHangmanMode;
+    hostHangmanTimeLimit = timeLimit;
+
+    await newRoomRef.child('hangmanWords').set(wordsObj);
+    await newRoomRef.child('gameState').set({
+      phase: 'waiting',
+      mode: 'hangman',
+      topicLabel: hostRoomTopicLabel,
+      hostName: playerName
+    });
+
+    const roomIndexRef = db.ref('roomIndex/' + newCode);
+    await roomIndexRef.set({
+      topicLabel: hostRoomTopicLabel,
+      mode: 'hangman',
+      hostName: playerName,
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    roomIndexRef.onDisconnect().remove();
+
+    amIRoomHost = true;
+    hostHangmanWordsPool = selected;
+    hostHangmanWordIndex = -1;
+    hostHangmanPhase = 'waiting';
+
+    errEl.textContent = '';
+    if (btn) btn.disabled = false;
+    await connectAsPlayerToRoom(newCode);
+
+  } catch(e) {
+    errEl.textContent = 'Hiba a szoba létrehozásakor: ' + e.message;
+    if (btn) btn.disabled = false;
+    console.error(e);
+  }
+}
+
 // ── SZOBÁK LISTÁJA képernyő ───────────────────────────────────
 function showRoomList() {
   hideAll();
@@ -2463,7 +2628,7 @@ function buildRoomCard(code, entry) {
   card.className = 'room-card';
   const topicEl = document.createElement('div');
   topicEl.className = 'room-card-topic';
-  const modeIcon = entry.mode === 'teams' ? '👥 ' : '🎯 ';
+  const modeIcon = entry.mode === 'teams' ? '👥 ' : entry.mode === 'hangman' ? '🔤 ' : '🎯 ';
   topicEl.textContent = modeIcon + (entry.topicLabel || 'Vegyes');
   const metaEl = document.createElement('div');
   metaEl.className = 'room-card-meta';
@@ -2525,6 +2690,9 @@ async function connectAsPlayerToRoom(code) {
     hostSetupScoringListener();
     hostScoringListenerAttached = true;
   }
+  if (amIRoomHost) {
+    hostSetupHangmanListeners();
+  }
 
   showLobby();
 }
@@ -2547,9 +2715,18 @@ function escHtml(s) {
 
 // ── Játékmód-választó (Új szoba képernyő) ─────────────────────
 const CR_MODES = [
-  { id: 'normal', label: '🎯 Egyéni verseny', desc: 'Mindenki egyénileg versenyez' },
-  { id: 'teams',  label: '👥 Csapatverseny',  desc: 'Csapatokra osztva versenyeztek' }
+  { id: 'normal',  label: '🎯 Egyéni verseny', desc: 'Mindenki egyénileg versenyez' },
+  { id: 'teams',   label: '👥 Csapatverseny',  desc: 'Csapatokra osztva versenyeztek' },
+  { id: 'hangman', label: '🔤 Akasztófa',      desc: 'Betűnként találjátok ki a szót' }
 ];
+
+// ── Akasztófa: coop/solo almód-választó (Új szoba képernyő) ───
+const CR_HANGMAN_MODES = [
+  { id: 'coop', label: '🤝 Kooperatív', desc: 'Mindenki együtt tippel minden szónál' },
+  { id: 'solo', label: '🎯 Solo kör',   desc: 'Mindenkinek saját szava van, felváltva tippeltek' }
+];
+let crSelectedHangmanMode = 'coop';   // szoba-létrehozáskor kiválasztott Akasztófa-stílus
+let crAvailableHangmanWords = [];     // a "kvizjatek" szóbankból betöltött teljes szólista
 
 function crRenderModeOptions() {
   const list = document.getElementById('cr-mode-list');
@@ -2564,17 +2741,91 @@ function crRenderModeOptions() {
 function crSelectMode(mode) {
   crSelectedMode = mode;
   crUpdateModeSelection();
+
+  const countWrap = document.getElementById('cr-count-wrap');
+  const hangmanFields = document.getElementById('cr-hangman-fields');
+  const topicLabel = document.getElementById('cr-topic-label');
+
+  if (mode === 'hangman') {
+    if (countWrap) countWrap.classList.add('hidden');
+    if (hangmanFields) hangmanFields.classList.remove('hidden');
+    if (topicLabel) topicLabel.textContent = 'Szó-kategória';
+    crRenderHangmanModeOptions();
+    loadHangmanCategoriesForCreate();
+  } else {
+    if (countWrap) countWrap.classList.remove('hidden');
+    if (hangmanFields) hangmanFields.classList.add('hidden');
+    if (topicLabel) topicLabel.textContent = 'Témakör';
+    loadTopicOptionsForCreate();
+  }
+
   const note = document.getElementById('cr-mode-note');
   if (note) {
-    note.innerHTML = mode === 'teams'
-      ? '👥 A csapatok beosztását a szoba létrehozása <strong style="color:var(--text);">után</strong>, a váróteremben végezheted el.<br><span style="opacity:0.75;">Akasztófa és Blokus mód hamarosan itt is választható lesz.</span>'
-      : '<span style="opacity:0.75;">Akasztófa és Blokus mód hamarosan választható lesz itt is.</span>';
+    if (mode === 'teams') {
+      note.innerHTML = '👥 A csapatok beosztását a szoba létrehozása <strong style="color:var(--text);">után</strong>, a váróteremben végezheted el.<br><span style="opacity:0.75;">Blokus mód hamarosan itt is választható lesz.</span>';
+    } else if (mode === 'hangman') {
+      note.innerHTML = '🔤 Minden szónál <strong style="color:var(--text);">6 tévesztésig</strong> van lehetőség, és legfeljebb 2 segítség kérhető (mindegyik −1 élet).<br><span style="opacity:0.75;">Blokus mód hamarosan itt is választható lesz.</span>';
+    } else {
+      note.innerHTML = '<span style="opacity:0.75;">Blokus mód hamarosan választható lesz itt is.</span>';
+    }
   }
 }
 function crUpdateModeSelection() {
-  document.querySelectorAll('.cr-mode-opt').forEach(el => {
+  document.querySelectorAll('#cr-mode-list .cr-mode-opt').forEach(el => {
     el.classList.toggle('selected', el.dataset.mode === crSelectedMode);
   });
+}
+
+function crRenderHangmanModeOptions() {
+  const list = document.getElementById('cr-hangman-mode-list');
+  if (!list) return;
+  list.innerHTML = CR_HANGMAN_MODES.map(m => `
+    <div class="cr-mode-opt" data-hmmode="${m.id}" onclick="crSelectHangmanMode('${m.id}')">
+      <div class="cr-mode-label">${m.label}</div>
+      <div class="cr-mode-desc">${m.desc}</div>
+    </div>`).join('');
+  crUpdateHangmanModeSelection();
+}
+function crSelectHangmanMode(mode) {
+  crSelectedHangmanMode = mode;
+  crUpdateHangmanModeSelection();
+}
+function crUpdateHangmanModeSelection() {
+  document.querySelectorAll('#cr-hangman-mode-list .cr-mode-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.hmmode === crSelectedHangmanMode);
+  });
+}
+
+// ── Akasztófa kategóriák betöltése (Új szoba képernyő) ────────
+// A loadTopicOptionsForCreate() kvíz-párja — ugyanabba a #cr-topic-list
+// konténerbe renderel, csak a hangmanWordDB/hangmanWordCategories forrásból.
+async function loadHangmanCategoriesForCreate() {
+  const list = document.getElementById('cr-topic-list');
+  list.innerHTML = '';
+  const loadingEl = document.createElement('div');
+  loadingEl.style.cssText = 'color:var(--muted);font-size:13px;text-align:center;padding:12px;';
+  loadingEl.textContent = 'Betöltés...';
+  list.appendChild(loadingEl);
+  try {
+    if (!db) db = firebase.database();
+    const snap = await db.ref('rooms/kvizjatek/hangmanWordDB').once('value');
+    const words = snap.val() ? Object.values(snap.val()) : [];
+    crAvailableHangmanWords = words;
+    const cats = {};
+    words.forEach(w => { if (w && w.category) cats[w.category] = (cats[w.category]||0) + 1; });
+    const catNames = Object.keys(cats).sort((a,b)=>a.localeCompare(b,'hu'));
+    list.innerHTML = '';
+    list.appendChild(buildCrTopicOption('all', '🎲 Bármelyik kategória', words.length));
+    catNames.forEach(cat => list.appendChild(buildCrTopicOption(cat, cat, cats[cat])));
+    crSelectedTopic = 'all';
+    updateCrTopicSelection();
+  } catch(e) {
+    list.innerHTML = '';
+    const errEl = document.createElement('div');
+    errEl.style.cssText = 'color:var(--red);font-size:13px;text-align:center;padding:12px;';
+    errEl.textContent = 'Hiba a szavak betöltésekor: ' + e.message;
+    list.appendChild(errEl);
+  }
 }
 
 // ── Segédfüggvény: melyik csapatban van a megadott játékos? ───
@@ -2794,6 +3045,7 @@ function tsUnassign(pid) {
 
 async function hostStartQuiz() {
   if (!amIRoomHost || !roomRef) return;
+  if (hostGameMode === 'hangman') { await hostStartHangmanGame(); return; }
   // Csapatmód: extra ellenőrzés indítás előtt — védelem esetleges race condition ellen
   // (pl. ha valaki épp a gomb megnyomásának pillanatában csatlakozik be nem osztottként)
   if (hostGameMode === 'teams' && !tsIsSetupReady()) {
@@ -3096,6 +3348,428 @@ async function hostStartNewRound() {
   }
 }
 
+// ══════════════════════════════════════════════════════════════
+// AKASZTÓFA — HOST MINI-MOTOR (a szobanyitó ebből vezérli a kört)
+// ══════════════════════════════════════════════════════════════
+// Ugyanazt a biztonsági elvet követi, mint a kvíz answerKeys/revealedQuestions
+// párosa: a nyers szó és a nyers segítség-szövegek SOSEM kerülnek a publikus
+// hangmanState-be — csak a maskedWord (a már legitim módon felfedett pozíciók)
+// és a ténylegesen elköltött segítség (hintReveal) látható onnan. A nyers adat
+// kizárólag a hostHangmanWordsPool host-lokális memóriájában és a védett
+// rooms/{code}/hangmanWords/{roundIndex} Firebase-ágban él (l. database_rules.json).
+// Teljesen automatikus lebonyolítás, a kvíz self-service motor filozófiáját
+// követve — nincs kézi "Megoldás/Következő szó/Befejezés" gomb.
+
+// Segédfüggvény: a maskedWord felépítése a nyers szóból + a már felfedett betűkből.
+// A szóköz mindig látszik (ez sosem volt titok — a szó tagolása, nem a tartalma),
+// a még ki nem talált pozíciók helyén '_' placeholder áll (sosem ütközik magyar betűvel).
+function hostBuildMaskedWord(rawWord, guessedSet) {
+  return rawWord.split('').map(ch => (ch === ' ') ? ' ' : (guessedSet.has(ch) ? ch : '_')).join('');
+}
+
+// Segédfüggvény: van-e még ki nem talált, nem-szóköz karakter a szóban?
+// A szóköz sosem számít bele a "kitalálandó" halmazba — ez egységesítve lett
+// (a régi rendszerben a guess- és a hint-alapú megoldva-ellenőrzés e tekintetben
+// következetlen volt egymással).
+function hostHangmanIsFullyGuessed(rawWord, guessedSet) {
+  return rawWord.split('').every(ch => ch === ' ' || guessedSet.has(ch));
+}
+
+async function hostStartHangmanGame() {
+  if (!amIRoomHost || !roomRef) return;
+
+  if (hostHangmanWordsPool.length === 0) {
+    // Fallback helyreállítás (pl. oldal-frissülés után elveszett helyi állapotra) —
+    // a hostnak a Rules mindig engedi a hangmanWords ág olvasását saját szobájában.
+    const snap = await roomRef.child('hangmanWords').once('value');
+    const obj = snap.val() || {};
+    const keys = Object.keys(obj).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+    hostHangmanWordsPool = keys.map(k => obj[k]);
+  }
+  if (hostHangmanWordsPool.length === 0) { alert('Nincs szó ebben a szobában!'); return; }
+
+  const playersSnap = await roomRef.child('players').once('value');
+  const allPlayers = playersSnap.val() || {};
+  const updates = {};
+  const activePids = [];
+  Object.keys(allPlayers).forEach(pid => {
+    if (allPlayers[pid].status === 'lobby') updates['players/' + pid + '/status'] = 'active';
+    if (allPlayers[pid].status === 'lobby' || allPlayers[pid].status === 'active') activePids.push(pid);
+  });
+  if (Object.keys(updates).length > 0) await roomRef.update(updates);
+
+  if (db && roomCode) db.ref('roomIndex/' + roomCode).remove().catch(() => {});
+
+  hostHangmanWordIndex = -1;
+  hostHangmanPhase = 'waiting';
+  hostHangmanPlayerResults = {};
+  // Solo módhoz: aktív játékosok véletlen sorrendje a körbeforgó kiosztáshoz
+  hostHangmanPlayerQueue = [...activePids].sort(() => Math.random() - 0.5);
+
+  await roomRef.child('gameState').set({
+    phase: 'hangman-intro',
+    mode: 'hangman',
+    topicLabel: hostRoomTopicLabel,
+    hostName: playerName
+  });
+
+  setTimeout(() => { if (amIRoomHost && hostGameMode === 'hangman') hostNextHangmanWord(); }, 16500);
+}
+
+function hostNextHangmanWord() {
+  if (!amIRoomHost || !roomRef) return;
+  hostHangmanAutoAdvanceRunning = false;
+  clearInterval(hostHangmanTimerInterval);
+  hostHangmanWordIndex++;
+
+  if (hostHangmanWordIndex >= hostHangmanWordsPool.length) { hostEndHangmanGame(); return; }
+
+  const entry = hostHangmanWordsPool[hostHangmanWordIndex];
+  hostHangmanCurrentWord = (entry.word || '').toUpperCase();
+  hostHangmanCurrentHints = { hint1: entry.hint1 || '', hint2: entry.hint2 || '' };
+  hostHangmanCurrentCategory = entry.category || hostRoomTopicLabel || '';
+  hostHangmanGuessedLetters = new Set();
+  hostHangmanWrongLetters = {};
+  hostHangmanHintsUsed = 0;
+  hostHangmanProcessedLetters = new Set();
+  hostHangmanPhase = 'active';
+
+  if (hostHangmanMode === 'solo' && hostHangmanPlayerQueue.length > 0) {
+    hostHangmanAssignedPid = hostHangmanPlayerQueue[hostHangmanWordIndex % hostHangmanPlayerQueue.length];
+    hostHangmanAssignedName = (players[hostHangmanAssignedPid] && players[hostHangmanAssignedPid].name) || '';
+  } else {
+    hostHangmanAssignedPid = null;
+    hostHangmanAssignedName = '';
+  }
+
+  const initialMasked = hostBuildMaskedWord(hostHangmanCurrentWord, hostHangmanGuessedLetters);
+  const hsData = {
+    phase: 'hangman-active',
+    mode: hostHangmanMode,
+    category: hostHangmanCurrentCategory,
+    roundIndex: hostHangmanWordIndex,
+    totalRounds: hostHangmanWordsPool.length,
+    maskedWord: initialMasked,
+    wrongLetters: {},
+    hintsUsed: 0,
+    hintReveal: null,
+    solved: null,
+    startTime: firebase.database.ServerValue.TIMESTAMP,
+    timeLimit: hostHangmanTimeLimit
+  };
+  if (hostHangmanAssignedPid) {
+    hsData.assignedPlayerId = hostHangmanAssignedPid;
+    hsData.assignedPlayerName = hostHangmanAssignedName;
+  }
+
+  // Előző kör esetleges hangmanGuesses/hangmanHintRequests bejegyzéseinek törlése —
+  // enélkül egy ismétlődő betű (pl. "R" mindkét szóban) a MÁSODIK körben már nem
+  // 'child_added', hanem 'child_changed' eseményt váltana ki, amit a listener nem figyel.
+  Promise.all([
+    roomRef.child('hangmanGuesses').remove(),
+    roomRef.child('hangmanHintRequests').remove()
+  ]).finally(() => {
+    roomRef.child('hangmanState').set(hsData);
+    roomRef.child('gameState').set({
+      phase: 'hangman-active',
+      mode: 'hangman',
+      topicLabel: hostRoomTopicLabel,
+      hostName: playerName
+    });
+  });
+
+  hostStartHangmanTimer(hostHangmanTimeLimit);
+}
+
+function hostStartHangmanTimer(seconds) {
+  clearInterval(hostHangmanTimerInterval);
+  let remaining = seconds;
+  hostHangmanTimerInterval = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) { clearInterval(hostHangmanTimerInterval); hostRevealHangmanWord(true, false, false); }
+  }, 1000);
+}
+
+// A hangmanGuesses/hangmanHintRequests child_added figyelők — a kvíz
+// hostSetupScoringListener()-ének mintájára, de saját, önálló bekötési ponttal
+// (l. connectAsPlayerToRoom()). Önmagukat védik a duplikált csatlakozás ellen.
+function hostSetupHangmanListeners() {
+  if (!roomRef || hostHangmanListenersAttached) return;
+  hostHangmanListenersAttached = true;
+
+  roomRef.child('hangmanGuesses').on('child_added', snap => {
+    if (!amIRoomHost || hostGameMode !== 'hangman' || hostHangmanPhase !== 'active') return;
+    const letter = snap.key;
+    const g = snap.val(); if (!g || !letter) return;
+    hostProcessHangmanGuess(letter, g.playerId, g.playerName);
+  });
+
+  roomRef.child('hangmanHintRequests').on('child_added', snap => {
+    if (!amIRoomHost || hostGameMode !== 'hangman' || hostHangmanPhase !== 'active') return;
+    const req = snap.val(); if (!req) return;
+    hostProcessHangmanHintRequest(req.playerId, req.playerName, req.hintNumber);
+  });
+}
+
+function hostProcessHangmanGuess(letter, pid, playerName) {
+  if (hostHangmanPhase !== 'active') return;
+  if (!letter || letter === ' ') return;
+  if (hostHangmanProcessedLetters.has(letter)) return;
+  if (hostHangmanMode === 'solo' && pid !== hostHangmanAssignedPid) return;
+  hostHangmanProcessedLetters.add(letter);
+
+  const isCorrect = hostHangmanCurrentWord.includes(letter);
+
+  if (isCorrect) {
+    hostHangmanGuessedLetters.add(letter);
+    const solved = hostHangmanIsFullyGuessed(hostHangmanCurrentWord, hostHangmanGuessedLetters);
+    const pts = solved ? 4 : 1; // +3 bónusz a szót lezáró betűért
+
+    if (pid) roomRef.child('players').child(pid).child('score').transaction(cur => (cur || 0) + pts);
+
+    if (solved) { hostRevealHangmanWord(false, true, false); return; }
+
+    const maskedWord = hostBuildMaskedWord(hostHangmanCurrentWord, hostHangmanGuessedLetters);
+    roomRef.child('hangmanState').update({ maskedWord });
+  } else {
+    hostHangmanWrongLetters[letter] = true;
+    roomRef.child('hangmanState').update({ ['wrongLetters/' + letter]: true });
+    const wrongCount = Object.keys(hostHangmanWrongLetters).length;
+    if (wrongCount >= 6) { hostRevealHangmanWord(false, false, true); }
+  }
+}
+
+function hostProcessHangmanHintRequest(pid, playerName, hintNumber) {
+  if (hostHangmanPhase !== 'active') return;
+  if (hostHangmanMode === 'solo' && pid !== hostHangmanAssignedPid) return;
+  if (hostHangmanHintsUsed >= 2) return;
+  if (hintNumber !== hostHangmanHintsUsed + 1) return; // csak a soron következő segítség fogadható el
+
+  hostHangmanHintsUsed++;
+  const textHint = hostHangmanHintsUsed === 1 ? hostHangmanCurrentHints.hint1 : hostHangmanCurrentHints.hint2;
+
+  let hintReveal, maskedWordUpdate = null;
+  if (textHint) {
+    hintReveal = { type: 'text', value: textHint };
+  } else {
+    // Nincs ennyi szöveges segítség megadva ehhez a szóhoz — visszaesés véletlen,
+    // még ki nem talált betű felfedésére.
+    const remaining = [...new Set(hostHangmanCurrentWord.split(''))]
+      .filter(ch => ch !== ' ' && !hostHangmanGuessedLetters.has(ch));
+    if (remaining.length > 0) {
+      const revealLetter = remaining[Math.floor(Math.random() * remaining.length)];
+      hostHangmanGuessedLetters.add(revealLetter);
+      maskedWordUpdate = hostBuildMaskedWord(hostHangmanCurrentWord, hostHangmanGuessedLetters);
+      hintReveal = { type: 'letter', value: revealLetter };
+    } else {
+      hintReveal = { type: 'letter', value: '' };
+    }
+  }
+
+  // Segítség ára: -1 élet, a régivel egyező '_H1'/'_H2' kulcsformátummal
+  // (a player-oldali renderHangmanWrongP eleve kiszűri ezeket a megjelenítésnél).
+  hostHangmanWrongLetters['_H' + hostHangmanHintsUsed] = true;
+
+  const isSolvedByHint = maskedWordUpdate !== null && hostHangmanIsFullyGuessed(hostHangmanCurrentWord, hostHangmanGuessedLetters);
+  const wrongCount = Object.keys(hostHangmanWrongLetters).length;
+  const isFailedByHint = !isSolvedByHint && wrongCount >= 6;
+
+  const updatePayload = {
+    hintsUsed: hostHangmanHintsUsed,
+    hintReveal,
+    ['wrongLetters/_H' + hostHangmanHintsUsed]: true
+  };
+  if (maskedWordUpdate !== null) updatePayload.maskedWord = maskedWordUpdate;
+  roomRef.child('hangmanState').update(updatePayload);
+
+  if (isSolvedByHint) { hostRevealHangmanWord(false, true, false); }
+  else if (isFailedByHint) { hostRevealHangmanWord(false, false, true); }
+}
+
+function hostRevealHangmanWord(fromTimer, solved, failed) {
+  if (!amIRoomHost || !roomRef) return;
+  if (hostHangmanPhase !== 'active') return; // védelem dupla-felfedés ellen
+  clearInterval(hostHangmanTimerInterval);
+  hostHangmanPhase = 'revealed';
+
+  hostHangmanCurrentWord.split('').forEach(ch => { if (ch !== ' ') hostHangmanGuessedLetters.add(ch); });
+  const isSolved = solved || (!fromTimer && !failed && hostHangmanIsFullyGuessed(hostHangmanCurrentWord, hostHangmanGuessedLetters));
+
+  // ── Eredmény rögzítése a végső összesítéshez ──────────────────
+  if (hostHangmanMode === 'solo' && hostHangmanAssignedPid) {
+    // Solo — többségi szabály: megoldott >= kihagyott → túlél (több kör esetén
+    // az adott játékos ÖSSZES körét figyelembe vesszük, pontosan a régi elv szerint).
+    const pid = hostHangmanAssignedPid;
+    const p = players[pid] || {};
+    const prev = hostHangmanPlayerResults[pid];
+    const solvedCount = (prev?.solvedCount || 0) + (isSolved ? 1 : 0);
+    const failedCount = (prev?.failedCount || 0) + (isSolved ? 0 : 1);
+    hostHangmanPlayerResults[pid] = {
+      name: hostHangmanAssignedName || p.name || 'Névtelen',
+      color: p.color || '#888',
+      word: hostHangmanCurrentWord,
+      solvedCount,
+      failedCount,
+      survived: (solvedCount + failedCount > 0) && (solvedCount >= failedCount)
+    };
+  } else if (hostHangmanMode === 'coop') {
+    // Coop — az utolsó kör eredménye felülírja: mindenki azonos sorsra jut.
+    Object.entries(players).forEach(([pid, p]) => {
+      if (p.status !== 'active') return;
+      hostHangmanPlayerResults[pid] = {
+        name: p.name || 'Névtelen',
+        color: p.color || '#888',
+        word: hostHangmanCurrentWord,
+        solvedCount: isSolved ? 1 : 0,
+        failedCount: isSolved ? 0 : 1,
+        survived: isSolved
+      };
+    });
+  }
+
+  roomRef.child('hangmanState').update({
+    phase: 'hangman-revealed',
+    maskedWord: hostHangmanCurrentWord,
+    solved: isSolved
+  });
+  roomRef.child('hangmanRevealedRounds').child(hostHangmanWordIndex).set(true);
+  roomRef.child('gameState').update({ phase: 'hangman-revealed' });
+
+  hostStartHangmanAutoAdvance();
+}
+
+function hostStartHangmanAutoAdvance() {
+  if (hostHangmanAutoAdvanceRunning) return;
+  hostHangmanAutoAdvanceRunning = true;
+  setTimeout(() => { hostHangmanAutoAdvanceRunning = false; hostNextHangmanWord(); }, 5000);
+}
+
+function hostEndHangmanGame() {
+  if (!amIRoomHost || !roomRef) return;
+  clearInterval(hostHangmanTimerInterval);
+  hostHangmanPhase = 'ended';
+
+  const resultPlayers = Object.entries(hostHangmanPlayerResults).map(([pid, r]) => ({
+    pid, name: r.name, color: r.color, word: r.word, survived: r.survived
+  }));
+  // Ha valamelyik aktív játékos nincs még a results-ben (pl. coop, de sosem volt kör,
+  // vagy solo módban több játékos volt, mint szó), adjuk hozzá az aktív játékosokat is.
+  Object.entries(players).forEach(([pid, p]) => {
+    if (p.status === 'active' && !hostHangmanPlayerResults[pid]) {
+      resultPlayers.push({ pid, name: p.name || 'Névtelen', color: p.color || '#888', word: '—', survived: false });
+    }
+  });
+  const survivorCount = resultPlayers.filter(r => r.survived).length;
+  const fallenCount = resultPlayers.filter(r => !r.survived).length;
+
+  roomRef.child('hangmanResults').set({
+    mode: hostHangmanMode,
+    players: resultPlayers,
+    survivorCount,
+    fallenCount
+  });
+  roomRef.child('hangmanState').update({ phase: 'hangman-ended' });
+  roomRef.child('gameState').update({
+    phase: 'hangman-ended',
+    mode: 'hangman',
+    topicLabel: hostRoomTopicLabel,
+    hostName: playerName
+  });
+  roomRef.child('hangmanGuesses').remove();
+  roomRef.child('hangmanHintRequests').remove();
+}
+
+// ── ÚJ KÖR INDÍTÁSA (önkiszolgáló Akasztófa szoba) ─────────────
+// Pontosan a kvíz hostStartNewRound()-jának mintáját követi: friss szó-minta
+// ugyanabból a kategóriából, a szoba visszaáll 'waiting'-re, roomIndex
+// visszaregisztrálva — l. 5.7/A szakasz invariáns (PROJEKT_ALLAPOT.md).
+async function hostStartNewHangmanRound() {
+  if (!amIRoomHost || !roomRef || !db) return;
+  const btn = document.getElementById('hmr-btn-new-round');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Új kör előkészítése...'; }
+
+  try {
+    const desiredCount = hostHangmanWordsPool.length || 5;
+    let pool = [];
+    try {
+      const wdbSnap = await db.ref('rooms/kvizjatek/hangmanWordDB').once('value');
+      const allWords = wdbSnap.val() ? Object.values(wdbSnap.val()) : [];
+      pool = (!hostRoomTopicLabel || hostRoomTopicLabel === 'Vegyes')
+        ? allWords
+        : allWords.filter(w => w && w.category === hostRoomTopicLabel);
+    } catch (e) {
+      console.warn('[QuizMaster] Friss szó-készlet lekérése sikertelen, a korábbi marad:', e);
+    }
+
+    let selected;
+    if (pool.length > 0) {
+      const shuffled = [...pool].sort(() => Math.random() - 0.5);
+      selected = shuffled.slice(0, Math.min(desiredCount, shuffled.length))
+        .map(w => ({ word: (w.word || '').toUpperCase(), hint1: w.hint1 || '', hint2: w.hint2 || '', category: w.category || '' }));
+    } else if (hostHangmanWordsPool.length > 0) {
+      selected = hostHangmanWordsPool; // fallback: nem sikerült frissíteni, marad a régi készlet
+    }
+    if (!selected || selected.length === 0) {
+      alert('Nem sikerült új szó-készletet előkészíteni. Próbáld újra, vagy hozz létre új szobát.');
+      if (btn) { btn.disabled = false; btn.textContent = '🔄 ÚJ KÖR INDÍTÁSA'; }
+      return;
+    }
+
+    const wordsObj = {};
+    selected.forEach((w, i) => { wordsObj[i] = { word: w.word, hint1: w.hint1 || '', hint2: w.hint2 || '' }; });
+
+    await roomRef.child('hangmanWords').set(wordsObj);
+    await roomRef.child('hangmanRevealedRounds').remove();
+    await roomRef.child('hangmanResults').remove();
+    await roomRef.child('hangmanGuesses').remove();
+    await roomRef.child('hangmanHintRequests').remove();
+    await roomRef.child('players').remove();
+    await roomRef.child('hangmanState').set(null);
+    await roomRef.child('gameState').set({
+      phase: 'waiting',
+      mode: 'hangman',
+      topicLabel: hostRoomTopicLabel,
+      hostName: playerName
+    });
+
+    const roomIndexRef = db.ref('roomIndex/' + roomCode);
+    await roomIndexRef.set({
+      topicLabel: hostRoomTopicLabel,
+      mode: 'hangman',
+      hostName: playerName,
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    roomIndexRef.onDisconnect().remove();
+
+    hostHangmanWordsPool = selected;
+    hostHangmanWordIndex = -1;
+    hostHangmanPhase = 'waiting';
+    hostHangmanPlayerResults = {};
+    hostHangmanAutoAdvanceRunning = false;
+    clearInterval(hostHangmanTimerInterval);
+
+    const rejoinData = {
+      name: playerName, score: 0, color: myColor, status: 'lobby',
+      joinedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+    await roomRef.child('players').child(playerId).set(rejoinData);
+    roomRef.child('players').child(playerId).onDisconnect().remove();
+
+    hasAnswered = false; currentQIndex = -1; answeredNamesThisRound = new Set();
+    pendingQuestion = null; myScore = 0; myQuestionHistory = [];
+    myPlayerStatus = 'lobby'; hostReadyForRejoin = false;
+    document.getElementById('my-score').textContent = '0';
+    document.getElementById('my-rank').textContent = '#—';
+    updateGameModeUI();
+    showLobby();
+
+  } catch (e) {
+    console.error('[QuizMaster] hostStartNewHangmanRound hiba:', e);
+    alert('Hiba történt az új kör indításakor: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 ÚJ KÖR INDÍTÁSA'; }
+  }
+}
+
 // ============================================================
 // AKASZTÓFA — JÁTÉKOS OLDAL
 // ============================================================
@@ -3130,9 +3804,14 @@ function showHangmanScreen(state) {
   screen.style.display = 'flex';
   screen.style.flexDirection = 'column';
 
-  const guessed = state.guessedLetters || {};
+  // BIZTONSÁG: a kliens SOSEM kapja meg a nyers szót — csak a maskedWord-ot,
+  // ami már eleve csak a legitim módon felfedett pozíciókat tartalmazza (lásd
+  // database_rules.json hangmanWords/hangmanRevealedRounds ága, 1. fázis).
+  // A "kitalált betűk" halmaz teljes egészében ebből vezethető le — nincs
+  // szükség külön guessedLetters mezőre a Firebase-ben.
+  const maskedWord = state.maskedWord || '';
   const wrong = state.wrongLetters || {};
-  const word = state.word || '';
+  const guessedSet = new Set(maskedWord.replace(/[ _]/g, '').split(''));
   const revealed = state.phase === 'hangman-revealed';
   hmCurrentPhase = state.phase;
   // Solo mód + hint állapot
@@ -3173,7 +3852,7 @@ function showHangmanScreen(state) {
   }
 
   // Word tiles
-  renderHangmanWordP(word, guessed, revealed, state.solved);
+  renderHangmanWordP(maskedWord, revealed, state.solved);
 
   // Total wrong count = real wrong letters + penalty hits (_H1, _H2)
   const totalWrongCount = Object.keys(wrong).length; // includes _H keys
@@ -3184,7 +3863,7 @@ function showHangmanScreen(state) {
   renderHangmanLivesP(totalWrongCount);
 
   // Keyboard
-  renderHangmanKeyboardP(guessed, wrong, revealed);
+  renderHangmanKeyboardP(guessedSet, wrong, revealed);
 
   // Wrong letters (filter penalty keys)
   renderHangmanWrongP(wrong);
@@ -3211,19 +3890,18 @@ function showHangmanScreen(state) {
   }
 }
 
-function renderHangmanWordP(word, guessed, revealed, solved) {
+function renderHangmanWordP(maskedWord, revealed, solved) {
   const row = document.getElementById('hm-word-row-p');
   if(!row) return;
-  row.innerHTML = word.split('').map(l => {
-    if(l === ' ') return '<div class="hm-tile-p space"></div>';
-    const isGuessed = guessed[l];
-    let cls = '';
-    if(isGuessed) cls = (revealed && !solved) ? 'reveal-all' : 'revealed';
-    return `<div class="hm-tile-p ${cls}">${isGuessed ? l : ''}</div>`;
+  row.innerHTML = maskedWord.split('').map(ch => {
+    if(ch === ' ') return '<div class="hm-tile-p space"></div>';
+    if(ch === '_') return '<div class="hm-tile-p"></div>';
+    const cls = (revealed && !solved) ? 'reveal-all' : 'revealed';
+    return `<div class="hm-tile-p ${cls}">${ch}</div>`;
   }).join('');
 }
 
-function renderHangmanKeyboardP(guessed, wrong, disabled) {
+function renderHangmanKeyboardP(guessedSet, wrong, disabled) {
   const kb = document.getElementById('hm-keyboard-p');
   if(!kb) return;
   // Solo: ha nem az én köröm, az összes billentyű letiltva (de a guessed/wrong státusz látható)
@@ -3232,10 +3910,10 @@ function renderHangmanKeyboardP(guessed, wrong, disabled) {
   kb.innerHTML = HM_KEY_ROWS.map(row =>
     `<div class="hm-key-row">${row.map(l => {
       let cls = '';
-      if(guessed[l]) cls = 'correct';
+      if(guessedSet.has(l)) cls = 'correct';
       else if(wrong[l]) cls = 'wrong';  // wrong only for real letters, not _H keys
       else if(fullyDisabled) cls = 'disabled';
-      const clickHandler = (!fullyDisabled && !guessed[l] && !wrong[l])
+      const clickHandler = (!fullyDisabled && !guessedSet.has(l) && !wrong[l])
         ? `onclick="submitHangmanLetter('${l}')"` : '';
       return `<div class="hm-key ${cls}" ${clickHandler}>${l}</div>`;
     }).join('')}</div>`
@@ -3432,7 +4110,7 @@ function startHangmanTimerP() {
     if(hmTimerValueP <= 0) {
       clearInterval(hmTimerIntervalP);
       hmKeyboardDisabled = true;
-      renderHangmanKeyboardP({}, {}, true);
+      renderHangmanKeyboardP(new Set(), {}, true);
     }
   }, 1000);
 }
@@ -4277,7 +4955,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 2.7</div>
+<div class="version-badge">Játék verzió: 2.8</div>
 
 </body>
 </html>
