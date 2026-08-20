@@ -320,199 +320,12 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
 
   .hidden { display:none !important; }
 
-  /* ── BLOKUS KÉPERNYŐ ───────────────────────────────────── */
-  #blokus-screen {
-    display:none; width:100%; max-width:420px;
-    min-height:100vh; min-height:100dvh;
-    flex-direction:column; padding-bottom:16px;
-  }
-  .blk-turn-banner {
-    text-align:center; padding:9px 12px; border-radius:10px;
-    margin-bottom:8px; font-weight:700; font-size:14px; letter-spacing:0.5px;
-    transition:all 0.3s;
-  }
-  .blk-turn-banner.my-turn {
-    background:rgba(240,192,64,0.1); border:1.5px solid var(--accent);
-    color:var(--accent); font-family:var(--font-display); font-size:18px; letter-spacing:2px;
-  }
-  .blk-turn-banner.other-turn {
-    background:var(--surface2); border:1px solid var(--border); color:var(--muted);
-  }
-  .blk-board-outer {
-    width:100%; display:flex; justify-content:center;
-    margin-bottom:8px; border-radius:6px; background:#0d0d1a;
-    overflow:hidden;
-  }
-  #blk-canvas { display:block; touch-action:none; cursor:crosshair; }
-  .blk-orient-row { display:flex; gap:6px; margin-bottom:6px; }
-  .blk-orient-btn {
-    flex:1; padding:9px 6px; background:var(--surface2); border:1.5px solid var(--border);
-    color:var(--text); border-radius:9px; font-size:13px; font-weight:600;
-    cursor:pointer; transition:all 0.15s; text-align:center;
-  }
-  .blk-orient-btn:active { transform:scale(0.95); background:var(--surface); }
-  .blk-confirm-row { display:flex; gap:6px; margin-bottom:8px; }
-  .blk-place-btn {
-    flex:2; padding:12px; background:var(--green); color:#000; border:none;
-    border-radius:10px; font-family:var(--font-display); font-size:17px;
-    letter-spacing:1.5px; cursor:pointer; transition:all 0.15s;
-  }
-  .blk-place-btn:disabled { background:var(--border); color:var(--muted); cursor:not-allowed; }
-  .blk-place-btn:not(:disabled):active { transform:scale(0.97); opacity:0.9; }
-  .blk-pass-btn {
-    flex:1; padding:12px 8px; background:transparent; color:var(--muted);
-    border:1.5px solid var(--border); border-radius:10px; font-size:12px;
-    font-weight:700; cursor:pointer; transition:all 0.15s; text-align:center;
-  }
-  .blk-pass-btn:active { border-color:var(--red); color:var(--red); }
-  .blk-pass-full {
-    width:100%; padding:13px; background:transparent; color:var(--muted);
-    border:1.5px solid var(--border); border-radius:10px; font-size:13px;
-    font-weight:700; cursor:pointer; transition:all 0.15s; margin-bottom:8px;
-  }
-  .blk-pass-full:active { border-color:var(--red); color:var(--red); }
-  .blk-color-tabs { display:flex; gap:6px; margin-bottom:6px; }
-  .blk-ctab {
-    flex:1; padding:8px 6px; border-radius:9px; border:1.5px solid var(--border);
-    background:transparent; font-size:12px; font-weight:700;
-    cursor:pointer; transition:all 0.15s; text-align:center; color:var(--muted);
-    line-height:1.4;
-  }
-  .blk-ctab:active { transform:scale(0.96); }
-  .blk-pieces-title {
-    font-size:10px; letter-spacing:2px; text-transform:uppercase;
-    color:var(--muted); text-align:center; margin-bottom:6px;
-  }
-  .blk-pieces-grid {
-    display:flex; flex-wrap:wrap; gap:5px; justify-content:center;
-    max-height:170px; overflow-y:auto; padding:2px;
-    -webkit-overflow-scrolling:touch;
-  }
-  .blk-pcard {
-    background:var(--surface2); border:1.5px solid var(--border);
-    border-radius:8px; padding:4px; cursor:pointer; transition:all 0.12s;
-    display:flex; align-items:center; justify-content:center;
-    width:48px; height:48px; flex-shrink:0;
-  }
-  .blk-pcard:active { transform:scale(0.88); }
-  .blk-pcard.blk-sel {
-    border-color:var(--accent); background:rgba(240,192,64,0.1);
-    box-shadow:0 0 8px rgba(240,192,64,0.25);
-  }
-  .blk-pcard.blk-noturn { opacity:0.35; cursor:default; pointer-events:none; }
-  .blk-color-chip {
-    display:inline-flex; align-items:center; gap:5px;
-    padding:3px 9px; border-radius:20px;
-    font-size:11px; font-weight:700; border:1.5px solid transparent;
-  }
-  .blk-observer-note {
-    text-align:center; padding:20px; color:var(--muted);
-    font-size:14px; line-height:1.6;
-  }
   /* VERSION BADGE */
   .version-badge {
     position:fixed; bottom:12px; right:14px; z-index:9999;
     font-size:10px; color:var(--muted); letter-spacing:1px;
     font-family:var(--font-body); pointer-events:none; opacity:0.6;
   }
-
-  /* ── AKASZTÓFA BEVEZETŐ (STORY) ────────────────────────── */
-  #hangman-intro-screen {
-    display:none; position:fixed; inset:0; z-index:500;
-    background:#000; flex-direction:column;
-    align-items:center; justify-content:center; padding:32px;
-  }
-  .story-bg-fade { animation: storyBgIn 1s ease forwards; }
-  @keyframes storyBgIn { from{opacity:0} to{opacity:1} }
-  .story-text-wrap {
-    text-align:center; max-width:360px; width:100%;
-    opacity:0;
-    pointer-events:none;
-  }
-  .story-text-wrap.story-anim {
-    animation: storyPhrase 5s ease forwards;
-  }
-  @keyframes storyPhrase {
-    0%   { opacity:0; transform:translateY(14px); }
-    22%  { opacity:1; transform:translateY(0); }
-    72%  { opacity:1; transform:translateY(0); }
-    100% { opacity:0; transform:translateY(-10px); }
-  }
-  .story-line {
-    font-family:'DM Sans',sans-serif;
-    font-size:20px; font-weight:500;
-    color:#f0f0f8; line-height:1.7;
-    letter-spacing:0.3px;
-  }
-  .story-line em { color:#f0c040; font-style:normal; font-weight:600; }
-  .story-skip-hint {
-    position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
-    font-size:11px; color:#3a3a52; letter-spacing:2px; text-transform:uppercase;
-    pointer-events:none;
-  }
-
-  /* ── AKASZTÓFA KÉPERNYŐ ─────────────────────────────────── */
-  #hangman-screen { display:none; width:100%; max-width:420px; min-height:100vh; min-height:100dvh; flex-direction:column; }
-  .hm-word-row-p { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; padding:8px 0; }
-  .hm-tile-p { width:32px; height:40px; border-bottom:2.5px solid var(--text); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:22px; color:var(--text); transition:all 0.3s; }
-  .hm-tile-p.space { border-bottom-color:transparent; width:14px; }
-  .hm-tile-p.revealed { color:var(--accent); border-bottom-color:var(--accent); animation:correctPulse 0.4s ease; }
-  .hm-tile-p.reveal-all { color:var(--red); border-bottom-color:var(--red); }
-  .hm-keyboard { display:flex; flex-direction:column; gap:6px; padding:8px 0 4px; }
-  .hm-key-row { display:flex; gap:5px; justify-content:center; flex-wrap:wrap; }
-  .hm-key { min-width:36px; height:40px; padding:0 8px; background:var(--surface2); border:1.5px solid var(--border); border-radius:8px; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:16px; color:var(--text); cursor:pointer; transition:all 0.15s; -webkit-user-select:none; user-select:none; }
-  .hm-key:active { transform:scale(0.92); }
-  .hm-key.correct { background:rgba(62,207,142,0.15); border-color:var(--green); color:var(--green); pointer-events:none; }
-  .hm-key.wrong { background:rgba(224,90,90,0.12); border-color:rgba(224,90,90,0.4); color:var(--red); pointer-events:none; opacity:0.55; }
-  .hm-key.disabled { pointer-events:none; opacity:0.4; }
-  .hm-lives-p { display:flex; gap:5px; justify-content:center; }
-  .hm-life-p { font-size:20px; transition:opacity 0.3s; }
-  .hm-life-p.lost { opacity:0.18; filter:grayscale(1); }
-  .hm-result-banner-p { text-align:center; padding:8px 0; }
-  .hm-solved-p { font-family:var(--font-display); font-size:28px; letter-spacing:2px; color:var(--green); }
-  .hm-failed-p { font-family:var(--font-display); font-size:28px; letter-spacing:2px; color:var(--red); }
-  .hm-failed-p { font-family:var(--font-display); font-size:28px; letter-spacing:2px; color:var(--red); }
-
-  /* ── AKASZTÓFA VÉGEREDMÉNY ──────────────────────────────── */
-  #hangman-result-screen {
-    display:none; width:100%; max-width:420px; padding:24px 0 48px; margin:0 auto;
-    flex-direction:column; gap:0;
-  }
-  .hmr-title { font-family:var(--font-display); font-size:52px; letter-spacing:4px; color:var(--accent); text-align:center; line-height:1; margin-bottom:4px; }
-  .hmr-subtitle { font-size:11px; color:var(--muted); letter-spacing:3px; text-transform:uppercase; text-align:center; margin-bottom:24px; }
-  .hmr-cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
-  .hmr-col-head { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; text-align:center; padding:6px 0; border-radius:6px; margin-bottom:10px; }
-  .hmr-col-head.alive { background:rgba(62,207,142,0.12); color:var(--green); }
-  .hmr-col-head.fallen { background:rgba(224,90,90,0.1); color:var(--red); }
-  .hmr-row { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:8px; margin-bottom:6px; }
-  .hmr-row.alive { background:rgba(62,207,142,0.07); border:1px solid rgba(62,207,142,0.2); }
-  .hmr-row.fallen { background:rgba(224,90,90,0.05); border:1px solid rgba(224,90,90,0.15); }
-  .hmr-row-name { font-size:13px; font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .hmr-row-word { font-size:9px; letter-spacing:1.5px; font-family:var(--font-display); color:var(--muted); flex-shrink:0; }
-  .hmr-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
-  .hmr-stat { border-radius:10px; padding:10px 12px; text-align:center; }
-  .hmr-stat.s-alive { background:rgba(62,207,142,0.07); border:1px solid rgba(62,207,142,0.18); }
-  .hmr-stat.s-fallen { background:rgba(224,90,90,0.05); border:1px solid rgba(224,90,90,0.14); }
-  .hmr-stat-num { font-family:var(--font-display); font-size:36px; line-height:1; }
-  .hmr-stat-num.alive { color:var(--green); }
-  .hmr-stat-num.fallen { color:var(--red); }
-  .hmr-stat-lbl { font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-top:3px; }
-  .hmr-my-result { text-align:center; padding:14px; border-radius:12px; margin-bottom:20px; }
-  .hmr-my-result.survived { background:rgba(62,207,142,0.08); border:1px solid rgba(62,207,142,0.25); }
-  .hmr-my-result.died { background:rgba(224,90,90,0.06); border:1px solid rgba(224,90,90,0.2); }
-  .hmr-my-icon { font-size:40px; line-height:1; margin-bottom:6px; }
-  .hmr-my-status { font-family:var(--font-display); font-size:22px; letter-spacing:3px; }
-  .hmr-my-status.survived { color:var(--green); }
-  .hmr-my-status.died { color:var(--red); }
-  .hmr-my-word { font-size:12px; color:var(--muted); margin-top:4px; }
-
-  .hm-my-turn-banner { font-family:var(--font-display); font-size:22px; letter-spacing:3px; color:var(--accent); text-align:center; padding:6px 0; animation:correctPulse 1s ease infinite; }
-  .hm-other-turn-banner { font-size:13px; color:var(--muted); text-align:center; padding:4px 0; letter-spacing:1px; }
-  .hm-hint-btn { width:100%; padding:11px; background:rgba(240,192,64,0.1); color:var(--accent); border:1.5px solid rgba(240,192,64,0.35); border-radius:10px; font-family:var(--font-display); font-size:17px; letter-spacing:1.5px; cursor:pointer; transition:all 0.15s; }
-  .hm-hint-btn:active { transform:scale(0.97); background:rgba(240,192,64,0.2); }
-  .hm-hint-btn:disabled { opacity:0.35; cursor:not-allowed; transform:none; }
-  .hm-hint-reveal-box { background:rgba(240,192,64,0.08); border:1px solid rgba(240,192,64,0.3); border-radius:10px; padding:10px 14px; font-size:14px; color:var(--text); line-height:1.55; text-align:center; }
-  .hm-hint-reveal-box strong { color:var(--accent); font-family:var(--font-display); font-size:22px; }
 
   /* CHANGELOG képernyő */
   #changelog-screen {
@@ -741,9 +554,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
       <option value="all">Mind</option>
     </select>
   </div>
-  <div style="width:100%;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6;" id="cr-mode-note">
-    <span style="opacity:0.75;">Akasztófa és Blokus mód hamarosan választható lesz itt is.</span>
-  </div>
+  <div style="width:100%;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6;display:none;" id="cr-mode-note"></div>
   <button class="menu-btn-primary" onclick="confirmCreateRoom()">SZOBA LÉTREHOZÁSA</button>
   <div class="menu-error" id="cr-error"></div>
 </div>
@@ -780,7 +591,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showMenu()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">2.7</div><div><div class="cl-desc">Hibajavítás — a régi, quiz-host.html-es élő alkalmakhoz készült játékmód-szavazó felület véglegesen eltávolítva a játékos oldalról. A várakozási képernyő (a „Vissza a játékba" és az „Új kör indítása" utáni visszatéréskor is) minden alkalommal felvillantotta ezt a kártyás szavazót, annak ellenére, hogy az önkiszolgáló szoba-motor sosem olvasta vagy dolgozta fel a leadott szavazatokat — ez a felület kizárólag a régi, host-felügyelt váróteremhez tartozott. A quiz-host.html saját, élő alkalmakra szánt szavazás-figyelője (jobb oldali „Szavazás" panel) változatlanul, érintetlenül megmaradt.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">2.8</div><div><div class="cl-desc">Az Akasztófa és a Blokus játékmód — a hozzájuk tartozó teljes HTML, CSS és JavaScript kód, valamint a `hangmanState`, `hangmanResults`, `hangmanGuesses`, `hangmanHintRequests`, `blokusMoves` Firebase-ágak — véglegesen eltávolításra kerültek. Mindkét mód a jövőben sem lesz játszható; az Útmutatóból és a szoba-létrehozás képernyőről is eltűnt minden erre utaló szöveg. A `quiz-host.html` "Szó adatbázis" füle (az Akasztófa szavainak kezelésére szolgált) szintén megszűnt.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">2.7</div><div><div class="cl-desc">Hibajavítás — a régi, quiz-host.html-es élő alkalmakhoz készült játékmód-szavazó felület véglegesen eltávolítva a játékos oldalról. A várakozási képernyő (a „Vissza a játékba" és az „Új kör indítása" utáni visszatéréskor is) minden alkalommal felvillantotta ezt a kártyás szavazót, annak ellenére, hogy az önkiszolgáló szoba-motor sosem olvasta vagy dolgozta fel a leadott szavazatokat — ez a felület kizárólag a régi, host-felügyelt váróteremhez tartozott. A quiz-host.html saját, élő alkalmakra szánt szavazás-figyelője (jobb oldali „Szavazás" panel) változatlanul, érintetlenül megmaradt.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.6</div><div><div class="cl-desc">Önkiszolgáló szobában is működik az „Új kör indítása" — a szoba irányítója az eredmény képernyőn a „🔄 ÚJ KÖR INDÍTÁSA" gombbal új kört kezdhet ugyanabban a szobában, friss kérdés-mintával, anélkül hogy új szobát kéne nyitnia (eddig a „Vissza a játékba" gomb önkiszolgáló szobában sosem aktiválódott). Javítva: a főmenü névmezőjén Enter és a „Nem elérhető" képernyő „Újrapróbálás" gombja mostantól a ténylegesen megcélzott szobát próbálja újra, nem a régi, fix admin-szobát. Útmutató frissítve: pontosított leírás az önkiszolgáló szoba-létrehozásról és -csatlakozásról, az Akasztófa jelenlegi, élő alkalmakhoz kötött elérhetőségéről, a 2. segítség tényleges működéséről és a csapatverseny indítási feltételéről.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.5</div><div><div class="cl-desc">Akasztófa játékmódhoz szó adatbázis és indítási felület átdolgozása — Firebase-alapú, perzisztens szó adatbázis a host felületen. Kategóriák szabadon meghatározhatók, átnevezhetők, egyedi színnel jelölhetők. Szavakhoz 2 opcionális segítség adható. Az Akasztófa indítása modál átdolgozva: kategória grid, 1–50 szó, session-szintű kijátszott-szó nyomkövetés.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.4</div><div><div class="cl-desc">Akasztófa játékmód következetesség javítása — Segítség kérés: 2 alkalom, mindkettő −1 életet von le. Első segítség szöveges tipp, második véletlen betű. Solo módban csak az aktuális tippelő kérhet segítséget.</div></div></div>
@@ -834,7 +646,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div class="guide-divider"></div>
   <div class="guide-section">
     <div class="guide-section-title">🎯 A játék lényege</div>
-    <p>A QuizMaster egy <strong style="color:var(--text)">valós idejű multiplayer játék,</strong> ahol egyszerre akár 20 játékos verseng egymással. Szoba-létrehozáskor jelenleg az <strong style="color:var(--text)">Egyéni verseny</strong> és a <strong style="color:var(--text)">Csapatverseny</strong> játékmód közül választhatsz. Az <strong style="color:var(--text)">Akasztófa</strong> egyelőre csak élő, egy teremben tartott alkalmakon érhető el, amit én vezénylek — hamarosan ez is bekerül az önálló szoba-létrehozásba.</p>
+    <p>A QuizMaster egy <strong style="color:var(--text)">valós idejű multiplayer játék,</strong> ahol egyszerre akár 20 játékos verseng egymással. Szoba-létrehozáskor az <strong style="color:var(--text)">Egyéni verseny</strong> és a <strong style="color:var(--text)">Csapatverseny</strong> játékmód közül választhatsz.</p>
     <p>Az Egyéni versenyhez és Csapatversenyhez kérdések különböző témakörökből érkeznek: Bibliai, Filmek, Történelem, Földrajz, Tudomány és még sok más.</p>
   </div>
   <div class="guide-section">
@@ -863,15 +675,6 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     <p><strong style="color:var(--text)">Fontos:</strong> A „▶ JÁTÉK INDÍTÁSA" gomb csak akkor válik nyomhatóvá, ha legalább 2 csapat létrejött, és a váróteremben lévő minden játékos be van osztva valamelyikbe — így nem fordulhat elő, hogy valaki kimarad egy induló körből.</p>
   </div>
   <div class="guide-divider"></div>
-  <div class="guide-section">
-    <div class="guide-section-title">🔤 Akasztófa játékmód</div>
-    <p>Az <strong style="color:var(--text)">Akasztófa</strong> egy teljesen különálló játékmód a szokásos kérdés-válasz formátumtól — jelenleg csak élő, egy teremben tartott alkalmakon érhető el. A host egy szót választ, ti pedig betűnként próbáljátok kitalálni — minden tévesztett betűvel eggyel kevesebb életetek marad. <strong style="color:var(--text)">6 tévesztés</strong> esetén a szó elvész.</p>
-    <p><strong style="color:var(--text)">Kooperatív mód:</strong> Mindenki <strong style="color:var(--text)">együtt</strong> tippelhet minden szónál. Ha sikerül kitalálni a szót, mindenki túléli azt a kört — ha nem, mindenki elesik. A végén az összes játékos ugyanolyan sorsra jut.</p>
-    <p><strong style="color:var(--text)">Solo kör mód:</strong> Minden játékosnak <strong style="color:var(--text)">saját szava</strong> van, és egyedül tippelhet. A képernyőn látható, hogy éppen ki következik. Akinek a saját szavát sikerül kitalálnia, az <strong style="color:var(--text)">megmenekül</strong> — aki nem tudja kitalálni, az <strong style="color:var(--text)">elesik.</strong></p>
-    <p><strong style="color:var(--text)">💡 Segítség:</strong> Minden szónál legfeljebb <strong style="color:var(--text)">2-szer</strong> kérhetsz segítséget a 💡 gombbal. Fontos: minden segítség kérés <strong style="color:var(--text)">−1 életet von le.</strong> Az 1. segítség az adott szóhoz megadott első szöveges tippet mutatja, a 2. segítség a másodikat — ha egy szóhoz nincs ennyi tipp megadva, helyette egy véletlenszerű, még ki nem talált betűt fed fel. Solo módban csak az aktuális tippelő kérhet segítséget.</p>
-    <p><strong style="color:var(--text)">Játék vége:</strong> Minden szó lejátszása után egy eredmény képernyő jelenik meg, ahol látható ki menekült meg és ki esett el. A saját eredményed (megmenekültél / elesettél) kiemelve jelenik meg. A „Vissza a játékba" gomb akkor aktiválódik, ha a host készen áll egy új körre.</p>
-    <p><strong style="color:var(--text)">Bevezető:</strong> Az Akasztófa játék indításakor egy rövid filmszerű bevezető animáció jelenik meg, amely felvázolja a játék hangulatát.</p>
-  </div>
   <div class="guide-section">
     <div class="guide-section-title">🏆 Pontozás (Egyéni és Csapatverseny)</div>
     <p>Minél gyorsabban válaszolsz <strong style="color:var(--text)">helyesen</strong>, annál több pontot kapsz! A sorrend a <strong style="color:var(--text)">helyes válaszadók</strong> között számít — a rossz válaszok nem befolyásolják a te helyezésedet.</p>
@@ -986,161 +789,6 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div id="hist-list"></div>
 </div>
 
-<!-- AKASZTÓFA VÉGEREDMÉNY -->
-<div id="hangman-result-screen">
-  <!-- Saját eredmény kiemelés (felül) -->
-  <div id="hmr-my-result"></div>
-
-  <div class="hmr-title">VÉGE</div>
-  <div class="hmr-subtitle" id="hmr-subtitle">A játék befejeződött</div>
-
-  <!-- Statisztika -->
-  <div class="hmr-stats">
-    <div class="hmr-stat s-alive">
-      <div class="hmr-stat-num alive" id="hmr-survivor-count">0</div>
-      <div class="hmr-stat-lbl">Túlélő</div>
-    </div>
-    <div class="hmr-stat s-fallen">
-      <div class="hmr-stat-num fallen" id="hmr-fallen-count">0</div>
-      <div class="hmr-stat-lbl">Elesett</div>
-    </div>
-  </div>
-
-  <!-- Két oszlop -->
-  <div class="hmr-cols">
-    <div>
-      <div class="hmr-col-head alive">✓ Túlélők</div>
-      <div id="hmr-survivors-list">
-        <div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">—</div>
-      </div>
-    </div>
-    <div>
-      <div class="hmr-col-head fallen">✕ Elesettek</div>
-      <div id="hmr-fallen-list">
-        <div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">—</div>
-      </div>
-    </div>
-  </div>
-
-  <button class="btn-lobby" id="hmr-btn-return" onclick="returnToGame()" disabled>⏳ VÁRAKOZÁS A HOST-RA...</button>
-  <button class="btn-lobby" onclick="backToMenu()">↺ VISSZA A FŐMENÜBE</button>
-</div>
-
-<!-- BLOKUS KÉPERNYŐ -->
-<div id="blokus-screen">
-  <!-- Top stats -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px;">
-    <div>
-      <div style="font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;" id="blk-score-label">PONTOM</div>
-      <div style="font-family:var(--font-display);font-size:28px;color:var(--accent);line-height:1;" id="blk-my-score">0</div>
-    </div>
-    <div id="blk-my-colors" style="display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:160px;"></div>
-    <div style="text-align:right;">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;">HELYEZÉS</div>
-      <div style="font-family:var(--font-display);font-size:28px;line-height:1;" id="blk-my-rank">#—</div>
-    </div>
-  </div>
-
-  <!-- Turn banner -->
-  <div class="blk-turn-banner other-turn" id="blk-turn-banner">Betöltés...</div>
-
-  <!-- Board -->
-  <div class="blk-board-outer">
-    <canvas id="blk-canvas"></canvas>
-  </div>
-
-  <!-- Orientation controls (visible only when piece selected & my turn) -->
-  <div class="blk-orient-row hidden" id="blk-orient-row">
-    <button class="blk-orient-btn" onclick="blkDoRotate()">↻ Forgatás</button>
-    <button class="blk-orient-btn" onclick="blkDoFlip()">⟺ Tükrözés</button>
-  </div>
-
-  <!-- Place + Pass buttons (visible when my turn) -->
-  <div class="blk-confirm-row hidden" id="blk-confirm-row">
-    <button class="blk-place-btn" id="blk-place-btn" onclick="blkConfirmPlace()" disabled>✓ LERAK</button>
-    <button class="blk-pass-btn" onclick="blkConfirmPass()">Passz</button>
-  </div>
-
-  <!-- Color tabs (only for players with 2+ colors) -->
-  <div class="blk-color-tabs hidden" id="blk-color-tabs"></div>
-
-  <!-- Piece selector -->
-  <div class="blk-pieces-title" id="blk-pieces-title">ELÉRHETŐ DARABOK</div>
-  <div class="blk-pieces-grid" id="blk-pieces-grid"></div>
-
-  <button class="btn-back-game" style="margin-top:10px;" onclick="backToMenu()">↺ Főmenü</button>
-</div>
-
-<!-- AKASZTÓFA BEVEZETŐ -->
-<div id="hangman-intro-screen">
-  <div class="story-text-wrap" id="story-text-wrap">
-    <div class="story-line" id="story-line"></div>
-  </div>
-  <div class="story-skip-hint">Az intro automatikusan elindul...</div>
-</div>
-
-<!-- AKASZTÓFA KÉPERNYŐ -->
-<div id="hangman-screen">
-  <div class="game-topbar">
-    <div>
-      <div class="my-score-label" id="hm-score-label">PONTOM</div>
-      <div class="my-score-val" id="hm-my-score">0</div>
-    </div>
-    <div style="text-align:center;">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;">IDŐ</div>
-      <div style="font-family:var(--font-display);font-size:32px;color:var(--accent);line-height:1;" id="hm-timer-num">60</div>
-    </div>
-    <div class="my-rank">
-      <div class="my-rank-label">HELYEZÉS</div>
-      <div class="my-rank-val" id="hm-my-rank">#—</div>
-    </div>
-  </div>
-
-  <!-- Progress bar -->
-  <div style="width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:10px;">
-    <div id="hm-timer-bar-p" style="height:100%;background:var(--accent);border-radius:2px;transition:width 1s linear;width:100%;"></div>
-  </div>
-
-  <!-- Round indicator -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-    <div style="font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;" id="hm-round-label-p">1/5. SZÓ</div>
-    <div style="font-size:10px;letter-spacing:1px;padding:3px 10px;border-radius:4px;background:rgba(224,90,43,0.12);color:#e05a2b;border:1px solid rgba(224,90,43,0.28);text-transform:uppercase;" id="hm-cat-p">—</div>
-  </div>
-
-  <!-- Assignment banner (solo mode) -->
-  <div id="hm-assignment-banner-p"></div>
-
-  <!-- Result banner -->
-  <div class="hm-result-banner-p" id="hm-result-banner-p"></div>
-
-  <!-- Hint reveal display -->
-  <div id="hm-hint-reveal-p" style="margin-bottom:6px;"></div>
-
-  <!-- Gallows + Word area -->
-  <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:10px;">
-    <div id="hm-gallows-p" style="flex-shrink:0;"></div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;flex:1;">
-      <div class="hm-word-row-p" id="hm-word-row-p"></div>
-      <div class="hm-lives-p" id="hm-lives-p"></div>
-    </div>
-  </div>
-
-  <!-- Keyboard -->
-  <div class="hm-keyboard" id="hm-keyboard-p"></div>
-
-  <!-- Segítség gomb -->
-  <div style="padding:4px 0;">
-    <button class="hm-hint-btn" id="hm-hint-btn-p" onclick="requestHangmanHint()">💡 Segítség (2x)</button>
-  </div>
-
-  <!-- Wrong letters row -->
-  <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:6px 0;min-height:28px;" id="hm-wrong-row-p"></div>
-
-  <div style="padding:8px 0 4px;">
-    <button class="btn-back-game" onclick="backToMenu()">↺ Főmenü</button>
-  </div>
-</div>
-
 <div class="score-delta-overlay" id="score-delta"></div>
 
 <!-- JELENTÉS MODAL -->
@@ -1236,8 +884,7 @@ function hideAll() {
   ['auth-screen','pending-screen','rejected-screen',
    'menu-screen','create-room-screen','room-list-screen','team-setup-screen',
    'guide-screen','unavailable-screen','lobby-screen',
-   'waiting-screen','game-screen','result-screen','history-screen','changelog-screen',
-   'hangman-screen','hangman-intro-screen','hangman-result-screen','blokus-screen']
+   'waiting-screen','game-screen','result-screen','history-screen','changelog-screen']
     .forEach(id => document.getElementById(id).style.display = 'none');
 }
 function showMenu() {
@@ -1510,57 +1157,14 @@ function setupListeners() {
     } else if (state.phase === 'revealed') {
       const revealIdx = typeof state.revealedForIndex === 'number' ? state.revealedForIndex : state.questionIndex;
       fetchAnswerKey(revealIdx).then(correctIdx => revealAnswers(correctIdx, revealIdx));
-    } else if (state.phase === 'hangman-intro') {
-      // Új akasztófa kör kezdődik — visszaállítjuk a gomb állapotot
-      hostReadyForRejoin = false;
-      updateHangmanReturnBtn();
-      if (myPlayerStatus === 'active') showHangmanIntro();
-    } else if (state.phase === 'hangman-active' || state.phase === 'hangman-revealed') {
-      // Akasztófa: hangmanState-ből olvassuk az állapotot (külön listener kezeli)
-      // Ha még az intro képernyőn vagyunk, zárjuk be (pl. gyors indítás)
-      const introVisible = document.getElementById('hangman-intro-screen').style.display !== 'none';
-      if (introVisible) { clearHangmanIntroTimers(); document.getElementById('hangman-intro-screen').style.display = 'none'; }
     } else if (state.phase === 'ended') {
       hostReadyForRejoin = false;
       const gameVisible = document.getElementById('game-screen').style.display !== 'none';
-      const hangmanVisible = document.getElementById('hangman-screen').style.display !== 'none';
-      if (gameVisible || hangmanVisible) showResults();
+      if (gameVisible) showResults();
       updateReturnToGameBtn();
-    } else if (state.phase === 'blokus-active') {
-      if (myPlayerStatus === 'active') {
-        const blkVisible = document.getElementById('blokus-screen').style.display !== 'none';
-        if (blkVisible) {
-          blkUpdateState(state.blokus);
-        } else {
-          blkShowScreen(state.blokus);
-        }
-      }
-    } else if (state.phase === 'blokus-ended') {
-      hostReadyForRejoin = false;
-      updateReturnToGameBtn();
-      const blkVisible = document.getElementById('blokus-screen').style.display !== 'none';
-      if (blkVisible && myPlayerStatus === 'active') {
-        // Kis késleltetés: a host aszinkron állítja be a pontokat,
-        // adjunk időt a players Firebase listener frissüléséhez
-        setTimeout(() => showResults(), 800);
-      }
-    } else if (state.phase === 'hangman-ended') {
-      // FONTOS: hostReadyForRejoin nullázása ELŐBB kell mint a showHangmanResults() hívás,
-      // mert a showHangmanResults() belsőleg azonnal updateHangmanReturnBtn()-t hív,
-      // és a korábbi waiting fázisból megmaradt true értékkel aktívvá tenné a gombot.
-      hostReadyForRejoin = false;
-      updateReturnToGameBtn();
-      updateHangmanReturnBtn();
-      const hangmanVisible = document.getElementById('hangman-screen').style.display !== 'none';
-      const introVisible   = document.getElementById('hangman-intro-screen').style.display !== 'none';
-      if (hangmanVisible || introVisible) {
-        clearHangmanIntroTimers();
-        showHangmanResults();
-      }
     } else if (state.phase === 'waiting') {
       hostReadyForRejoin = true;
       updateReturnToGameBtn();
-      updateHangmanReturnBtn();
       // Team módban: pontszám felirat frissítése
       if(gameMode==='teams') updateGameModeUI();
     }
@@ -1635,25 +1239,6 @@ function setupListeners() {
   roomRef.child('questions').once('value', snap => {
     questions = Object.values(snap.val() || {});
     updateProgress();
-  });
-
-  // ── AKASZTÓFA: hangmanState figyelése ────────────────────
-  roomRef.child('hangmanState').on('value', snap => {
-    const state = snap.val();
-    if (!state) return;
-    if (myPlayerStatus !== 'active') return;
-    if (state.phase === 'hangman-active' || state.phase === 'hangman-revealed') {
-      showHangmanScreen(state);
-    }
-  });
-
-  // ── AKASZTÓFA: végeredmény figyelése ─────────────────────
-  roomRef.child('hangmanResults').on('value', snap => {
-    const data = snap.val();
-    if (!data) return;
-    // Ha az eredmény képernyő már látszik, frissítjük (pl. késő adat érkezés)
-    const resultVisible = document.getElementById('hangman-result-screen').style.display !== 'none';
-    if (resultVisible) renderHangmanResults(data);
   });
 }
 
@@ -1816,9 +1401,7 @@ function showResults() {
 
   // Önkiszolgáló szoba irányítója saját maga indíthat új kört ugyanabban a
   // szobában — neki nem a "Vissza a játékba" várakozó gombot mutatjuk, hanem
-  // az "Új kör indítása" gombot (lásd hostStartNewRound()). Akasztófa/Blokus
-  // (mindkettő ma még csak a régi, quiz-host.html-es élő rendszerben fut)
-  // esetén amIRoomHost úgyis mindig false, tehát ott a viselkedés változatlan.
+  // az "Új kör indítása" gombot (lásd hostStartNewRound()).
   const btnReturn = document.getElementById('btn-return-to-game');
   const btnNewRound = document.getElementById('btn-host-new-round');
   const isSelfServiceHost = amIRoomHost && (hostGameMode === 'normal' || hostGameMode === 'teams');
@@ -1980,116 +1563,6 @@ function backToResults() {
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
-// ── AKASZTÓFA VÉGEREDMÉNY ────────────────────────────────────
-function showHangmanResults() {
-  hideAll();
-  const screen = document.getElementById('hangman-result-screen');
-  screen.style.display = 'flex';
-  screen.style.flexDirection = 'column';
-  window.scrollTo({top: 0, behavior: 'smooth'});
-  updateHangmanReturnBtn();
-  // Adatok lekérése Firebase-ből
-  if (db && roomRef) {
-    roomRef.child('hangmanResults').once('value', snap => {
-      const data = snap.val();
-      if (data) renderHangmanResults(data);
-    });
-  }
-}
-
-function renderHangmanResults(data) {
-  if (!data || !data.players) return;
-  const players_list = data.players;
-  const survivors = players_list.filter(p => p.survived);
-  const fallen    = players_list.filter(p => !p.survived);
-
-  // Számok
-  const sc = document.getElementById('hmr-survivor-count');
-  const fc = document.getElementById('hmr-fallen-count');
-  if (sc) sc.textContent = survivors.length;
-  if (fc) fc.textContent = fallen.length;
-
-  // Subtitle
-  const sub = document.getElementById('hmr-subtitle');
-  if (sub) {
-    sub.textContent = data.mode === 'solo'
-      ? 'Solo kör — egyéni eredmények'
-      : 'Kooperatív — csapat eredmény';
-  }
-
-  // Saját eredmény kiemelés
-  const myResult = players_list.find(p => p.pid === playerId);
-  const myResEl = document.getElementById('hmr-my-result');
-  if (myResEl && myResult) {
-    const survived = myResult.survived;
-    myResEl.className = 'hmr-my-result ' + (survived ? 'survived' : 'died');
-    myResEl.innerHTML =
-      '<div class="hmr-my-icon">' + (survived ? '🟢' : '💀') + '</div>' +
-      '<div class="hmr-my-status ' + (survived ? 'survived' : 'died') + '">' +
-        (survived ? 'MEGMENEKÜLTÉL' : 'ELESETTÉL') +
-      '</div>' +
-      (myResult.word && myResult.word !== '—'
-        ? '<div class="hmr-my-word">Szavad: <strong style="font-family:var(--font-display);font-size:14px;color:var(--text);letter-spacing:1px;">' + myResult.word + '</strong></div>'
-        : '');
-  } else if (myResEl) {
-    myResEl.innerHTML = '';
-  }
-
-  // Túlélők lista
-  const surEl = document.getElementById('hmr-survivors-list');
-  if (surEl) {
-    if (survivors.length === 0) {
-      surEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">—</div>';
-    } else {
-      surEl.innerHTML = survivors.map(p => {
-        const isMe = p.pid === playerId;
-        const init = (p.name || '?')[0].toUpperCase();
-        const col  = p.color || '#888';
-        const showWord = data.mode === 'solo' && p.word && p.word !== '—';
-        return '<div class="hmr-row alive">' +
-          '<div style="width:24px;height:24px;border-radius:50%;background:' + col + '22;border:1.5px solid ' + col + ';color:' + col + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:12px;flex-shrink:0;">' + init + '</div>' +
-          '<div class="hmr-row-name" style="' + (isMe ? 'color:var(--accent);' : '') + '">' + (p.name || 'Névtelen') + (isMe ? ' 👤' : '') + '</div>' +
-          (showWord ? '<div class="hmr-row-word">' + p.word + '</div>' : '') +
-        '</div>';
-      }).join('');
-    }
-  }
-
-  // Elesettek lista
-  const falEl = document.getElementById('hmr-fallen-list');
-  if (falEl) {
-    if (fallen.length === 0) {
-      falEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">—</div>';
-    } else {
-      falEl.innerHTML = fallen.map(p => {
-        const isMe = p.pid === playerId;
-        const init = (p.name || '?')[0].toUpperCase();
-        const col  = p.color || '#888';
-        const showWord = data.mode === 'solo' && p.word && p.word !== '—';
-        return '<div class="hmr-row fallen">' +
-          '<div style="width:24px;height:24px;border-radius:50%;background:' + col + '22;border:1.5px solid ' + col + ';color:' + col + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:12px;flex-shrink:0;">' + init + '</div>' +
-          '<div class="hmr-row-name" style="' + (isMe ? 'color:var(--red);' : '') + '">' + (p.name || 'Névtelen') + (isMe ? ' 👤' : '') + '</div>' +
-          (showWord ? '<div class="hmr-row-word">' + p.word + '</div>' : '') +
-        '</div>';
-      }).join('');
-    }
-  }
-}
-
-function updateHangmanReturnBtn() {
-  const btn = document.getElementById('hmr-btn-return');
-  if (!btn) return;
-  if (hostReadyForRejoin) {
-    btn.disabled = false;
-    btn.textContent = '🎮 VISSZA A JÁTÉKBA';
-    btn.style.cssText = 'background:rgba(240,192,64,0.08);border-color:var(--accent);color:var(--accent);';
-  } else {
-    btn.disabled = true;
-    btn.textContent = '⏳ VÁRAKOZÁS A HOST-RA...';
-    btn.style.cssText = '';
-  }
-}
-
 // ── VISSZA A JÁTÉKBA — gomb állapot kezelő ───────────────────
 // Akkor aktiválódik, ha a host már visszalépett (phase:'waiting' érkezett)
 // Addig szürke és letiltott: "Várakozás a host-ra..."
@@ -2121,8 +1594,6 @@ async function returnToGame() {
   // Gomb azonnal letiltva — dupla kattintás ellen (mindkét gomb)
   const btn = document.getElementById('btn-return-to-game');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Csatlakozás...'; }
-  const hmrBtn = document.getElementById('hmr-btn-return');
-  if (hmrBtn) { hmrBtn.disabled = true; hmrBtn.textContent = '⏳ Csatlakozás...'; }
 
   try {
     // Ellenőrzés: a gameState valóban 'waiting'-e még?
@@ -2210,14 +1681,10 @@ function showWaitingForTeam() {
 
 function backToMenu() {
   stopTimer();
-  stopHangmanTimer();
   if (roomRef) {
     roomRef.child('gameState').off();
     roomRef.child('players').off();
     roomRef.child('answers').off();
-    roomRef.child('hangmanState').off();
-    roomRef.child('hangmanHintRequests').off();
-    roomRef.child('hangmanResults').off();
     roomRef.child('teams').off();
     if (playerId) {
       roomRef.child('players').child(playerId).child('status').off();
@@ -2237,14 +1704,6 @@ function backToMenu() {
   myPlayerStatus = 'lobby';
   hostReadyForRejoin = false;
   gameMode = 'normal'; myTeamId = null; myTeamName = ''; teamScores = {};
-  hmKeyboardDisabled = false;
-  hmModeP = 'coop'; hmAssignedPidP = null; hmAssignedNameP = '';
-  hmHintsUsedP = 0; hmHintRevealP = null;
-  clearHangmanIntroTimers();
-  // Blokus állapot törlése
-  blkBoardP = null; blkMyColorsP = []; blkActiveColorP = 0;
-  blkSelPieceId = null; blkSelCells = []; blkIsMyTurnP = false;
-  blkAnchorRP = -1; blkAnchorCP = -1;
   // Szoba-létrehozás / host mini-motor állapot resetje
   amIRoomHost = false;
   clearInterval(hostTimerInterval);
@@ -2566,9 +2025,13 @@ function crSelectMode(mode) {
   crUpdateModeSelection();
   const note = document.getElementById('cr-mode-note');
   if (note) {
-    note.innerHTML = mode === 'teams'
-      ? '👥 A csapatok beosztását a szoba létrehozása <strong style="color:var(--text);">után</strong>, a váróteremben végezheted el.<br><span style="opacity:0.75;">Akasztófa és Blokus mód hamarosan itt is választható lesz.</span>'
-      : '<span style="opacity:0.75;">Akasztófa és Blokus mód hamarosan választható lesz itt is.</span>';
+    if (mode === 'teams') {
+      note.innerHTML = '👥 A csapatok beosztását a szoba létrehozása <strong style="color:var(--text);">után</strong>, a váróteremben végezheted el.';
+      note.style.display = '';
+    } else {
+      note.innerHTML = '';
+      note.style.display = 'none';
+    }
   }
 }
 function crUpdateModeSelection() {
@@ -2788,8 +2251,7 @@ function tsUnassign(pid) {
 
 // ══════════════════════════════════════════════════════════════
 // HOST MINI-MOTOR — a szobanyitó ebből vezérli az alap kvíz kört.
-// 'normal' és 'teams' módra is működik (hostGameMode dönti el);
-// akasztófa/blokus vezérlése külön, következő lépésben kerül ide.
+// 'normal' és 'teams' módra működik (hostGameMode dönti el).
 // ══════════════════════════════════════════════════════════════
 
 async function hostStartQuiz() {
@@ -3096,366 +2558,6 @@ async function hostStartNewRound() {
   }
 }
 
-// ============================================================
-// AKASZTÓFA — JÁTÉKOS OLDAL
-// ============================================================
-const HU_LETTERS_P = ['A','Á','B','C','D','E','É','F','G','H','I','Í','J','K','L','M','N','O','Ó','Ö','Ő','P','R','S','T','U','Ú','Ü','Ű','V','Z'];
-// Magyar QWERTZ billentyűzet (kép alapján) + hiányzó ékezetes betűk
-const HM_KEY_ROWS = [
-  ['Q','W','E','R','T','Z','U','I','O','P','Ö'],
-  ['A','S','D','F','G','H','J','K','L','É','Á'],
-  ['Y','X','C','V','B','N','M','Ü'],
-  ['Í','Ó','Ő','Ú','Ű'],
-];
-
-let hmKeyboardDisabled = false;
-let hmTimerIntervalP = null;
-let hmTimerValueP = 60;
-let hmTimeLimitP = 60;
-let hmCurrentPhase = 'idle';
-// Solo mód + segítség state
-let hmModeP = 'coop';
-let hmAssignedPidP = null;
-let hmAssignedNameP = '';
-let hmHintsUsedP = 0;
-let hmHintRevealP = null;
-
-function stopHangmanTimer() {
-  clearInterval(hmTimerIntervalP);
-}
-
-function showHangmanScreen(state) {
-  hideAll();
-  const screen = document.getElementById('hangman-screen');
-  screen.style.display = 'flex';
-  screen.style.flexDirection = 'column';
-
-  const guessed = state.guessedLetters || {};
-  const wrong = state.wrongLetters || {};
-  const word = state.word || '';
-  const revealed = state.phase === 'hangman-revealed';
-  hmCurrentPhase = state.phase;
-  // Solo mód + hint állapot
-  hmModeP = state.mode || 'coop';
-  hmAssignedPidP = state.assignedPlayerId || null;
-  hmAssignedNameP = state.assignedPlayerName || '';
-  hmHintsUsedP = state.hintsUsed || 0;
-  hmHintRevealP = state.hintReveal || null;
-  const isMyTurn = hmModeP === 'coop' || hmAssignedPidP === playerId;
-  hmKeyboardDisabled = revealed || !isMyTurn;
-
-  // Update score display
-  document.getElementById('hm-my-score').textContent = myScore;
-  document.getElementById('hm-my-rank').textContent = document.getElementById('my-rank').textContent;
-
-  // Category + round
-  document.getElementById('hm-cat-p').textContent = state.category || '—';
-  document.getElementById('hm-round-label-p').textContent =
-    (typeof state.roundIndex==='number' ? state.roundIndex+1 : '?') +
-    '/' + (state.totalRounds||'?') + '. SZÓ';
-
-  // Timer
-  hmTimeLimitP = state.timeLimit || 60;
-  if(!revealed) {
-    stopHangmanTimer();
-    // Estimate remaining time from startTime
-    if(state.startTime) {
-      const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
-      hmTimerValueP = Math.max(0, hmTimeLimitP - elapsed);
-    } else {
-      hmTimerValueP = hmTimeLimitP;
-    }
-    startHangmanTimerP();
-  } else {
-    stopHangmanTimer();
-    hmTimerValueP = 0;
-    updateHangmanTimerUI(0);
-  }
-
-  // Word tiles
-  renderHangmanWordP(word, guessed, revealed, state.solved);
-
-  // Total wrong count = real wrong letters + penalty hits (_H1, _H2)
-  const totalWrongCount = Object.keys(wrong).length; // includes _H keys
-  // Gallows
-  document.getElementById('hm-gallows-p').innerHTML = buildHangmanSVGP(totalWrongCount, 90, 100);
-
-  // Lives
-  renderHangmanLivesP(totalWrongCount);
-
-  // Keyboard
-  renderHangmanKeyboardP(guessed, wrong, revealed);
-
-  // Wrong letters (filter penalty keys)
-  renderHangmanWrongP(wrong);
-
-  // Assignment banner
-  renderAssignmentBannerP();
-
-  // Hint button state
-  updateHintButtonP(revealed);
-
-  // Hint reveal
-  renderHintRevealP();
-
-  // Result banner
-  const bannerEl = document.getElementById('hm-result-banner-p');
-  if(revealed) {
-    if(state.solved) {
-      bannerEl.innerHTML = '<div class="hm-solved-p">✓ MEGOLDVA!</div>';
-    } else {
-      bannerEl.innerHTML = '<div class="hm-failed-p">✗ NEM SIKERÜLT</div>';
-    }
-  } else {
-    bannerEl.innerHTML = '';
-  }
-}
-
-function renderHangmanWordP(word, guessed, revealed, solved) {
-  const row = document.getElementById('hm-word-row-p');
-  if(!row) return;
-  row.innerHTML = word.split('').map(l => {
-    if(l === ' ') return '<div class="hm-tile-p space"></div>';
-    const isGuessed = guessed[l];
-    let cls = '';
-    if(isGuessed) cls = (revealed && !solved) ? 'reveal-all' : 'revealed';
-    return `<div class="hm-tile-p ${cls}">${isGuessed ? l : ''}</div>`;
-  }).join('');
-}
-
-function renderHangmanKeyboardP(guessed, wrong, disabled) {
-  const kb = document.getElementById('hm-keyboard-p');
-  if(!kb) return;
-  // Solo: ha nem az én köröm, az összes billentyű letiltva (de a guessed/wrong státusz látható)
-  const isMyTurn = hmModeP === 'coop' || hmAssignedPidP === playerId;
-  const fullyDisabled = disabled || !isMyTurn;
-  kb.innerHTML = HM_KEY_ROWS.map(row =>
-    `<div class="hm-key-row">${row.map(l => {
-      let cls = '';
-      if(guessed[l]) cls = 'correct';
-      else if(wrong[l]) cls = 'wrong';  // wrong only for real letters, not _H keys
-      else if(fullyDisabled) cls = 'disabled';
-      const clickHandler = (!fullyDisabled && !guessed[l] && !wrong[l])
-        ? `onclick="submitHangmanLetter('${l}')"` : '';
-      return `<div class="hm-key ${cls}" ${clickHandler}>${l}</div>`;
-    }).join('')}</div>`
-  ).join('');
-}
-
-function renderHangmanLivesP(wrongCount) {
-  const el = document.getElementById('hm-lives-p');
-  if(!el) return;
-  el.innerHTML = Array.from({length:6}, (_,i) =>
-    `<div class="hm-life-p${i<wrongCount?' lost':''}">❤️</div>`
-  ).join('');
-}
-
-function renderHangmanWrongP(wrong) {
-  const el = document.getElementById('hm-wrong-row-p');
-  if(!el) return;
-  const wrongArr = Object.keys(wrong).filter(l => !l.startsWith('_'));
-  if(wrongArr.length === 0) { el.innerHTML = ''; return; }
-  el.innerHTML = wrongArr.map(l =>
-    `<div style="width:26px;height:26px;border-radius:5px;background:rgba(224,90,90,0.12);border:1px solid rgba(224,90,90,0.35);color:var(--red);font-family:var(--font-display);font-size:14px;display:flex;align-items:center;justify-content:center;">${l}</div>`
-  ).join('');
-}
-
-// ── AKASZTÓFA BEVEZETŐ ANIMÁCIÓ ─────────────────────────────
-let _hmIntroTimers = [];
-
-function clearHangmanIntroTimers() {
-  _hmIntroTimers.forEach(t => clearTimeout(t));
-  _hmIntroTimers = [];
-}
-
-function showHangmanIntro() {
-  hideAll();
-  clearHangmanIntroTimers();
-  const screen = document.getElementById('hangman-intro-screen');
-  screen.style.display = 'flex';
-  screen.style.opacity = '0';
-  screen.style.transition = 'opacity 1s ease';
-
-  // Szövegek
-  const phrases = [
-    'Egy gonosz diktatúra <em>börtönbe zárt</em> téged és csapatodat.',
-    'Halálbüntetéssel fenyegetnek.<br>Már csak <em>1 lehetőségetek</em> maradt.',
-    'Ki kell találnotok a szavakat.<br><em>Mindenkinek a sajátját.</em>',
-  ];
-
-  // Timing (ms)
-  // Phrase animation: storyPhrase keyframe = 5s
-  //   0%→22%: fade in (1.1s) | 22%→72%: hold (2.5s) | 72%→100%: fade out (1.4s)
-  // Gap between phrases: 0.5s
-  const PHRASE_DUR  = 5000;   // ms — matches storyPhrase animation
-  const PHRASE_GAP  = 600;    // ms between phrases
-  const BG_FADE_IN  = 800;    // ms for bg fade in before first text
-  const AFTER_LAST  = 200;    // ms after last phrase before auto-close
-
-  // Background fade in
-  _hmIntroTimers.push(setTimeout(() => {
-    screen.style.opacity = '1';
-  }, 30));
-
-  // Show each phrase in sequence
-  phrases.forEach((text, i) => {
-    const startMs = BG_FADE_IN + i * (PHRASE_DUR + PHRASE_GAP);
-
-    _hmIntroTimers.push(setTimeout(() => {
-      const wrap = document.getElementById('story-text-wrap');
-      const line = document.getElementById('story-line');
-      if(!wrap || !line) return;
-      // Reset animation by removing class, forcing reflow, then re-adding
-      wrap.classList.remove('story-anim');
-      line.innerHTML = text;
-      void wrap.offsetWidth; // force reflow
-      wrap.classList.add('story-anim');
-    }, startMs));
-  });
-
-  // After all phrases: fade out screen, then hide
-  const totalMs = BG_FADE_IN + phrases.length * (PHRASE_DUR + PHRASE_GAP) + AFTER_LAST;
-  _hmIntroTimers.push(setTimeout(() => {
-    screen.style.transition = 'opacity 0.8s ease';
-    screen.style.opacity = '0';
-  }, totalMs));
-
-  _hmIntroTimers.push(setTimeout(() => {
-    screen.style.display = 'none';
-    screen.style.opacity = '';
-    screen.style.transition = '';
-    // Cleanup — game screen will be shown by hangmanState listener when host sends hangman-active
-  }, totalMs + 900));
-}
-
-function renderAssignmentBannerP() {
-  const el = document.getElementById('hm-assignment-banner-p');
-  if(!el) return;
-  if(hmModeP !== 'solo') { el.innerHTML = ''; return; }
-  const isMyTurn = hmAssignedPidP === playerId;
-  if(isMyTurn) {
-    el.innerHTML = '<div class="hm-my-turn-banner">🎯 TE KÖVETKEZEL!</div>';
-  } else {
-    el.innerHTML = '<div class="hm-other-turn-banner">Éppen ' + (hmAssignedNameP || '?') + ' tippel...</div>';
-  }
-}
-
-function updateHintButtonP(revealed) {
-  const btn = document.getElementById('hm-hint-btn-p');
-  if(!btn) return;
-  const isMyTurn = hmModeP === 'coop' || hmAssignedPidP === playerId;
-  const canUse = isMyTurn && !revealed && hmHintsUsedP < 2;
-  btn.disabled = !canUse;
-  const remaining = 2 - hmHintsUsedP;
-  if(hmHintsUsedP === 0) {
-    btn.textContent = '💡 Segítség (2x) — −1 élet';
-  } else if(hmHintsUsedP === 1) {
-    btn.textContent = '💡 Segítség (még 1x) — −1 élet';
-  } else {
-    btn.textContent = '💡 Segítség — nem elérhető';
-  }
-  // Solo: elrejtjük ha nem az én köröm
-  btn.style.display = (hmModeP === 'solo' && !isMyTurn) ? 'none' : '';
-}
-
-function renderHintRevealP() {
-  const el = document.getElementById('hm-hint-reveal-p');
-  if(!el) return;
-  if(!hmHintRevealP) { el.innerHTML = ''; return; }
-  if(hmHintRevealP.type === 'text') {
-    el.innerHTML = '<div class="hm-hint-reveal-box">💡 ' + hmHintRevealP.value + '</div>';
-  } else if(hmHintRevealP.type === 'letter') {
-    el.innerHTML = '<div class="hm-hint-reveal-box">💡 Felfedett betű: <strong>' + hmHintRevealP.value + '</strong></div>';
-  } else {
-    el.innerHTML = '';
-  }
-}
-
-function requestHangmanHint() {
-  const isMyTurn = hmModeP === 'coop' || hmAssignedPidP === playerId;
-  if(!isMyTurn || hmHintsUsedP >= 2 || hmCurrentPhase !== 'hangman-active') return;
-  if(!db || !roomRef || !playerId) return;
-  // Optimistic UI: disable button immediately
-  const btn = document.getElementById('hm-hint-btn-p');
-  if(btn) btn.disabled = true;
-  // Write hint request to Firebase
-  const reqKey = playerId + '_h' + (hmHintsUsedP + 1);
-  roomRef.child('hangmanHintRequests').child(reqKey).set({
-    playerId,
-    playerName,
-    hintNumber: hmHintsUsedP + 1,
-    ts: firebase.database.ServerValue.TIMESTAMP
-  });
-}
-
-function buildHangmanSVGP(wrongCountRaw, w, h) {
-  // wrongCountRaw may include penalty keys (_H1, _H2), count only real wrong letters + penalties
-  const wrongCount = wrongCountRaw;
-  let svg = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;">`;
-  svg += `<line x1="8" y1="${h-4}" x2="${w-8}" y2="${h-4}" stroke="#2a2a3d" stroke-width="3" stroke-linecap="round"/>`;
-  svg += `<line x1="${w/2-20}" y1="${h-4}" x2="${w/2-20}" y2="8" stroke="#2a2a3d" stroke-width="3" stroke-linecap="round"/>`;
-  svg += `<line x1="${w/2-20}" y1="8" x2="${w/2+18}" y2="8" stroke="#2a2a3d" stroke-width="3" stroke-linecap="round"/>`;
-  svg += `<line x1="${w/2+18}" y1="8" x2="${w/2+18}" y2="20" stroke="#2a2a3d" stroke-width="2" stroke-linecap="round"/>`;
-  const cx = w/2+18, ry = 20;
-  if(wrongCount>=1) svg += `<circle cx="${cx}" cy="${ry+9}" r="9" stroke="var(--red)" stroke-width="2" fill="none"/>`;
-  if(wrongCount>=2) svg += `<line x1="${cx}" y1="${ry+18}" x2="${cx}" y2="${ry+38}" stroke="var(--red)" stroke-width="2" stroke-linecap="round"/>`;
-  if(wrongCount>=3) svg += `<line x1="${cx}" y1="${ry+23}" x2="${cx-14}" y2="${ry+33}" stroke="var(--red)" stroke-width="2" stroke-linecap="round"/>`;
-  if(wrongCount>=4) svg += `<line x1="${cx}" y1="${ry+23}" x2="${cx+14}" y2="${ry+33}" stroke="var(--red)" stroke-width="2" stroke-linecap="round"/>`;
-  if(wrongCount>=5) svg += `<line x1="${cx}" y1="${ry+38}" x2="${cx-12}" y2="${ry+55}" stroke="var(--red)" stroke-width="2" stroke-linecap="round"/>`;
-  if(wrongCount>=6) svg += `<line x1="${cx}" y1="${ry+38}" x2="${cx+12}" y2="${ry+55}" stroke="var(--red)" stroke-width="2" stroke-linecap="round"/>`;
-  svg += '</svg>';
-  return svg;
-}
-
-function submitHangmanLetter(letter) {
-  if(hmKeyboardDisabled || hmCurrentPhase !== 'hangman-active') return;
-  // Solo: csak az aktuális tippelő küldhet
-  if(hmModeP === 'solo' && hmAssignedPidP !== playerId) return;
-  if(!db || !roomRef || !playerId) return;
-  // Disable key immediately (optimistic UI)
-  const keys = document.querySelectorAll('#hm-keyboard-p .hm-key');
-  keys.forEach(k => { if(k.textContent === letter) k.classList.add('disabled'); });
-  // Write guess to Firebase (child_added deduplicated by host)
-  roomRef.child('hangmanGuesses').child(letter).set({
-    playerId,
-    playerName,
-    ts: firebase.database.ServerValue.TIMESTAMP
-  });
-}
-
-function startHangmanTimerP() {
-  clearInterval(hmTimerIntervalP);
-  updateHangmanTimerUI(hmTimerValueP);
-  hmTimerIntervalP = setInterval(() => {
-    hmTimerValueP--;
-    updateHangmanTimerUI(hmTimerValueP);
-    if(hmTimerValueP <= 0) {
-      clearInterval(hmTimerIntervalP);
-      hmKeyboardDisabled = true;
-      renderHangmanKeyboardP({}, {}, true);
-    }
-  }, 1000);
-}
-
-function updateHangmanTimerUI(val) {
-  const numEl = document.getElementById('hm-timer-num');
-  const barEl = document.getElementById('hm-timer-bar-p');
-  if(numEl) {
-    if(val > 60) {
-      const m = Math.floor(val/60), s = val%60;
-      numEl.textContent = m+':'+(s<10?'0':'')+s;
-    } else {
-      numEl.textContent = val;
-    }
-    numEl.style.color = val <= 10 ? 'var(--red)' : 'var(--accent)';
-  }
-  if(barEl) {
-    const pct = hmTimeLimitP > 0 ? (val/hmTimeLimitP*100) : 0;
-    barEl.style.width = pct + '%';
-    barEl.style.background = val <= 10 ? 'var(--red)' : 'var(--accent)';
-  }
-}
-
 function updatePlayersChips(answeredSet) {
   const container = document.getElementById('players-chips');
   if (!container) return;
@@ -3683,571 +2785,6 @@ function _reportSuccess(status, btn) {
   setTimeout(() => closeReportModal(), 2800);
 }
 
-// ============================================================
-// BLOKUS — JÁTÉKOS OLDAL
-// ============================================================
-
-const BLK_PIECES_P = {
-  I1:[[0,0]],
-  I2:[[0,0],[0,1]],
-  I3:[[0,0],[0,1],[0,2]],
-  L3:[[0,0],[1,0],[1,1]],
-  I4:[[0,0],[0,1],[0,2],[0,3]],
-  L4:[[0,0],[1,0],[2,0],[2,1]],
-  T4:[[0,0],[0,1],[0,2],[1,1]],
-  S4:[[0,1],[0,2],[1,0],[1,1]],
-  O: [[0,0],[0,1],[1,0],[1,1]],
-  I5:[[0,0],[0,1],[0,2],[0,3],[0,4]],
-  L5:[[0,0],[1,0],[2,0],[3,0],[3,1]],
-  Y: [[0,1],[1,0],[1,1],[2,1],[3,1]],
-  N: [[0,1],[1,0],[1,1],[2,0],[3,0]],
-  T5:[[0,0],[0,1],[0,2],[1,1],[2,1]],
-  U: [[0,0],[0,2],[1,0],[1,1],[1,2]],
-  V5:[[0,0],[1,0],[2,0],[2,1],[2,2]],
-  W: [[0,0],[1,0],[1,1],[2,1],[2,2]],
-  X: [[0,1],[1,0],[1,1],[1,2],[2,1]],
-  P: [[0,0],[0,1],[1,0],[1,1],[2,0]],
-  F: [[0,1],[0,2],[1,0],[1,1],[2,1]],
-  Z: [[0,0],[0,1],[1,1],[1,2],[2,2]],
-};
-
-const BLK_COLS_P = {
-  1:{name:'Sárga', hex:'#f0c040', dark:'#c09020'},
-  2:{name:'Piros',  hex:'#e05a5a', dark:'#b02020'},
-  3:{name:'Kék',    hex:'#5a8fe0', dark:'#2050b0'},
-  4:{name:'Zöld',   hex:'#3ecf8e', dark:'#1a8f5e'},
-};
-
-const BLK_CORN_P = {1:[0,0], 2:[0,19], 3:[19,19], 4:[19,0]};
-
-// ── Állapot változók ─────────────────────────────────────────
-let blkBoardP      = null;   // 20×20 number[][]
-let blkStateDataP  = null;   // utolsó blokus gameState.blokus
-let blkMyColorsP   = [];     // saját szín ID-k (pl. [1,4])
-let blkActiveColorP= 0;      // jelenleg kiválasztott saját szín
-let blkCurrentColorP=0;      // éppen kinek a körözik (globális)
-let blkRemainingP  = {};     // {colorId: [pieceId, ...]}
-let blkFirstMoveP  = {};     // {colorId: bool}
-let blkAssignmentsP= {};     // {playerId: [colorId, ...]}
-let blkColorToPlayerP={};   // {colorId: playerId}
-let blkIsMyTurnP   = false;
-let blkSelPieceId  = null;
-let blkSelCells    = [];     // normalizált orientáció
-let blkAnchorRP    = -1;
-let blkAnchorCP    = -1;
-let blkCellSzP     = 16;
-let blkCanvasSzP   = 320;
-let blkCanvasTouchAdded = false;
-
-// ── Geometria segédfüggvények ─────────────────────────────────
-function blkNormP(cells) {
-  if (!cells.length) return [];
-  const minR = Math.min(...cells.map(([r]) => r));
-  const minC = Math.min(...cells.map(([,c]) => c));
-  return cells.map(([r,c]) => [r-minR, c-minC]);
-}
-function blkRotateP(cells) { return blkNormP(cells.map(([r,c]) => [c,-r])); }
-function blkFlipP(cells)   { return blkNormP(cells.map(([r,c]) => [r,-c])); }
-function blkAbsP(cells, ar, ac) { return cells.map(([r,c]) => [r+ar, c+ac]); }
-
-// ── Érvényességi ellenőrzés ───────────────────────────────────
-function blkIsValidP(board, absCells, cid, isFirst) {
-  // 1. Minden cella a táblán belül és üres
-  for (const [r,c] of absCells) {
-    if (r<0||r>19||c<0||c>19) return false;
-    if (board[r][c] !== 0) return false;
-  }
-  // 2. Nincs ortogonális szomszédság saját színnel
-  for (const [r,c] of absCells) {
-    for (const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-      const nr=r+dr, nc=c+dc;
-      if (nr>=0&&nr<20&&nc>=0&&nc<20&&board[nr][nc]===cid) return false;
-    }
-  }
-  // 3. Első lépés: fedje a kijelölt sarokcellát
-  if (isFirst) {
-    const [cr,cc] = BLK_CORN_P[cid] || [0,0];
-    return absCells.some(([r,c]) => r===cr && c===cc);
-  }
-  // 4. Van diagonális szomszédság saját színnel
-  for (const [r,c] of absCells) {
-    for (const [dr,dc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
-      const nr=r+dr, nc=c+dc;
-      if (nr>=0&&nr<20&&nc>=0&&nc<20&&board[nr][nc]===cid) return true;
-    }
-  }
-  return false;
-}
-
-// ── Firebase adat parsing (robusztus: kezeli a Firebase tömb-konverzióját) ──
-function blkParseNumObj(data) {
-  if (!data) return {};
-  if (Array.isArray(data)) {
-    const r = {};
-    data.forEach((v,i) => { if (v!==null && v!==undefined) r[i] = v; });
-    return r;
-  }
-  return data;
-}
-
-function blkParseRemaining(data) {
-  const result = {};
-  const raw = blkParseNumObj(data);
-  Object.entries(raw).forEach(([k,v]) => {
-    const cid = parseInt(k);
-    if (!isNaN(cid) && cid > 0) {
-      result[cid] = Array.isArray(v) ? v : Object.values(v || {});
-    }
-  });
-  return result;
-}
-
-function blkParseFirstMove(data) {
-  const result = {};
-  const raw = blkParseNumObj(data);
-  Object.entries(raw).forEach(([k,v]) => {
-    const cid = parseInt(k);
-    if (!isNaN(cid) && cid > 0) result[cid] = !!v;
-  });
-  return result;
-}
-
-function blkParseColorToPlayer(data) {
-  const result = {};
-  const raw = blkParseNumObj(data);
-  Object.entries(raw).forEach(([k,v]) => {
-    const cid = parseInt(k);
-    if (!isNaN(cid) && cid > 0 && v) result[cid] = v;
-  });
-  return result;
-}
-
-// ── Képernyő megjelenítése (első alkalommal) ─────────────────
-function blkShowScreen(blkData) {
-  if (!blkData) return;
-  hideAll();
-  const screen = document.getElementById('blokus-screen');
-  screen.style.display = 'flex';
-  screen.style.flexDirection = 'column';
-  // Canvas touch listener — csak egyszer adjuk hozzá
-  if (!blkCanvasTouchAdded) {
-    const canvas = document.getElementById('blk-canvas');
-    canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (e.touches && e.touches[0]) blkHandleCanvasTap(e.touches[0]);
-    }, {passive: false});
-    blkCanvasTouchAdded = true;
-  }
-  // Reset kiválasztás
-  blkSelPieceId = null;
-  blkSelCells = [];
-  blkAnchorRP = -1;
-  blkAnchorCP = -1;
-  blkUpdateState(blkData);
-}
-
-// ── Állapot frissítése (minden gameState változáskor) ─────────
-function blkUpdateState(blkData) {
-  if (!blkData) return;
-  blkStateDataP = blkData;
-
-  // Tábla parse
-  blkBoardP = blkData.board
-    ? blkData.board.split(';').map(row => row.split(',').map(Number))
-    : Array.from({length:20}, () => Array(20).fill(0));
-
-  blkCurrentColorP = parseInt(blkData.currentColor) || 0;
-  blkRemainingP    = blkParseRemaining(blkData.remaining);
-  blkFirstMoveP    = blkParseFirstMove(blkData.firstMove);
-  blkAssignmentsP  = blkData.assignments || {};
-  blkColorToPlayerP= blkParseColorToPlayer(blkData.colorToPlayer);
-
-  // Saját színek
-  const myColorsRaw = blkAssignmentsP[playerId];
-  blkMyColorsP = myColorsRaw
-    ? (Array.isArray(myColorsRaw) ? myColorsRaw : Object.values(myColorsRaw)).map(Number).filter(n=>n>0)
-    : [];
-
-  // Körözés eldöntése
-  const wasMyTurn = blkIsMyTurnP;
-  blkIsMyTurnP = blkMyColorsP.includes(blkCurrentColorP);
-
-  // Ha most lett az én köröm: aktív szín frissítése, kiválasztás reset
-  if (blkIsMyTurnP && !wasMyTurn) {
-    blkActiveColorP = blkCurrentColorP;
-    blkSelPieceId = null;
-    blkSelCells = [];
-    blkAnchorRP = -1;
-    blkAnchorCP = -1;
-  } else if (blkIsMyTurnP) {
-    blkActiveColorP = blkCurrentColorP;
-  } else if (!blkMyColorsP.includes(blkActiveColorP)) {
-    blkActiveColorP = blkMyColorsP[0] || 0;
-  }
-
-  // Canvas méretezése
-  const canvas = document.getElementById('blk-canvas');
-  const maxSz = Math.min(window.innerWidth - 32, 400);
-  blkCellSzP = Math.floor(maxSz / 20);
-  blkCanvasSzP = blkCellSzP * 20;
-  canvas.width  = blkCanvasSzP;
-  canvas.height = blkCanvasSzP;
-  canvas.style.width  = blkCanvasSzP + 'px';
-  canvas.style.height = blkCanvasSzP + 'px';
-
-  // UI frissítés
-  blkUpdateTopbarP();
-  blkUpdateTurnBannerP();
-  blkRenderBoardP();
-  blkUpdateColorTabsP();
-  blkUpdatePiecesGridP();
-  blkUpdateActionAreaP();
-}
-
-// ── Topbar (pontszám + saját szín chipek) ─────────────────────
-function blkUpdateTopbarP() {
-  const scoreEl = document.getElementById('blk-my-score');
-  if (scoreEl) scoreEl.textContent = myScore;
-  const rankEl = document.getElementById('blk-my-rank');
-  if (rankEl) rankEl.textContent = document.getElementById('my-rank').textContent;
-
-  const colsEl = document.getElementById('blk-my-colors');
-  if (!colsEl) return;
-  if (blkMyColorsP.length === 0) {
-    colsEl.innerHTML = '<span style="font-size:11px;color:var(--muted);">Megfigyelő</span>';
-    return;
-  }
-  colsEl.innerHTML = blkMyColorsP.map(cid => {
-    const col = BLK_COLS_P[cid] || {};
-    return `<div class="blk-color-chip" style="background:${col.hex}22;color:${col.hex};border-color:${col.hex}55;">
-      <span style="width:8px;height:8px;border-radius:2px;background:${col.hex};display:inline-block;flex-shrink:0;"></span>
-      ${col.name||'?'}
-    </div>`;
-  }).join('');
-}
-
-// ── Turn banner ───────────────────────────────────────────────
-function blkUpdateTurnBannerP() {
-  const el = document.getElementById('blk-turn-banner');
-  if (!el) return;
-  const col = BLK_COLS_P[blkCurrentColorP] || {};
-  if (blkIsMyTurnP) {
-    el.className = 'blk-turn-banner my-turn';
-    el.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${col.hex};vertical-align:middle;margin-right:6px;"></span>TE KÖVETKEZEL (${col.name||'?'})`;
-  } else {
-    const turnPid  = blkColorToPlayerP[blkCurrentColorP];
-    const turnName = (players[turnPid] || {}).name || '?';
-    el.className = 'blk-turn-banner other-turn';
-    el.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${col.hex};vertical-align:middle;margin-right:5px;"></span>${turnName} (${col.name||'?'}) lép...`;
-  }
-}
-
-// ── Tábla rajzolása canvas-ra ─────────────────────────────────
-function blkRenderBoardP() {
-  const canvas = document.getElementById('blk-canvas');
-  if (!canvas || !blkBoardP) return;
-  const ctx = canvas.getContext('2d');
-  const sz = blkCellSzP;
-  const N = 20;
-
-  // Háttér
-  ctx.fillStyle = '#0d0d1a';
-  ctx.fillRect(0, 0, blkCanvasSzP, blkCanvasSzP);
-
-  // Cellák
-  for (let r = 0; r < N; r++) {
-    for (let c = 0; c < N; c++) {
-      const cid = blkBoardP[r][c];
-      const x = c*sz, y = r*sz;
-      if (cid > 0) {
-        const col = BLK_COLS_P[cid] || {};
-        ctx.fillStyle = col.hex || '#888';
-        ctx.fillRect(x+1, y+1, sz-1, sz-1);
-        // Árnyék él
-        ctx.fillStyle = col.dark || '#555';
-        ctx.fillRect(x+1, y+sz-2, sz-2, 1);
-        ctx.fillRect(x+sz-2, y+1, 1, sz-2);
-      } else {
-        ctx.fillStyle = '#1a1a2e';
-        ctx.fillRect(x+1, y+1, sz-1, sz-1);
-      }
-    }
-  }
-
-  // Rácsvonaak
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 0.5;
-  for (let i = 0; i <= N; i++) {
-    const p = i * sz;
-    ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, blkCanvasSzP); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(blkCanvasSzP, p); ctx.stroke();
-  }
-
-  // Sarokjelölők a saját színeknél (első lépésnél)
-  blkMyColorsP.forEach(cid => {
-    if (blkFirstMoveP[cid]) {
-      const [cr,cc] = BLK_CORN_P[cid] || [0,0];
-      const col = BLK_COLS_P[cid] || {};
-      ctx.strokeStyle = col.hex || '#888';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(cc*sz+1.5, cr*sz+1.5, sz-3, sz-3);
-    }
-  });
-
-  // Bábu előnézet (ha ki van választva és az én köröm)
-  if (blkSelPieceId && blkAnchorRP >= 0 && blkIsMyTurnP) {
-    const absCells = blkAbsP(blkSelCells, blkAnchorRP, blkAnchorCP);
-    const valid = blkIsValidP(blkBoardP, absCells, blkActiveColorP, blkFirstMoveP[blkActiveColorP]);
-    const previewHex = valid ? (BLK_COLS_P[blkActiveColorP]?.hex || '#3ecf8e') : '#e05a5a';
-    absCells.forEach(([r,c]) => {
-      if (r>=0&&r<N&&c>=0&&c<N) {
-        const x=c*sz, y=r*sz;
-        ctx.fillStyle = previewHex + '99';
-        ctx.fillRect(x+1, y+1, sz-1, sz-1);
-        ctx.strokeStyle = previewHex;
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(x+1.5, y+1.5, sz-3, sz-3);
-      }
-    });
-  }
-}
-
-// ── Canvas tap/kattintás kezelés ──────────────────────────────
-function blkHandleCanvasTap(event) {
-  if (!blkIsMyTurnP || !blkSelPieceId) return;
-  const canvas = document.getElementById('blk-canvas');
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = blkCanvasSzP / rect.width;
-  const scaleY = blkCanvasSzP / rect.height;
-  const x = ((event.clientX !== undefined ? event.clientX : event.pageX) - rect.left) * scaleX;
-  const y = ((event.clientY !== undefined ? event.clientY : event.pageY) - rect.top)  * scaleY;
-  const c = Math.floor(x / blkCellSzP);
-  const r = Math.floor(y / blkCellSzP);
-  if (r<0||r>19||c<0||c>19) return;
-  blkAnchorRP = r;
-  blkAnchorCP = c;
-  blkUpdatePlaceBtnP();
-  blkRenderBoardP();
-}
-
-// ── Szín lapfülek (2+ szín esetén) ───────────────────────────
-function blkUpdateColorTabsP() {
-  const el = document.getElementById('blk-color-tabs');
-  if (!el) return;
-  if (blkMyColorsP.length <= 1) { el.classList.add('hidden'); return; }
-  el.classList.remove('hidden');
-  el.innerHTML = blkMyColorsP.map(cid => {
-    const col = BLK_COLS_P[cid] || {};
-    const rem = (blkRemainingP[cid] || []).length;
-    const isActive = cid === blkActiveColorP;
-    const activeStyle = isActive ? `border-color:${col.hex};color:${col.hex};background:${col.hex}22;border-width:2px;` : `color:${col.hex};`;
-    return `<button class="blk-ctab${isActive?' active':''}" style="${activeStyle}" onclick="blkSetActiveColorP(${cid})">
-      <span style="display:block;font-size:13px;">◼ ${col.name||'?'}</span>
-      <span style="font-size:10px;opacity:0.7;">${rem} db</span>
-    </button>`;
-  }).join('');
-}
-
-function blkSetActiveColorP(cid) {
-  if (!blkMyColorsP.includes(cid)) return;
-  blkActiveColorP = cid;
-  blkSelPieceId = null;
-  blkSelCells = [];
-  blkAnchorRP = -1;
-  blkAnchorCP = -1;
-  blkUpdateColorTabsP();
-  blkUpdatePiecesGridP();
-  blkUpdateActionAreaP();
-  blkRenderBoardP();
-}
-
-// ── Bábu grid ─────────────────────────────────────────────────
-function blkUpdatePiecesGridP() {
-  const grid  = document.getElementById('blk-pieces-grid');
-  const title = document.getElementById('blk-pieces-title');
-  if (!grid) return;
-
-  const remaining = blkRemainingP[blkActiveColorP] || [];
-  const col = BLK_COLS_P[blkActiveColorP] || {};
-
-  if (title) {
-    if (!blkIsMyTurnP) {
-      title.textContent = `${col.name?.toUpperCase() || '—'} — VÁRAKOZÁS`;
-    } else {
-      title.textContent = `${col.name?.toUpperCase() || '—'} — ${remaining.length} DARAB`;
-    }
-  }
-
-  if (remaining.length === 0) {
-    grid.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px;width:100%;">Nincs több darab ennél a színnél!</div>`;
-    return;
-  }
-
-  // Méret szerint növekvő sorrend
-  const sorted = [...remaining].sort((a,b) =>
-    (BLK_PIECES_P[a]?.length || 0) - (BLK_PIECES_P[b]?.length || 0)
-  );
-
-  grid.innerHTML = sorted.map(pid => {
-    const isSel = pid === blkSelPieceId;
-    const noTurn = !blkIsMyTurnP;
-    return `<div class="blk-pcard${isSel?' blk-sel':''}${noTurn?' blk-noturn':''}"
-      id="blkp-${pid}" onclick="blkSelectPieceP('${pid}')">
-      <canvas id="blkpc-${pid}" width="40" height="40"></canvas>
-    </div>`;
-  }).join('');
-
-  sorted.forEach(pid => blkDrawPieceCanvasP(pid, blkActiveColorP, pid === blkSelPieceId));
-}
-
-function blkDrawPieceCanvasP(pieceId, colorId, isSelected) {
-  const c = document.getElementById('blkpc-' + pieceId);
-  if (!c) return;
-  // Ha ki van választva és van speciális orientáció, azt rajzoljuk
-  const cells = (pieceId === blkSelPieceId && blkSelCells.length)
-    ? blkSelCells
-    : (BLK_PIECES_P[pieceId] || []);
-  if (!cells.length) return;
-  const maxR = Math.max(...cells.map(([r]) => r));
-  const maxC = Math.max(...cells.map(([,c]) => c));
-  const gridSz = Math.max(maxR+1, maxC+1, 1);
-  const sz = Math.min(Math.floor(36 / gridSz), 10);
-  const offR = Math.floor((40 - (maxR+1)*sz) / 2);
-  const offC = Math.floor((40 - (maxC+1)*sz) / 2);
-  const ctx = c.getContext('2d');
-  ctx.clearRect(0, 0, 40, 40);
-  const col = BLK_COLS_P[colorId] || {};
-  cells.forEach(([r,col2]) => {
-    ctx.fillStyle = isSelected ? (col.hex||'#888') : ((col.hex||'#888') + 'bb');
-    ctx.fillRect(offC + col2*sz, offR + r*sz, sz-1, sz-1);
-  });
-}
-
-// ── Bábu kiválasztás ──────────────────────────────────────────
-function blkSelectPieceP(pieceId) {
-  if (!blkIsMyTurnP) return;
-  if (blkSelPieceId === pieceId) {
-    // Kijelölés törlése
-    blkSelPieceId = null;
-    blkSelCells   = [];
-    blkAnchorRP   = -1;
-    blkAnchorCP   = -1;
-  } else {
-    blkSelPieceId = pieceId;
-    blkSelCells   = [...(BLK_PIECES_P[pieceId] || [])];
-    blkAnchorRP   = -1;
-    blkAnchorCP   = -1;
-  }
-  blkUpdatePiecesGridP();
-  blkUpdateActionAreaP();
-  blkRenderBoardP();
-}
-
-// ── Forgatás / Tükrözés ───────────────────────────────────────
-function blkDoRotate() {
-  if (!blkSelPieceId || !blkIsMyTurnP) return;
-  blkSelCells = blkRotateP(blkSelCells);
-  blkUpdatePlaceBtnP();
-  blkRenderBoardP();
-  blkDrawPieceCanvasP(blkSelPieceId, blkActiveColorP, true);
-}
-
-function blkDoFlip() {
-  if (!blkSelPieceId || !blkIsMyTurnP) return;
-  blkSelCells = blkFlipP(blkSelCells);
-  blkUpdatePlaceBtnP();
-  blkRenderBoardP();
-  blkDrawPieceCanvasP(blkSelPieceId, blkActiveColorP, true);
-}
-
-// ── Lerak gomb állapot ────────────────────────────────────────
-function blkUpdatePlaceBtnP() {
-  const btn = document.getElementById('blk-place-btn');
-  if (!btn) return;
-  if (!blkSelPieceId || blkAnchorRP < 0 || !blkIsMyTurnP || !blkBoardP) {
-    btn.disabled = true;
-    return;
-  }
-  const absCells = blkAbsP(blkSelCells, blkAnchorRP, blkAnchorCP);
-  btn.disabled = !blkIsValidP(blkBoardP, absCells, blkActiveColorP, blkFirstMoveP[blkActiveColorP]);
-}
-
-// ── Akció terület (gombok megjelenítése/elrejtése) ────────────
-function blkUpdateActionAreaP() {
-  const orientRow  = document.getElementById('blk-orient-row');
-  const confirmRow = document.getElementById('blk-confirm-row');
-  if (!orientRow || !confirmRow) return;
-  if (blkIsMyTurnP) {
-    confirmRow.classList.remove('hidden');
-    if (blkSelPieceId) orientRow.classList.remove('hidden');
-    else orientRow.classList.add('hidden');
-  } else {
-    orientRow.classList.add('hidden');
-    confirmRow.classList.add('hidden');
-  }
-  blkUpdatePlaceBtnP();
-}
-
-// ── Lerakás megerősítése ──────────────────────────────────────
-function blkConfirmPlace() {
-  if (!blkIsMyTurnP || !blkSelPieceId || blkAnchorRP < 0 || !blkBoardP) return;
-  const absCells = blkAbsP(blkSelCells, blkAnchorRP, blkAnchorCP);
-  if (!blkIsValidP(blkBoardP, absCells, blkActiveColorP, blkFirstMoveP[blkActiveColorP])) return;
-  if (!db || !roomRef) return;
-
-  // A push előtt elmentjük az adatokat, mert az optimista UI-reset nullázza őket
-  const movePieceId  = blkSelPieceId;
-  const moveColorId  = blkActiveColorP;
-  const moveCells    = absCells;
-
-  // Optimista UI: azonnal letiltunk mindent
-  blkIsMyTurnP = false;
-  blkSelPieceId = null;
-  blkSelCells = [];
-  blkAnchorRP = -1;
-  blkAnchorCP = -1;
-  blkUpdateActionAreaP();
-  blkUpdateTurnBannerP();
-
-  roomRef.child('blokusMoves').push({
-    colorId: moveColorId,
-    pieceId: movePieceId || '',
-    cells:   moveCells,
-    pass:    false,
-    player:  playerId,
-    ts:      firebase.database.ServerValue.TIMESTAMP
-  });
-}
-
-// ── Passz ─────────────────────────────────────────────────────
-function blkConfirmPass() {
-  if (!blkIsMyTurnP) return;
-  if (!db || !roomRef) return;
-
-  blkIsMyTurnP = false;
-  blkSelPieceId = null;
-  blkSelCells = [];
-  blkAnchorRP = -1;
-  blkAnchorCP = -1;
-  blkUpdateActionAreaP();
-  blkUpdateTurnBannerP();
-
-  roomRef.child('blokusMoves').push({
-    colorId: blkActiveColorP,
-    pieceId: '',
-    cells:   [],
-    pass:    true,
-    player:  playerId,
-    ts:      firebase.database.ServerValue.TIMESTAMP
-  });
-}
-
-// Canvas onclick regisztrálása (a canvas az onclick-et nem örökli a HTML-ből)
-document.addEventListener('DOMContentLoaded', () => {
-  const canvas = document.getElementById('blk-canvas');
-  if (canvas) canvas.onclick = blkHandleCanvasTap;
-});
-
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js')
@@ -4277,7 +2814,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 2.7</div>
+<div class="version-badge">Játék verzió: 2.8</div>
 
 </body>
 </html>
