@@ -98,7 +98,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   .auth-notice { color:var(--green); font-size:13px; text-align:center; margin-top:10px; min-height:18px; line-height:1.5; }
 
   /* ── ELBÍRÁLÁS ALATT / ELUTASÍTVA ────────── */
-  #pending-screen, #rejected-screen, #gyulekezet-gate-screen {
+  #pending-screen, #rejected-screen {
     display:none; flex-direction:column; align-items:center; text-align:center;
     width:100%; max-width:340px; margin:auto; padding:20px 0 40px;
     animation:fadeIn 0.4s ease;
@@ -480,10 +480,6 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
       <input type="text" class="auth-input" id="register-name" autocomplete="name" maxlength="40" placeholder="pl. Kovács Anna">
     </div>
     <div class="auth-field-wrap">
-      <label class="auth-field-label">Gyülekezet</label>
-      <input type="text" class="auth-input" id="register-gyulekezet" autocomplete="off" maxlength="60" placeholder="pl. Keszthely">
-    </div>
-    <div class="auth-field-wrap">
       <label class="auth-field-label">E-mail cím</label>
       <input type="email" class="auth-input" id="register-email" autocomplete="username" placeholder="pelda@email.hu">
     </div>
@@ -516,22 +512,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="menu-btn-secondary" style="max-width:240px;" onclick="doLogout()">KIJELENTKEZÉS</button>
 </div>
 
-<!-- GYÜLEKEZET PÓTLÁSA (meglévő, gyülekezet nélküli felhasználóknak) -->
-<div id="gyulekezet-gate-screen">
-  <div class="pending-icon">⛪</div>
-  <div class="pending-title">GYÜLEKEZETED</div>
-  <div class="pending-text">Mostantól minden játékosnál nyilvántartjuk a gyülekezetet is.<br>Kérjük, add meg a sajátodat a folytatáshoz!</div>
-  <div class="auth-field-wrap" style="max-width:280px;">
-    <label class="auth-field-label">Gyülekezet</label>
-    <input type="text" class="auth-input" id="gyulekezet-gate-input" maxlength="60" placeholder="pl. Keszthely" onkeydown="if(event.key==='Enter')submitGyulekezetGate()">
-  </div>
-  <div class="auth-error" id="gyulekezet-gate-error"></div>
-  <button class="menu-btn-primary" id="gyulekezet-gate-submit-btn" style="max-width:280px;margin-top:6px;margin-bottom:14px;" onclick="submitGyulekezetGate()">TOVÁBB</button>
-  <button class="menu-btn-secondary" style="max-width:240px;" onclick="doLogout()">KIJELENTKEZÉS</button>
-</div>
-
 <!-- FŐMENÜ -->
-
 <div id="menu-screen">
   <div class="menu-logo">QUIZ</div>
   <div class="menu-sub">Multiplayer Kvíz Játék</div>
@@ -610,9 +591,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showMenu()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">2.10</div><div><div class="cl-desc">Bevezetésre került egy kötelező, egyszeri "Gyülekezeted" képernyő azoknak a már jóváhagyott játékosoknak, akiknél ez az adat még hiányzik (mert a mező bevezetése előtt regisztráltak) — bejelentkezéskor ezt kell először kitölteniük, mielőtt a főmenübe jutnának. Aki már megadta a gyülekezetét, azt ez egyáltalán nem érinti, változatlanul egyenesen a főmenübe kerül.</div></div></div>
-  <div class="cl-item"><div class="cl-ver">2.9</div><div><div class="cl-desc">Regisztrációnál mostantól kötelező megadni a gyülekezeted nevét. Bevezetésre került egy élethosszig tartó, fiókodhoz kötött válasz-statisztika (hány kérdésre válaszoltál, ebből hány volt helyes/helytelen) — ezt a szoba irányítója frissíti kérdésenként, függetlenül attól, melyik szobában játszol. A statisztika egyelőre az admin felületen tekinthető meg regisztrációnként; a saját Profilomban való megjelenítése egy következő fejlesztési körben érkezik.</div></div></div>
-  <div class="cl-item"><div class="cl-ver">2.8</div><div><div class="cl-desc">Az Akasztófa és a Blokus játékmód — a hozzájuk tartozó teljes HTML, CSS és JavaScript kód, valamint a `hangmanState`, `hangmanResults`, `hangmanGuesses`, `hangmanHintRequests`, `blokusMoves` Firebase-ágak — véglegesen eltávolításra kerültek. Mindkét mód a jövőben sem lesz játszható; az Útmutatóból és a szoba-létrehozás képernyőről is eltűnt minden erre utaló szöveg. A `quiz-host.html` "Szó adatbázis" füle (az Akasztófa szavainak kezelésére szolgált) szintén megszűnt.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">2.8</div><div><div class="cl-desc">Az Akasztófa és a Blokus játékmód — a hozzájuk tartozó teljes HTML, CSS és JavaScript kód, valamint a `hangmanState`, `hangmanResults`, `hangmanGuesses`, `hangmanHintRequests`, `blokusMoves` Firebase-ágak — véglegesen eltávolításra kerültek. Mindkét mód a jövőben sem lesz játszható; az Útmutatóból és a szoba-létrehozás képernyőről is eltűnt minden erre utaló szöveg. A `quiz-host.html` "Szó adatbázis" füle (az Akasztófa szavainak kezelésére szolgált) szintén megszűnt.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.7</div><div><div class="cl-desc">Hibajavítás — a régi, quiz-host.html-es élő alkalmakhoz készült játékmód-szavazó felület véglegesen eltávolítva a játékos oldalról. A várakozási képernyő (a „Vissza a játékba" és az „Új kör indítása" utáni visszatéréskor is) minden alkalommal felvillantotta ezt a kártyás szavazót, annak ellenére, hogy az önkiszolgáló szoba-motor sosem olvasta vagy dolgozta fel a leadott szavazatokat — ez a felület kizárólag a régi, host-felügyelt váróteremhez tartozott. A quiz-host.html saját, élő alkalmakra szánt szavazás-figyelője (jobb oldali „Szavazás" panel) változatlanul, érintetlenül megmaradt.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.6</div><div><div class="cl-desc">Önkiszolgáló szobában is működik az „Új kör indítása" — a szoba irányítója az eredmény képernyőn a „🔄 ÚJ KÖR INDÍTÁSA" gombbal új kört kezdhet ugyanabban a szobában, friss kérdés-mintával, anélkül hogy új szobát kéne nyitnia (eddig a „Vissza a játékba" gomb önkiszolgáló szobában sosem aktiválódott). Javítva: a főmenü névmezőjén Enter és a „Nem elérhető" képernyő „Újrapróbálás" gombja mostantól a ténylegesen megcélzott szobát próbálja újra, nem a régi, fix admin-szobát. Útmutató frissítve: pontosított leírás az önkiszolgáló szoba-létrehozásról és -csatlakozásról, az Akasztófa jelenlegi, élő alkalmakhoz kötött elérhetőségéről, a 2. segítség tényleges működéséről és a csapatverseny indítási feltételéről.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.5</div><div><div class="cl-desc">Akasztófa játékmódhoz szó adatbázis és indítási felület átdolgozása — Firebase-alapú, perzisztens szó adatbázis a host felületen. Kategóriák szabadon meghatározhatók, átnevezhetők, egyedi színnel jelölhetők. Szavakhoz 2 opcionális segítség adható. Az Akasztófa indítása modál átdolgozva: kategória grid, 1–50 szó, session-szintű kijátszott-szó nyomkövetés.</div></div></div>
@@ -902,7 +881,7 @@ window.addEventListener('load', () => {
 
 // ── KÉPERNYŐ VÁLTÁS ──────────────────────────────────────────
 function hideAll() {
-  ['auth-screen','pending-screen','rejected-screen','gyulekezet-gate-screen',
+  ['auth-screen','pending-screen','rejected-screen',
    'menu-screen','create-room-screen','room-list-screen','team-setup-screen',
    'guide-screen','unavailable-screen','lobby-screen',
    'waiting-screen','game-screen','result-screen','history-screen','changelog-screen']
@@ -954,7 +933,6 @@ function translateAuthError(e) {
 
 async function doRegister() {
   const name = document.getElementById('register-name').value.trim();
-  const gyulekezet = document.getElementById('register-gyulekezet').value.trim();
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value;
   const errEl = document.getElementById('auth-error');
@@ -962,7 +940,6 @@ async function doRegister() {
   errEl.textContent = ''; noticeEl.textContent = '';
 
   if (!name || name.length < 2) { errEl.textContent = 'Adj meg legalább 2 karakteres nevet!'; return; }
-  if (!gyulekezet || gyulekezet.length < 2) { errEl.textContent = 'Add meg a gyülekezeted nevét!'; return; }
   if (!email) { errEl.textContent = 'Add meg az e-mail címed!'; return; }
   if (!password || password.length < 6) { errEl.textContent = 'A jelszónak legalább 6 karakternek kell lennie!'; return; }
   if (!firebase.apps.length) { errEl.textContent = 'Firebase nincs beállítva!'; return; }
@@ -973,7 +950,6 @@ async function doRegister() {
     await firebase.database().ref('users/' + cred.user.uid).set({
       name: name,
       email: email,
-      gyulekezet: gyulekezet,
       status: 'pending',
       createdAt: firebase.database.ServerValue.TIMESTAMP
     });
@@ -983,7 +959,6 @@ async function doRegister() {
   } catch (e) {
     noticeEl.textContent = '';
     errEl.textContent = translateAuthError(e);
-
   }
 }
 
@@ -1052,14 +1027,7 @@ function initAuthGate() {
         localStorage.setItem('quizPlayerName', data.name);
         const nameInput = document.getElementById('menu-name-input');
         if (nameInput) nameInput.value = data.name;
-        // Meglévő, a gyülekezet mező bevezetése ELŐTT regisztrált felhasználóknál ez
-        // még hiányozhat — kötelező pótlás, mielőtt a főmenübe engednénk (l. PROJEKT_ALLAPOT).
-        const hasGyulekezet = data.gyulekezet && String(data.gyulekezet).trim().length > 0;
-        if (!hasGyulekezet) {
-          showGyulekezetGateScreen();
-        } else {
-          showMenu();
-        }
+        showMenu();
       } else if (data.status === 'rejected') {
         showRejectedScreen();
       } else {
@@ -1072,52 +1040,6 @@ function initAuthGate() {
   });
 }
 initAuthGate();
-
-// ── GYÜLEKEZET-PÓTLÁS KAPU ────────────────────────────────────
-// Csak azoknál a MÁR JÓVÁHAGYOTT felhasználóknál fut le, akiknél a
-// gyulekezet mező még hiányzik (mert a bevezetése előtt regisztráltak).
-// Amíg ezt ki nem töltik, a főmenübe nem juthatnak el.
-function showGyulekezetGateScreen() {
-  hideAll();
-  const screen = document.getElementById('gyulekezet-gate-screen');
-  screen.style.display = 'flex';
-  document.getElementById('gyulekezet-gate-error').textContent = '';
-  const input = document.getElementById('gyulekezet-gate-input');
-  if (input) {
-    input.value = '';
-    const btn = document.getElementById('gyulekezet-gate-submit-btn');
-    if (btn) { btn.disabled = false; btn.textContent = 'TOVÁBB'; }
-    setTimeout(() => input.focus(), 150);
-  }
-}
-
-async function submitGyulekezetGate() {
-  const input = document.getElementById('gyulekezet-gate-input');
-  const errEl = document.getElementById('gyulekezet-gate-error');
-  const btn = document.getElementById('gyulekezet-gate-submit-btn');
-  const val = input.value.trim();
-  errEl.textContent = '';
-
-  if (!val || val.length < 2) {
-    errEl.textContent = 'Add meg a gyülekezeted nevét (legalább 2 karakter)!';
-    return;
-  }
-  const currentUser = firebase.auth().currentUser;
-  if (!currentUser) {
-    errEl.textContent = 'A munkameneted lejárt — frissítsd az oldalt, és jelentkezz be újra!';
-    return;
-  }
-
-  if (btn) { btn.disabled = true; btn.textContent = 'Mentés...'; }
-  try {
-    await firebase.database().ref('users/' + currentUser.uid + '/gyulekezet').set(val);
-    showMenu();
-  } catch (e) {
-    errEl.textContent = 'Hiba történt a mentéskor: ' + (e && e.message ? e.message : e);
-    if (btn) { btn.disabled = false; btn.textContent = 'TOVÁBB'; }
-  }
-}
-
 function showGuide() {
   hideAll();
   document.getElementById('guide-screen').style.display = 'flex';
@@ -2448,14 +2370,6 @@ function hostSetupScoringListener() {
       if (hostGameMode === 'teams' && players[pid] && players[pid].teamId) {
         roomRef.child('teams').child(players[pid].teamId).child('score').transaction(cur => (cur||0) + pts);
       }
-      // Élethosszig tartó válasz-statisztika (users/{pid}/stats) — SZOBÁTÓL FÜGGETLEN,
-      // a játékos fiókjához kötött. Ide csak akkor jutunk, ha ans.answer !== -1
-      // (pts>0 kizárja az időtúllépést), tehát a "megválaszolt" számláló pontosan
-      // a tényleges válaszadásokat számolja, időtúllépést sosem. Ugyanaz a bármely-
-      // approved-felhasználó-írhat elv érvényesül itt, mint a room-szintű pontozásnál —
-      // a szobát irányító host mindig más játékos fiókjába ír, nem a sajátjába.
-      db.ref('users/' + pid + '/stats/answered').transaction(cur => (cur||0) + 1);
-      db.ref('users/' + pid + '/stats/' + (isCorrect ? 'correct' : 'wrong')).transaction(cur => (cur||0) + 1);
     }
 
     roomRef.child('players').once('value', psnap => {
@@ -2900,7 +2814,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 2.10</div>
+<div class="version-badge">Játék verzió: 2.8</div>
 
 </body>
 </html>
