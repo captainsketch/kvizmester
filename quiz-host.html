@@ -470,8 +470,8 @@ function renderRegistrations(){
   decided.slice().reverse().forEach(([uid,u]) => decidedList.appendChild(buildRegCard(uid,u,false)));
 }
 
-// FONTOS: a name/email/gyulekezet mezők regisztrációkor felhasználó által megadott,
-// tehát nem megbízható szöveg — mindig textContent-tel kerülnek a DOM-ba, sose innerHTML-lel.
+// FONTOS: a name/email mezők regisztrációkor felhasználó által megadott, tehát nem
+// megbízható szöveg — mindig textContent-tel kerülnek a DOM-ba, sose innerHTML-lel.
 function buildRegCard(uid, u, showActions){
   const card = document.createElement('div');
   card.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;';
@@ -482,22 +482,9 @@ function buildRegCard(uid, u, showActions){
   card.appendChild(nameEl);
 
   const emailEl = document.createElement('div');
-  emailEl.style.cssText = 'color:var(--muted);font-size:12px;margin-bottom:2px;';
+  emailEl.style.cssText = 'color:var(--muted);font-size:12px;margin-bottom:10px;';
   emailEl.textContent = (u && u.email) || '';
   card.appendChild(emailEl);
-
-  const gyulekezetEl = document.createElement('div');
-  gyulekezetEl.style.cssText = 'color:var(--muted);font-size:12px;margin-bottom:8px;';
-  gyulekezetEl.textContent = '⛪ ' + ((u && u.gyulekezet) || '—');
-  card.appendChild(gyulekezetEl);
-
-  // Válasz-statisztika: users/{uid}/stats — hiányzó mezők (még nem játszott felhasználóknál,
-  // pl. függőben lévő regisztrációknál) 0-ként jelennek meg, a megszokott '||0' mintával.
-  const stats = (u && u.stats) || {};
-  const statsEl = document.createElement('div');
-  statsEl.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:10px;padding:6px 9px;background:var(--bg);border-radius:6px;border:1px solid var(--border);';
-  statsEl.textContent = `Megválaszolt: ${stats.answered||0}  ·  Helyes: ${stats.correct||0}  ·  Helytelen: ${stats.wrong||0}`;
-  card.appendChild(statsEl);
 
   if(showActions){
     const row = document.createElement('div');
@@ -1024,7 +1011,7 @@ function renumberAllQuestions() {
 
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.2</div>
+<div class="version-badge">Admin panel verzió: 3.1</div>
 
 <script>
 // ============================================================
