@@ -98,7 +98,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   .auth-notice { color:var(--green); font-size:13px; text-align:center; margin-top:10px; min-height:18px; line-height:1.5; }
 
   /* ── ELBÍRÁLÁS ALATT / ELUTASÍTVA ────────── */
-  #pending-screen, #rejected-screen {
+  #pending-screen, #rejected-screen, #gyulekezet-gate-screen {
     display:none; flex-direction:column; align-items:center; text-align:center;
     width:100%; max-width:340px; margin:auto; padding:20px 0 40px;
     animation:fadeIn 0.4s ease;
@@ -111,6 +111,36 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
 
   /* ── ÚTMUTATÓ ────────────────────────────── */
   #guide-screen { display:none; flex-direction:column; width:100%; max-width:400px; margin:auto; padding:24px 0 48px; animation:fadeIn 0.3s ease; }
+  #info-screen { display:none; flex-direction:column; width:100%; max-width:360px; margin:auto; padding:24px 0 48px; animation:fadeIn 0.3s ease; }
+  #info-screen .menu-buttons { margin-top:8px; }
+
+  /* ── PROFILOM ─────────────────────────────────────────────── */
+  #profil-screen { display:none; flex-direction:column; width:100%; max-width:400px; margin:auto; padding:24px 0 48px; animation:fadeIn 0.3s ease; }
+  .profil-avatar-wrap { text-align:center; margin-bottom:8px; }
+  .profil-avatar-circle { width:88px; height:88px; border-radius:50%; margin:0 auto; cursor:pointer; overflow:hidden; border:3px solid var(--border); transition:border-color 0.2s; }
+  .profil-avatar-circle:active { border-color:var(--accent); }
+  .profil-avatar-hint { font-size:12px; color:var(--muted); margin-top:10px; cursor:pointer; }
+  #avatar-picker-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:14px 0 20px; padding:14px; background:var(--surface2); border:1px solid var(--border); border-radius:14px; }
+  .avatar-pick-item { cursor:pointer; border-radius:50%; overflow:hidden; border:3px solid transparent; transition:border-color 0.15s; aspect-ratio:1; }
+  .avatar-pick-item.selected { border-color:var(--accent); }
+  .profil-section-box { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .profil-stats-row { display:flex; gap:8px; margin-bottom:6px; }
+  .profil-stat-card { flex:1; text-align:center; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 6px; }
+  .profil-stat-num { font-family:var(--font-display); font-size:26px; line-height:1; }
+  .profil-stat-lbl { font-size:9.5px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:4px; }
+  .profil-email-row { display:flex; gap:8px; margin-bottom:6px; }
+  .profil-email-row .auth-input { flex:1; }
+  .profil-danger-btn { color:var(--red); border-color:var(--red); }
+
+  /* ── ONLINE JÁTÉKOSOK ─────────────────────────────────────── */
+  #online-players-screen { display:none; flex-direction:column; width:100%; max-width:400px; margin:auto; padding:24px 0 48px; animation:fadeIn 0.3s ease; }
+  .online-player-card { display:flex; align-items:center; gap:12px; background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
+  .online-player-avatar { width:48px; height:48px; border-radius:50%; overflow:hidden; flex-shrink:0; }
+  .online-player-info { flex:1; min-width:0; }
+  .online-player-name { font-size:14px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .online-player-gyulekezet { font-size:12px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .online-status-playing { font-size:11px; color:var(--accent2); font-weight:700; white-space:nowrap; }
+  .online-status-idle { font-size:11px; color:var(--green); font-weight:700; white-space:nowrap; }
   .guide-back { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; margin-bottom:28px; background:none; border:none; padding:0; }
   .guide-back:active { color:var(--accent); }
   .guide-title { font-family:var(--font-display); font-size:42px; letter-spacing:3px; color:var(--accent); margin-bottom:6px; }
@@ -480,6 +510,10 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
       <input type="text" class="auth-input" id="register-name" autocomplete="name" maxlength="40" placeholder="pl. Kovács Anna">
     </div>
     <div class="auth-field-wrap">
+      <label class="auth-field-label">Gyülekezet</label>
+      <input type="text" class="auth-input" id="register-gyulekezet" autocomplete="off" maxlength="60" placeholder="pl. Keszthely">
+    </div>
+    <div class="auth-field-wrap">
       <label class="auth-field-label">E-mail cím</label>
       <input type="email" class="auth-input" id="register-email" autocomplete="username" placeholder="pelda@email.hu">
     </div>
@@ -512,21 +546,37 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="menu-btn-secondary" style="max-width:240px;" onclick="doLogout()">KIJELENTKEZÉS</button>
 </div>
 
+<!-- GYÜLEKEZET PÓTLÁSA (meglévő, gyülekezet nélküli felhasználóknak) -->
+<div id="gyulekezet-gate-screen">
+  <div class="pending-icon">🏠</div>
+  <div class="pending-title">GYÜLEKEZETED</div>
+  <div class="pending-text">Mostantól minden játékosnál nyilvántartjuk a gyülekezetet is.<br>Kérjük, add meg a sajátodat a folytatáshoz!</div>
+  <div class="auth-field-wrap" style="max-width:280px;">
+    <label class="auth-field-label">Gyülekezet</label>
+    <input type="text" class="auth-input" id="gyulekezet-gate-input" maxlength="60" placeholder="pl. Keszthely" onkeydown="if(event.key==='Enter')submitGyulekezetGate()">
+  </div>
+  <div class="auth-error" id="gyulekezet-gate-error"></div>
+  <button class="menu-btn-primary" id="gyulekezet-gate-submit-btn" style="max-width:280px;margin-top:6px;margin-bottom:14px;" onclick="submitGyulekezetGate()">TOVÁBB</button>
+  <button class="menu-btn-secondary" style="max-width:240px;" onclick="doLogout()">KIJELENTKEZÉS</button>
+</div>
+
 <!-- FŐMENÜ -->
+
 <div id="menu-screen">
   <div class="menu-logo">QUIZ</div>
   <div class="menu-sub">Multiplayer Kvíz Játék</div>
   <div class="menu-name-wrap">
     <label class="menu-name-label">A neved</label>
     <input type="text" class="menu-name-input" id="menu-name-input"
-      placeholder="pl. Anna" maxlength="20" autocomplete="off"
-      onkeydown="if(event.key==='Enter')this.blur()">
+      readonly tabindex="-1" style="cursor:default;opacity:0.85;">
   </div>
   <div class="menu-buttons">
     <button class="menu-btn-primary" onclick="showCreateRoom()">➕ ÚJ SZOBA</button>
     <button class="menu-btn-secondary" onclick="showRoomList()">🚪 CSATLAKOZÁS SZOBÁHOZ</button>
-    <button class="menu-btn-secondary" onclick="showGuide()">📖 ÚTMUTATÓ</button>
-    <button class="menu-btn-secondary" onclick="showChangelog()">📋 VERZIÓELŐZMÉNYEK</button>
+    <button class="menu-btn-secondary" onclick="showOnlinePlayersScreen()">👥 ONLINE JÁTÉKOSOK</button>
+    <button class="menu-btn-secondary" onclick="showProfilScreen()">👤 PROFILOM</button>
+    <button class="menu-btn-secondary" onclick="showInfoScreen()">💡 INFORMÁCIÓK</button>
+    <button class="menu-btn-secondary" onclick="doLogout()">⏻ KIJELENTKEZÉS</button>
   </div>
   <div class="menu-error" id="menu-error"></div>
 </div>
@@ -588,10 +638,17 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
 
 <!-- VERZIÓELŐZMÉNYEK -->
 <div id="changelog-screen">
-  <button class="changelog-back" onclick="showMenu()">← Vissza</button>
+  <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">2.8</div><div><div class="cl-desc">Az Akasztófa és a Blokus játékmód — a hozzájuk tartozó teljes HTML, CSS és JavaScript kód, valamint a `hangmanState`, `hangmanResults`, `hangmanGuesses`, `hangmanHintRequests`, `blokusMoves` Firebase-ágak — véglegesen eltávolításra kerültek. Mindkét mód a jövőben sem lesz játszható; az Útmutatóból és a szoba-létrehozás képernyőről is eltűnt minden erre utaló szöveg. A `quiz-host.html` "Szó adatbázis" füle (az Akasztófa szavainak kezelésére szolgált) szintén megszűnt.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.3</div><div><div class="cl-desc">Új "Online Játékosok" gomb a főmenüben — megmutatja, kik vannak éppen csatlakoztatva az apphoz (avatarjukkal, nevükkel, gyülekezetükkel), és azt is jelzi, ki van épp játékban, ki elérhető. A szobába hívás funkciója egy következő frissítésben érkezik.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.2</div><div><div class="cl-desc">Alapozó munka egy jövőbeli "Online Játékosok" funkcióhoz: a rendszer mostantól nyomon követi, ki van éppen csatlakoztatva az apphoz és van-e éppen szobában. Ez a fázis még nem hoz látható változást — a tényleges lista a következő frissítésben érkezik.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.1</div><div><div class="cl-desc">Főmenü átrendezve: az Útmutató és a Verzióelőzmények mostantól egy közös "Információk" gomb mögé kerültek, és megjelent a "Kijelentkezés" gomb is. A "neved" mező a főmenün mostantól csak megjelenítés — a neved kizárólag a Profilomban módosítható.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.0</div><div><div class="cl-desc">Új "Profilom" képernyő a főmenüben: név és gyülekezet szerkesztése, avatar-választás 20 saját arc-ikon közül, e-mail cím módosítása (megerősítő linkkel az új címre), jelszó megváltoztatása, saját válasz-statisztika megtekintése, és fiók végleges törlése. Az e-mail- és jelszócsere, valamint a fiók törlése biztonsági okból mindig kéri a jelenlegi jelszavad megerősítését.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">2.11</div><div><div class="cl-desc">Apró vizuális finomítás: a "Gyülekezeted" képernyő ikonja ⛪ helyett 🏠 lett.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">2.10</div><div><div class="cl-desc">Bevezetésre került egy kötelező, egyszeri "Gyülekezeted" képernyő azoknak a már jóváhagyott játékosoknak, akiknél ez az adat még hiányzik (mert a mező bevezetése előtt regisztráltak) — bejelentkezéskor ezt kell először kitölteniük, mielőtt a főmenübe jutnának. Aki már megadta a gyülekezetét, azt ez egyáltalán nem érinti, változatlanul egyenesen a főmenübe kerül.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">2.9</div><div><div class="cl-desc">Regisztrációnál mostantól kötelező megadni a gyülekezeted nevét. Bevezetésre került egy élethosszig tartó, fiókodhoz kötött válasz-statisztika (hány kérdésre válaszoltál, ebből hány volt helyes/helytelen) — ezt a szoba irányítója frissíti kérdésenként, függetlenül attól, melyik szobában játszol. A statisztika egyelőre az admin felületen tekinthető meg regisztrációnként; a saját Profilomban való megjelenítése egy következő fejlesztési körben érkezik.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">2.8</div><div><div class="cl-desc">Az Akasztófa és a Blokus játékmód — a hozzájuk tartozó teljes HTML, CSS és JavaScript kód, valamint a `hangmanState`, `hangmanResults`, `hangmanGuesses`, `hangmanHintRequests`, `blokusMoves` Firebase-ágak — véglegesen eltávolításra kerültek. Mindkét mód a jövőben sem lesz játszható; az Útmutatóból és a szoba-létrehozás képernyőről is eltűnt minden erre utaló szöveg. A `quiz-host.html` "Szó adatbázis" füle (az Akasztófa szavainak kezelésére szolgált) szintén megszűnt.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.7</div><div><div class="cl-desc">Hibajavítás — a régi, quiz-host.html-es élő alkalmakhoz készült játékmód-szavazó felület véglegesen eltávolítva a játékos oldalról. A várakozási képernyő (a „Vissza a játékba" és az „Új kör indítása" utáni visszatéréskor is) minden alkalommal felvillantotta ezt a kártyás szavazót, annak ellenére, hogy az önkiszolgáló szoba-motor sosem olvasta vagy dolgozta fel a leadott szavazatokat — ez a felület kizárólag a régi, host-felügyelt váróteremhez tartozott. A quiz-host.html saját, élő alkalmakra szánt szavazás-figyelője (jobb oldali „Szavazás" panel) változatlanul, érintetlenül megmaradt.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.6</div><div><div class="cl-desc">Önkiszolgáló szobában is működik az „Új kör indítása" — a szoba irányítója az eredmény képernyőn a „🔄 ÚJ KÖR INDÍTÁSA" gombbal új kört kezdhet ugyanabban a szobában, friss kérdés-mintával, anélkül hogy új szobát kéne nyitnia (eddig a „Vissza a játékba" gomb önkiszolgáló szobában sosem aktiválódott). Javítva: a főmenü névmezőjén Enter és a „Nem elérhető" képernyő „Újrapróbálás" gombja mostantól a ténylegesen megcélzott szobát próbálja újra, nem a régi, fix admin-szobát. Útmutató frissítve: pontosított leírás az önkiszolgáló szoba-létrehozásról és -csatlakozásról, az Akasztófa jelenlegi, élő alkalmakhoz kötött elérhetőségéről, a 2. segítség tényleges működéséről és a csapatverseny indítási feltételéről.</div></div></div>
   <div class="cl-item"><div class="cl-ver">2.5</div><div><div class="cl-desc">Akasztófa játékmódhoz szó adatbázis és indítási felület átdolgozása — Firebase-alapú, perzisztens szó adatbázis a host felületen. Kategóriák szabadon meghatározhatók, átnevezhetők, egyedi színnel jelölhetők. Szavakhoz 2 opcionális segítség adható. Az Akasztófa indítása modál átdolgozva: kategória grid, 1–50 szó, session-szintű kijátszott-szó nyomkövetés.</div></div></div>
@@ -633,9 +690,133 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div class="cl-item"><div class="cl-ver">1.0</div><div><div class="cl-desc">A játék elkészítése</div><div class="cl-date">2026.04.02</div></div></div>
 </div>
 
+<!-- PROFILOM -->
+<div id="profil-screen">
+  <button class="guide-back" onclick="showMenu()">← Vissza a főmenübe</button>
+  <div class="guide-title">PROFILOM</div>
+  <div class="guide-subtitle">Fiókadataid kezelése</div>
+
+  <div class="profil-avatar-wrap">
+    <div class="profil-avatar-circle" id="profil-avatar-circle" onclick="toggleAvatarPicker()"></div>
+    <div class="profil-avatar-hint" onclick="toggleAvatarPicker()">Koppints az avatar módosításához ▾</div>
+  </div>
+  <div id="avatar-picker-grid" class="hidden"></div>
+
+  <div class="guide-divider"></div>
+
+  <div class="auth-field-wrap">
+    <label class="auth-field-label">A neved</label>
+    <input type="text" class="auth-input" id="profil-name-input" maxlength="40">
+  </div>
+  <div class="auth-field-wrap">
+    <label class="auth-field-label">Gyülekezet</label>
+    <input type="text" class="auth-input" id="profil-gyulekezet-input" maxlength="60">
+  </div>
+  <div class="auth-error" id="profil-basic-error"></div>
+  <div class="auth-notice" id="profil-basic-notice"></div>
+  <button class="menu-btn-primary" style="font-size:18px;padding:14px;margin-bottom:8px;" onclick="saveProfilBasicInfo()">✓ MENTÉS</button>
+
+  <div class="guide-divider"></div>
+
+  <label class="auth-field-label">E-mail cím</label>
+  <div class="profil-email-row">
+    <input type="email" class="auth-input" id="profil-email-display" disabled style="opacity:0.65;">
+    <button class="menu-btn-secondary" style="width:auto;padding:0 16px;font-size:13px;" onclick="toggleProfilSection('email-change-form')">Módosítás</button>
+  </div>
+  <div id="email-change-form" class="hidden profil-section-box">
+    <div class="auth-field-wrap">
+      <label class="auth-field-label">Új e-mail cím</label>
+      <input type="email" class="auth-input" id="profil-new-email-input" placeholder="uj@email.hu">
+    </div>
+    <div class="auth-field-wrap">
+      <label class="auth-field-label">Jelenlegi jelszavad (megerősítéshez)</label>
+      <input type="password" class="auth-input" id="profil-email-currentpw-input" placeholder="••••••••">
+    </div>
+    <div class="auth-error" id="profil-email-error"></div>
+    <div class="auth-notice" id="profil-email-notice"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="menu-btn-primary" style="font-size:15px;padding:11px;flex:2;" onclick="submitEmailChange()">Megerősítő link küldése</button>
+      <button class="menu-btn-secondary" style="font-size:14px;padding:11px;flex:1;" onclick="toggleProfilSection('email-change-form')">Mégse</button>
+    </div>
+  </div>
+
+  <div class="guide-divider"></div>
+
+  <div class="guide-section-title">📊 Saját statisztikám</div>
+  <div class="profil-stats-row" id="profil-stats-box"></div>
+
+  <div class="guide-divider"></div>
+
+  <button class="menu-btn-secondary" style="font-size:16px;padding:14px;margin-bottom:8px;" onclick="toggleProfilSection('password-change-form')">🔑 JELSZÓ MEGVÁLTOZTATÁSA</button>
+  <div id="password-change-form" class="hidden profil-section-box">
+    <div class="auth-field-wrap">
+      <label class="auth-field-label">Jelenlegi jelszó</label>
+      <input type="password" class="auth-input" id="profil-currentpw-input" placeholder="••••••••">
+    </div>
+    <div class="auth-field-wrap">
+      <label class="auth-field-label">Új jelszó</label>
+      <input type="password" class="auth-input" id="profil-newpw-input" placeholder="Legalább 6 karakter">
+    </div>
+    <div class="auth-field-wrap">
+      <label class="auth-field-label">Új jelszó megerősítése</label>
+      <input type="password" class="auth-input" id="profil-newpw2-input" placeholder="••••••••">
+    </div>
+    <div class="auth-error" id="profil-password-error"></div>
+    <div class="auth-notice" id="profil-password-notice"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="menu-btn-primary" style="font-size:15px;padding:11px;flex:2;" onclick="submitPasswordChange()">✓ Mentés</button>
+      <button class="menu-btn-secondary" style="font-size:14px;padding:11px;flex:1;" onclick="toggleProfilSection('password-change-form')">Mégse</button>
+    </div>
+  </div>
+
+  <button class="menu-btn-secondary profil-danger-btn" style="font-size:16px;padding:14px;" onclick="openDeleteAccountModal()">🗑 FIÓK TÖRLÉSE</button>
+</div>
+
+<!-- FIÓK TÖRLÉSE MEGERŐSÍTŐ MODAL -->
+<div class="report-modal-overlay hidden" id="delete-account-modal-overlay" onclick="if(event.target===this)closeDeleteAccountModal()">
+  <div class="report-modal">
+    <div class="report-modal-header">
+      <div class="report-modal-header-left">
+        <div class="report-modal-qnum" style="color:var(--red);">⚠ FIÓK TÖRLÉSE</div>
+      </div>
+      <button class="report-modal-close" onclick="closeDeleteAccountModal()" aria-label="Bezárás">✕</button>
+    </div>
+    <div class="report-modal-body">
+      <div class="report-modal-qtext" style="border-color:var(--red);">Ez a művelet <strong>végleges és nem vonható vissza</strong>. A fiókod, a neved, gyülekezeted és a statisztikád véglegesen törlődik, és többé nem tudsz bejelentkezni ezzel a fiókkal.</div>
+      <div class="report-modal-label">Add meg a jelenlegi jelszavad a megerősítéshez:</div>
+      <input type="password" class="auth-input" id="delete-account-password-input" placeholder="••••••••" style="margin-bottom:14px;">
+      <div class="auth-error" id="delete-account-error"></div>
+    </div>
+    <div class="report-modal-footer">
+      <button class="report-submit-btn" style="background:var(--red);" id="delete-account-confirm-btn" onclick="confirmDeleteAccount()">🗑 VÉGLEGES TÖRLÉS</button>
+      <button class="report-cancel-btn" onclick="closeDeleteAccountModal()">Mégse</button>
+    </div>
+  </div>
+</div>
+
+<!-- ONLINE JÁTÉKOSOK -->
+<div id="online-players-screen">
+  <button class="guide-back" onclick="showMenu()">← Vissza</button>
+  <div class="guide-title">ONLINE JÁTÉKOSOK</div>
+  <div class="guide-subtitle" id="online-players-subtitle">Betöltés...</div>
+  <div id="online-players-list"></div>
+</div>
+
+<!-- INFORMÁCIÓK -->
+<div id="info-screen">
+  <button class="guide-back" onclick="showMenu()">← Vissza</button>
+  <div class="guide-title">INFORMÁCIÓK</div>
+  <div class="guide-subtitle">Válassz egy témát</div>
+  <div class="menu-buttons">
+    <button class="menu-btn-secondary" style="font-size:22px;padding:18px;" onclick="showGuide()">📖 ÚTMUTATÓ</button>
+    <button class="menu-btn-secondary" style="font-size:22px;padding:18px;" onclick="showChangelog()">📋 VERZIÓELŐZMÉNYEK</button>
+  </div>
+</div>
+
 <!-- ÚTMUTATÓ -->
 <div id="guide-screen">
-  <button class="guide-back" onclick="showMenu()">← Vissza</button>
+  <button class="guide-back" onclick="showInfoScreen()">← Vissza</button>
+
   <div class="guide-title">ÚTMUTATÓ</div>
   <div class="guide-subtitle">Hogyan működik a QuizMaster?</div>
   <div class="guide-notice">
@@ -836,12 +1017,44 @@ const LETTERS = ['A','B','C','D'];
 const COLORS = ['#f0c040','#e05a2b','#3ecf8e','#5a8fe0','#c05ae0','#e05a8f','#5ae0d4','#e0c05a'];
 const CIRCUMFERENCE = 175.9;
 
+// ── AVATAR-KÉSZLET (Profilom) ─────────────────────────────────
+// 20 pixel-art arc, a DiceBear "Pixel Art" stílusával generálva
+// (https://www.dicebear.com, CC0 1.0 licenc - szabadon felhasználható,
+// nincs Firebase Storage/Blaze függőség, nincs feltöltés). Minden avatar
+// egy 16x16-os viewBox-ú SVG-részlet, saját, beépített színekkel - ellentétben
+// a korábbi elvont ikonokkal, itt NINCS külső "color" mező, mert a szín
+// már a rajz része.
+const AVATAR_DEFS = {
+  face_01: { name: 'Aurora', svg: `<mask id="viewboxMask_face_01"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_01)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#eac393"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M2 7h1v1H2zM13 7h1v1h-1z" fill="#d3d3d3"/><path d="M10 13h3v1h1v2H2v-2h1v-1h3v2h4v-2Z" fill="#ae0001"/><path fill="#fff" fill-opacity=".2" d="M5 14h1v1H5zM4 15h1v1H4zM7 15h1v1H7zM3 13h1v1H3zM2 14h1v1H2zM12 13h1v1h-1zM11 14h1v1h-1zM10 15h1v1h-1zM13 15h1v1h-1z"/><path fill="#fff" d="M4 5h3v2H4zM9 5h3v2H9z"/><path fill="#588387" d="M9 6h1v1H9zM4 6h1v1H4z"/><path d="M6 10v1h1v-1h3V9H7v1H6Z" fill="#e35d6a"/><path d="M7 1h5v1H7zM4 2h7v1H4zM3 3h5v1H3z" fill="#cab188"/></g>` },
+  face_02: { name: 'Bence', svg: `<mask id="viewboxMask_face_02"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_02)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#f5cfa0"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M10 13h3v1h1v2H2v-2h1v-1h3v1h1v1h2v-1h1v-1Z" fill="#ffeead"/><path fill="#fff" d="M4 5h3v2H4zM9 5h3v2H9z"/><path fill="#5b7c8b" d="M9 6h1v1H9zM4 6h1v1H4z"/><path d="M6 9v1h3v1h1v-1H9V9H6Z" fill="#de0f0d"/><path d="M7 1h5v1H7zM4 2h7v1H4zM3 3h5v1H3z" fill="#cab188"/></g>` },
+  face_03: { name: 'Csilla', svg: `<mask id="viewboxMask_face_03"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_03)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#a26d3d"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M10 13h3v1h1v2H2v-2h1v-1h3v1h4v-1Z" fill="#44c585"/><path fill="#fff" fill-opacity=".2" d="M3 13h1v1H3zM2 14h1v1H2zM3 15h1v1H3zM4 14h1v1H4zM5 13h1v1H5zM5 15h1v1H5zM6 14h1v1H6zM7 15h1v1H7zM8 14h1v1H8zM9 15h1v1H9zM10 14h1v1h-1zM11 15h1v1h-1zM11 13h1v1h-1zM12 14h1v1h-1zM13 15h1v1h-1z"/><path d="M10 5h1v2H9V6h1V5ZM5 5h1v2H4V6h1V5Z" fill="#fff"/><path fill="#647b90" d="M11 6h-1v1h1zM6 6H5v1h1z"/><path d="M6 9h3v1H6V9Z" fill="#d29985"/><path d="M4 2h8v1h1v2h-2V4H5v1H3V3h1V2Z" fill="#009bbd"/></g>` },
+  face_04: { name: 'Dorka', svg: `<mask id="viewboxMask_face_04"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_04)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#ffdbac"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M10 13h3v1h1v2H2v-2h1v-1h3v1h4v-1Z" fill="#03396c"/><path fill="#fff" d="M4 5h3v2H4zM9 5h3v2H9z"/><path fill="#697b94" d="M9 6h1v1H9zM4 6h1v1H4z"/><path d="M6 9h3v1H6V9Z" fill="#e35d6a"/><path d="M13 2H3v1H2v3h1V4h10v2h1V3h-1V2ZM3 8H2v1H1v2H0v1h1v-1h1v-1h1V8Z" fill="#603a14"/></g>` },
+  face_05: { name: 'Elek', svg: `<mask id="viewboxMask_face_05"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_05)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#e0b687"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M5 13H3v1H2v2h5v-1H6v-1H5v-1ZM13 13h-2v1h-1v1H9v1h5v-2h-1v-1Z" fill="#ffeead"/><path fill="#fff" fill-opacity=".3" d="M11 13h1v1h-1zM10 14h1v1h-1zM9 15h1v1H9zM6 15h1v1H6zM5 14h1v1H5zM4 13h1v1H4z"/><path d="M10 5h1v2H9V6h1V5ZM5 5h1v2H4V6h1V5Z" fill="#fff"/><path fill="#647b90" d="M11 6h-1v1h1zM6 6H5v1h1z"/><path d="M9 9v1H7v1H6v-1h1V9h2Z" fill="#e35d6a"/><path d="M4 0H1v3h2v1H2v2h1V5h2V4h1V3h5v1h1v1h1v1h1V3h-1V2h-1V1H6v1H4V0ZM2 8h1v1H2V8ZM14 8h-1v1h1V8Z" fill="#611c17"/></g>` },
+  face_06: { name: 'Flóra', svg: `<mask id="viewboxMask_face_06"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_06)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#8d5524"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M10 13h3v1h1v2H2v-2h1v-1h3v1h4v-1Z" fill="#ffc425"/><path fill="#fff" fill-opacity=".2" d="M11 14h1v2h-1zM4 14h1v2H4z"/><path d="M6 5H5v2h2V6H6V5ZM11 5h-1v2h2V6h-1V5Z" fill="#fff"/><path fill="#876658" d="M5 6h1v1H5zM10 6h1v1h-1z"/><path d="M6 11v-1h3V9h1v1H9v1H6Z" fill="#de0f0d"/><path fill="#a78961" d="M7 1h2v2H7z"/></g>` },
+  face_07: { name: 'Gergő', svg: `<mask id="viewboxMask_face_07"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_07)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#8d5524"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M5 13H3v1H2v2h5v-1H6v-1H5v-1ZM13 13h-2v1h-1v1H9v1h5v-2h-1v-1Z" fill="#ffc425"/><path fill="#fff" fill-opacity=".3" d="M11 13h1v1h-1zM10 14h1v1h-1zM9 15h1v1H9zM6 15h1v1H6zM5 14h1v1H5zM4 13h1v1H4z"/><path fill="#fff" d="M4 5h3v3H4zM9 5h3v3H9z"/><path fill="#588387" d="M10 6h1v1h-1zM5 6h1v1H5z"/><path d="M6 9h4v1H6V9Z" fill="#e35d6a"/><path d="M13 2H3v1H2v3h1V4h10v2h1V3h-1V2ZM3 8H2v1H1v2H0v1h1v-1h1v-1h1V8Z" fill="#28150a"/></g>` },
+  face_08: { name: 'Hanna', svg: `<mask id="viewboxMask_face_08"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_08)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#e0b687"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M5 13H3v1H2v2h12v-2h-1v-1h-2v1H5v-1Z" fill="#44c585"/><path fill="#fff" d="M4 5h3v2H4zM9 5h3v2H9z"/><path fill="#697b94" d="M11 6h1v1h-1zM6 6h1v1H6z"/><path d="M6 9v1h3v1h1v-1H9V9H6Z" fill="#de0f0d"/><path d="M4 2h8v1h1v2h-2V4H5v1H3V3h1V2Z" fill="#611c17"/></g>` },
+  face_09: { name: 'Imre', svg: `<mask id="viewboxMask_face_09"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_09)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#cb9e6e"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M5 13H3v1H2v2h12v-2h-1v-1h-2v1h-1v1H6v-1H5v-1Z" fill="#ff6f69"/><path fill="#fff" d="M4 5h3v2H4z"/><path fill="#588387" d="M5 6h1v1H5z"/><path fill="#fff" d="M9 5h3v2H9z"/><path fill="#588387" d="M10 6h1v1h-1z"/><path d="M9 9v1H8v1h2V9H9Z" fill="#c98276"/><path d="M12 2H4v1h8zM13 3h-1v1h1zM6 3H3v1h3zM5 4H3v1h2z" fill="#cab188"/></g>` },
+  face_10: { name: 'Judit', svg: `<mask id="viewboxMask_face_10"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_10)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#f5cfa0"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M5 13H4v3h3v-1H6v-1H5v-1ZM12 13h-1v1h-1v1H9v1h3v-3Z" fill="#428bca"/><path fill="#fff" d="M12 5H9v3h3zM7 5H4v3h3z"/><path fill="#588387" d="M12 6h-2v1h2zM7 6H5v1h2z"/><path fill="#fff" fill-opacity=".7" d="M12 6h-1v1h1zM7 6H6v1h1z"/><path d="M10 11v-1H7V9H6v1h1v1h3Z" fill="#e35d6a"/><path d="M4 0H1v3h2v1H2v2h1V5h2V4h1V3h5v1h1v1h1v1h1V3h-1V2h-1V1H6v1H4V0ZM2 8h1v1H2V8ZM14 8h-1v1h1V8Z" fill="#603015"/></g>` },
+  face_11: { name: 'Kristóf', svg: `<mask id="viewboxMask_face_11"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_11)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#eac393"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path fill="#ffeead" d="M4 14h8v2H4z"/><path fill="#fff" fill-opacity=".3" d="M4 14h1v2H4zM11 14h1v2h-1z"/><g fill-rule="evenodd" clip-rule="evenodd"><path d="M11 5h-1v2h2V6h-1V5ZM6 5H5v2h2V6H6V5Z" fill="#fff"/><path d="M10 5v1h1v1H9V5h1ZM5 5v1h1v1H4V5h1Z" fill="#5b7c8b"/><path d="M10 5v1H9V5h1Zm1 1v1h-1V6h1ZM5 5v1H4V5h1Zm1 1v1H5V6h1Z" fill="#fff" fill-opacity=".5"/></g><path fill="#fff" fill-opacity=".3" d="M4 5h3v3H4zM9 5h3v3H9z"/><path fill="#4b4b4b" d="M3 5h1v1H3zM7 5h2v1H7zM12 5h1v1h-1z"/><path d="M7 9v1h1v1h1V9H7Z" fill="#d29985"/><path d="M4 1h8v1h1v1h1v3h-1V4h-1V3H6v1H3v2H2V3h1V2h1V1ZM2 8h1v3h1v1h3v1H2V8ZM12 12H9v1h5V8h-1v3h-1v1Z" fill="#611c17"/></g>` },
+  face_12: { name: 'Lili', svg: `<mask id="viewboxMask_face_12"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_12)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#f5cfa0"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M4 13h1v2h6v-2h1v2h1v1H3v-1h1v-2Z" fill="#03396c"/><path fill="#fff" fill-opacity=".2" d="M4 13h1v2H4zM11 13h1v2h-1z"/><path fill="#fff" d="M4 5h3v2H4z"/><path fill="#588387" d="M5 6h1v1H5z"/><path fill="#fff" d="M9 5h3v2H9z"/><path fill="#588387" d="M10 6h1v1h-1z"/><mask id="beardVariant07-a" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="3" y="9" width="10" height="3"><path opacity=".9" d="M3 9v2h1v1h8v-1h1V9H3Z" fill="#a78961"/></mask><g mask="url(#beardVariant07-a)"><path fill="#a78961" d="M0 0h16v16H0z"/><path fill="#fff" fill-opacity=".3" d="M0 0h16v16H0z"/></g><path d="M7 9v1h1v1h1V9H7Z" fill="#e35d6a"/><path d="M5 4V3h7v1h1v2h1v2h-1v3h-1v1H9v1h4v1h1v3h1V3h-1V2h-1V1H3v1H2v1H1v14h1v-3h1v-1h4v-1H4v-1H3V8H2V6h1V5h1V4h1Z" fill="#a78961"/></g>` },
+  face_13: { name: 'Marcell', svg: `<mask id="viewboxMask_face_13"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_13)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#8d5524"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M4 13h1v1h6v-1h1v1h1v2H3v-2h1v-1Z" fill="#428bca"/><path fill="#fff" fill-opacity=".5" d="M9 15h2v1H9z"/><path fill="#fff" d="M4 5h3v2H4zM9 5h3v2H9z"/><path fill="#697b94" d="M9 6h1v1H9zM4 6h1v1H4z"/><path d="M7 9v2h2V9H7Z" fill="#e35d6a"/><g fill="#83623b"><path d="M4 2h8v1H4zM3 3h3v1H3zM10 3h3v1h-3zM8 3h1v1H8z"/><path d="M8 3h1v1H8z"/></g></g>` },
+  face_14: { name: 'Nóra', svg: `<mask id="viewboxMask_face_14"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_14)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#b68655"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M10 13h3v1h1v2H2v-2h1v-1h3v1h4v-1Z" fill="#d11141"/><path fill="#fff" d="M4 5h3v2H4z"/><path fill="#588387" d="M5 6h1v1H5z"/><path fill="#fff" d="M9 5h3v2H9z"/><path fill="#588387" d="M10 6h1v1h-1z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M14 5H2v1h1v2h4V7h2v1h4V6h1V5Zm-2 1H9v1h3V6ZM7 7H4V6h3v1Z" fill="#191919"/><path fill="#fff" fill-opacity=".3" d="M4 6h3v1H4z"/><path fill="#fff" fill-opacity=".2" d="M2 5h1v1H2zM7 5h2v1H7zM13 5h1v1h-1z"/><path fill="#fff" fill-opacity=".3" d="M9 6h3v1H9z"/><path d="M9 9v1H7v1H6v-1h1V9h2Z" fill="#e35d6a"/><g fill="#009bbd"><path d="M2 3h2v3H2zM12 3h2v3h-2z"/><path d="M12 3h2v3h-2z"/></g></g>` },
+  face_15: { name: 'Olivér', svg: `<mask id="viewboxMask_face_15"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_15)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#b68655"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M5 13H3v1H2v2h5v-1H6v-1H5v-1ZM13 13h-2v1h-1v1H9v1h5v-2h-1v-1Z" fill="#44c585"/><path fill="#fff" fill-opacity=".3" d="M11 13h1v1h-1zM10 14h1v1h-1zM9 15h1v1H9zM6 15h1v1H6zM5 14h1v1H5zM4 13h1v1H4z"/><path fill="#fff" d="M4 5h3v3H4zM9 5h3v3H9z"/><path fill="#76778b" d="M10 6h1v1h-1zM5 6h1v1H5z"/><path d="M7 9v1h1v1h1V9H7Z" fill="#c98276"/><path fill="#611c17" d="M7 1h2v2H7z"/></g>` },
+  face_16: { name: 'Petra', svg: `<mask id="viewboxMask_face_16"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_16)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#ffdbac"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M10 13h3v1h1v2H2v-2h1v-1h3v1h4v-1Z" fill="#88d8b0"/><path fill="#fff" fill-opacity=".2" d="M4 13h1v3H4zM11 13h1v3h-1z"/><g fill-rule="evenodd" clip-rule="evenodd"><path d="M11 5h-1v2h2V6h-1V5ZM6 5H5v2h2V6H6V5Z" fill="#fff"/><path d="M10 5v1h1v1H9V5h1ZM5 5v1h1v1H4V5h1Z" fill="#697b94"/><path d="M10 5v1H9V5h1Zm1 1v1h-1V6h1ZM5 5v1H4V5h1Zm1 1v1H5V6h1Z" fill="#fff" fill-opacity=".5"/></g><path d="M8 10v1h1v-1H8Z" fill="#e35d6a"/><path d="M4 3H3v2h1zM13 3h-1v2h1zM12 2H4v1h8z" fill="#a78961"/></g>` },
+  face_17: { name: 'Roland', svg: `<mask id="viewboxMask_face_17"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_17)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#ffdbac"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M5 13H3v1H2v2h12v-2h-1v-1h-2v1H5v-1Z" fill="#03396c"/><path fill="#fff" d="M4 5h3v3H4zM9 5h3v3H9z"/><path fill="#697b94" d="M4 6h2v1H4zM9 6h2v1H9z"/><path fill="#fff" fill-opacity=".7" d="M4 6h1v1H4zM9 6h1v1H9z"/><path d="M6 9v1h3v1h1v-1H9V9H6Z" fill="#c98276"/><path d="M3 1h8v1h2v1h1v3h-1V4h-2V3H6v1H5V3H4v1H3v2H2v2h1v2H1V3h1V2h1V1ZM14 8h-1v2h1V8Z" fill="#91cb15"/></g>` },
+  face_18: { name: 'Szonja', svg: `<mask id="viewboxMask_face_18"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_18)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#ffdbac"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M5 13H3v1H2v2h12v-2h-1v-1h-2v1h-1v1H6v-1H5v-1Z" fill="#ffd969"/><path fill="#fff" d="M4 5h3v3H4zM9 5h3v3H9z"/><path fill="#697b94" d="M10 5h2v2h-2zM5 5h2v2H5z"/><path fill="#fff" fill-opacity=".4" d="M5 5h1v1H5zM6 6h1v1H6zM10 5h1v1h-1zM11 6h1v1h-1z"/><path fill="#fff" fill-opacity=".7" d="M11 5h1v1h-1zM6 5h1v1H6z"/><mask id="beardVariant04-a" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="6" y="11" width="4" height="1"><path opacity=".9" fill="#a78961" d="M6 11h4v1H6z"/></mask><g mask="url(#beardVariant04-a)"><path fill="#a78961" d="M0 0h16v16H0z"/><path fill="#fff" fill-opacity=".3" d="M0 0h16v16H0z"/></g><path d="M7 9v1h2v1h1v-1H9V9H7Z" fill="#c98276"/><path d="M3 3h1v1H3zM5 2H4v1h1zM12 2h-1v1h1zM13 3h-1v1h1z" fill="#a78961"/></g>` },
+  face_19: { name: 'Tamás', svg: `<mask id="viewboxMask_face_19"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_19)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#ffdbac"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M5 13H4v3h3v-1H6v-1H5v-1ZM12 13h-1v1h-1v1H9v1h3v-3Z" fill="#00b159"/><path fill="#fff" d="M4 5h3v2H4zM9 5h3v2H9z"/><path fill="#5b7c8b" d="M9 6h1v1H9zM4 6h1v1H4z"/><path fill="#4b4b4b" d="M2 5h12v1H2zM3 7h10v1H3zM3 6h1v1H3zM12 6h1v1h-1z"/><path fill="#000" fill-opacity=".3" d="M4 6h8v1H4z"/><path fill="#fff" fill-opacity=".2" d="M2 5h1v1H2zM13 5h1v1h-1z"/><path fill="#000" fill-opacity=".3" d="M7 6h2v1H7z"/><path d="M7 9v1h1v1h1V9H7Z" fill="#de0f0d"/><path d="M5 1h5v1H5zM4 2h8v1H4zM9 3h1v1H9zM11 3h2v1h-2zM3 3h2v1H3z" fill="#009bbd"/></g>` },
+  face_20: { name: 'Zsófia', svg: `<mask id="viewboxMask_face_20"><rect width="16" height="16" rx="0" ry="0" x="0" y="0" fill="#fff" /></mask><g mask="url(#viewboxMask_face_20)"><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H9v1h4v1h1v2H2v-2h1v-1h4v-1H4v-1H3V8H2V6h1V3h1V2Z" fill="#ffdbac"/><path d="M4 2h8v1h1v3h1v2h-1v3h-1v1H4v-1H3V8H2V6h1V3h1V2Z" fill="#fff" fill-opacity=".1"/><path d="M10 13h3v1h1v2H2v-2h1v-1h3v1h4v-1Z" fill="#5bc0de"/><path fill="#fff" d="M4 5h3v2H4zM9 5h3v2H9z"/><path d="M11 5h-1v1H9v1h3V6h-1V5Z" fill="#76778b"/><path fill="#fff" fill-opacity=".5" d="M9 6h1v1H9zM10 5h1v1h-1zM11 6h1v1h-1z"/><path d="M6 5H5v1H4v1h3V6H6V5Z" fill="#76778b"/><path fill="#fff" fill-opacity=".5" d="M4 6h1v1H4zM5 5h1v1H5zM6 6h1v1H6z"/><path d="M7 9h2v1H7V9ZM7 10v1H6v-1h1ZM9 10v1h1v-1H9Z" fill="#d29985"/><path d="M12 1H5v1H4v1H3v1H2v2h2V5h1V4h1V3h5v1h1v1h1v1h1V3h-1V2h-1V1ZM13 8h1v6h-1v-1H9v-1h3v-1h1V8ZM2 8h1v3h1v1h3v1H3v1H2V8Z" fill="#612616"/></g>` },
+};
+
+
 // ── SZOBA-LÉTREHOZÁS ÉS -CSATLAKOZÁS (2. fázis) ──────────────
 let amIRoomHost = false;          // igaz, ha ÉN hoztam létre az aktuális szobát
 let crSelectedTopic = 'all';      // szoba-létrehozáskor kiválasztott témakör
 let crSelectedMode = 'normal';    // szoba-létrehozáskor kiválasztott játékmód ('normal' | 'teams')
 let crAvailableQuestions = [];    // a "kvizjatek" tartalom-szobából betöltött teljes kérdéslista
 let roomListListenerRef = null;   // a szobalista élő figyelője
+let onlinePlayersListenerRef = null;   // az Online Játékosok lista élő figyelője (presence)
 let hostRoomTopicLabel = 'Vegyes';
 // Host mini-motor: a szobanyitó ebből vezérli az alap kvíz kört
 let hostGameMode = 'normal';       // az aktuális szoba játékmódja ('normal' | 'teams') — ez alapján dolgozik a mini-motor
@@ -874,21 +1087,18 @@ let hostReadyForRejoin = false;
 
 function getParam(n) { return new URLSearchParams(window.location.search).get(n); }
 
-window.addEventListener('load', () => {
-  const saved = localStorage.getItem('quizPlayerName');
-  if (saved) document.getElementById('menu-name-input').value = saved;
-});
-
 // ── KÉPERNYŐ VÁLTÁS ──────────────────────────────────────────
 function hideAll() {
-  ['auth-screen','pending-screen','rejected-screen',
+  ['auth-screen','pending-screen','rejected-screen','gyulekezet-gate-screen',
    'menu-screen','create-room-screen','room-list-screen','team-setup-screen',
-   'guide-screen','unavailable-screen','lobby-screen',
+   'guide-screen','unavailable-screen','lobby-screen','profil-screen','info-screen',
+   'online-players-screen',
    'waiting-screen','game-screen','result-screen','history-screen','changelog-screen']
     .forEach(id => document.getElementById(id).style.display = 'none');
 }
 function showMenu() {
   if (roomListListenerRef) { roomListListenerRef.off(); roomListListenerRef = null; }
+  if (onlinePlayersListenerRef) { onlinePlayersListenerRef.off(); onlinePlayersListenerRef = null; }
   hideAll();
   document.getElementById('menu-screen').style.display = 'flex';
   document.getElementById('menu-error').textContent = '';
@@ -933,6 +1143,7 @@ function translateAuthError(e) {
 
 async function doRegister() {
   const name = document.getElementById('register-name').value.trim();
+  const gyulekezet = document.getElementById('register-gyulekezet').value.trim();
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value;
   const errEl = document.getElementById('auth-error');
@@ -940,6 +1151,7 @@ async function doRegister() {
   errEl.textContent = ''; noticeEl.textContent = '';
 
   if (!name || name.length < 2) { errEl.textContent = 'Adj meg legalább 2 karakteres nevet!'; return; }
+  if (!gyulekezet || gyulekezet.length < 2) { errEl.textContent = 'Add meg a gyülekezeted nevét!'; return; }
   if (!email) { errEl.textContent = 'Add meg az e-mail címed!'; return; }
   if (!password || password.length < 6) { errEl.textContent = 'A jelszónak legalább 6 karakternek kell lennie!'; return; }
   if (!firebase.apps.length) { errEl.textContent = 'Firebase nincs beállítva!'; return; }
@@ -950,15 +1162,21 @@ async function doRegister() {
     await firebase.database().ref('users/' + cred.user.uid).set({
       name: name,
       email: email,
+      gyulekezet: gyulekezet,
       status: 'pending',
       createdAt: firebase.database.ServerValue.TIMESTAMP
     });
-    localStorage.setItem('quizPlayerName', name);
+    // "Nyilvános kirakat" bejegyzés (roomIndex mintájára) - ezt olvassa majd az
+    // Online Játékosok lista bármely jóváhagyott felhasználónál, a védett
+    // users/{uid} rekord (email, stats) érintése nélkül.
+    await firebase.database().ref('publicProfiles/' + cred.user.uid + '/name').set(name);
+    await firebase.database().ref('publicProfiles/' + cred.user.uid + '/gyulekezet').set(gyulekezet);
     noticeEl.textContent = '';
     // Az onAuthStateChanged figyelő automatikusan átvált az Elbírálás alatt képernyőre
   } catch (e) {
     noticeEl.textContent = '';
     errEl.textContent = translateAuthError(e);
+
   }
 }
 
@@ -994,8 +1212,353 @@ async function doPasswordReset() {
   }
 }
 
+// ══════════════════════════════════════════════════════════════
+// JELENLÉT-RENDSZER (presence) — 6. fázis
+// A bevált Firebase-mintát követi (.info/connected + onDisconnect),
+// ugyanazt az elvet, amit a roomIndex bejegyzéseknél is használunk.
+// Csak az ADATOT építi fel (presence/{uid} = {state, lastChanged}) —
+// ezt megjelenítő "Online Játékosok" felület a következő fázisban jön.
+// ══════════════════════════════════════════════════════════════
+
+let presenceRef = null;
+
+// Egyszer hívandó, amint a felhasználó jóváhagyottként belép az appba.
+// A .info/connected figyelő minden (újra)csatlakozáskor újraregisztrálja
+// az onDisconnect()-et — ez azért fontos, mert egy kapcsolat-megszakadás
+// törli a korábban regisztrált onDisconnect műveleteket, tehát egy esetleges
+// hálózati hiba utáni újracsatlakozáskor ezt mindig újra be kell állítani.
+function initPresenceSystem(uid) {
+  if (presenceRef) return; // már fut ebben a munkamenetben
+  presenceRef = firebase.database().ref('presence/' + uid);
+  firebase.database().ref('.info/connected').on('value', snap => {
+    if (snap.val() === true) {
+      presenceRef.onDisconnect().remove().then(() => {
+        updateMyPresence('menu');
+      });
+    }
+  });
+}
+
+// Könnyű súlyú állapot-frissítés — az onDisconnect-et NEM regisztrálja újra,
+// csak az aktuális "state" mezőt írja át (belépés főmenübe / szobába).
+function updateMyPresence(state) {
+  if (!presenceRef) return;
+  presenceRef.set({ state, lastChanged: firebase.database.ServerValue.TIMESTAMP }).catch(() => {});
+}
+
+// Explicit eltávolítás kijelentkezéskor / fiók törlésekor — nem várjuk meg
+// az onDisconnect-et, azonnal eltűnik a jelenlét-listából.
+function removeMyPresence() {
+  if (!presenceRef) return;
+  presenceRef.remove().catch(() => {});
+}
+
 function doLogout() {
+  removeMyPresence();
   firebase.auth().signOut();
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROFILOM (4. fázis) — saját adatok szerkesztése, avatar, jelszó,
+// e-mail csere, fiók törlése, saját statisztika
+// ══════════════════════════════════════════════════════════════
+
+let profilCurrentAvatarId = null;
+let profilAvatarPickerOpen = false;
+
+// Egy adott avatarId-hez tartozó SVG-jelvény HTML-jét adja vissza.
+// Ha az avatarId nem létezik (pl. még nincs választva), null-t ad vissza -
+// a hívó fél ilyenkor a renderMonogramBadge() régi, betű-alapú megjelenítésre esik vissza.
+function renderAvatarBadge(avatarId, sizePx) {
+  const def = AVATAR_DEFS[avatarId];
+  if (!def) return null;
+  const sz = sizePx || 64;
+  return `<svg width="${sz}" height="${sz}" viewBox="0 0 16 16" style="display:block;">${def.svg}</svg>`;
+}
+
+// Visszaesési megjelenítés (még nem választott avatart a felhasználó) -
+// ugyanaz a szín-monogram minta, mint amit a váróterem eddig is használt.
+function renderMonogramBadge(name, color, sizePx) {
+  const sz = sizePx || 64;
+  const letter = (name && name[0]) ? name[0].toUpperCase() : '?';
+  return `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color}22;border:2px solid ${color};color:${color};display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:${Math.floor(sz*0.45)}px;">${letter}</div>`;
+}
+
+function showProfilScreen() {
+  hideAll();
+  document.getElementById('profil-screen').style.display = 'flex';
+  window.scrollTo({top:0});
+  document.getElementById('avatar-picker-grid').classList.add('hidden');
+  profilAvatarPickerOpen = false;
+  ['email-change-form','password-change-form'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+  loadProfilData();
+}
+
+async function loadProfilData() {
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) { showAuthScreen(); return; }
+  document.getElementById('profil-email-display').value = currentUser.email || '';
+  document.getElementById('profil-basic-error').textContent = '';
+  document.getElementById('profil-basic-notice').textContent = '';
+  try {
+    const snap = await firebase.database().ref('users/' + currentUser.uid).once('value');
+    const data = snap.val() || {};
+    document.getElementById('profil-name-input').value = data.name || '';
+    document.getElementById('profil-gyulekezet-input').value = data.gyulekezet || '';
+    profilCurrentAvatarId = data.avatarId || null;
+    renderProfilAvatarDisplay(data.name || playerName);
+    renderAvatarPickerGrid();
+    renderProfilStats(data.stats || {});
+  } catch (e) {
+    document.getElementById('profil-basic-error').textContent = 'Hiba az adatok betöltésekor: ' + (e && e.message ? e.message : e);
+  }
+}
+
+function renderProfilAvatarDisplay(nameForFallback) {
+  const el = document.getElementById('profil-avatar-circle');
+  if (!el) return;
+  const badge = profilCurrentAvatarId ? renderAvatarBadge(profilCurrentAvatarId, 88) : null;
+  el.innerHTML = badge || renderMonogramBadge(nameForFallback || playerName, myColor || '#f0c040', 88);
+}
+
+function toggleAvatarPicker() {
+  profilAvatarPickerOpen = !profilAvatarPickerOpen;
+  document.getElementById('avatar-picker-grid').classList.toggle('hidden', !profilAvatarPickerOpen);
+}
+
+function renderAvatarPickerGrid() {
+  const grid = document.getElementById('avatar-picker-grid');
+  if (!grid) return;
+  grid.innerHTML = Object.keys(AVATAR_DEFS).map(id => {
+    const isSelected = id === profilCurrentAvatarId;
+    return `<div class="avatar-pick-item${isSelected?' selected':''}" onclick="selectAvatar('${id}')" title="${AVATAR_DEFS[id].name}">${renderAvatarBadge(id, 52)}</div>`;
+  }).join('');
+}
+
+async function selectAvatar(avatarId) {
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) return;
+  profilCurrentAvatarId = avatarId; // optimista UI - azonnal frissítjük a megjelenítést
+  renderProfilAvatarDisplay();
+  renderAvatarPickerGrid();
+  try {
+    await firebase.database().ref('users/' + currentUser.uid + '/avatarId').set(avatarId);
+    await firebase.database().ref('publicProfiles/' + currentUser.uid + '/avatarId').set(avatarId);
+  } catch (e) {
+    document.getElementById('profil-basic-error').textContent = 'Hiba az avatar mentésekor: ' + (e && e.message ? e.message : e);
+  }
+}
+
+function toggleProfilSection(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('hidden');
+}
+
+async function saveProfilBasicInfo() {
+  const errEl = document.getElementById('profil-basic-error');
+  const noticeEl = document.getElementById('profil-basic-notice');
+  errEl.textContent = ''; noticeEl.textContent = '';
+  const name = document.getElementById('profil-name-input').value.trim();
+  const gyulekezet = document.getElementById('profil-gyulekezet-input').value.trim();
+  if (!name || name.length < 2) { errEl.textContent = 'A névnek legalább 2 karakteresnek kell lennie!'; return; }
+  if (!gyulekezet || gyulekezet.length < 2) { errEl.textContent = 'Add meg a gyülekezeted nevét!'; return; }
+
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) { errEl.textContent = 'A munkameneted lejárt, jelentkezz be újra!'; return; }
+
+  const btn = document.querySelector('#profil-screen .menu-btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Mentés...'; }
+  try {
+    await firebase.database().ref('users/' + currentUser.uid).update({ name, gyulekezet });
+    await firebase.database().ref('publicProfiles/' + currentUser.uid + '/name').set(name);
+    await firebase.database().ref('publicProfiles/' + currentUser.uid + '/gyulekezet').set(gyulekezet);
+    // Helyi állapot frissítése, hogy a főmenü ("A neved" mező) és a munkamenet
+    // is azonnal a friss nevet tükrözze - ugyanígy, ahogy initAuthGate() teszi belépéskor.
+    playerName = name;
+    const nameInput = document.getElementById('menu-name-input');
+    if (nameInput) nameInput.value = name;
+    renderProfilAvatarDisplay(name);
+    noticeEl.textContent = '✓ Sikeresen mentve!';
+  } catch (e) {
+    errEl.textContent = 'Hiba a mentéskor: ' + (e && e.message ? e.message : e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✓ MENTÉS'; }
+  }
+}
+
+function renderProfilStats(stats) {
+  const box = document.getElementById('profil-stats-box');
+  if (!box) return;
+  const answered = stats.answered || 0;
+  const correct = stats.correct || 0;
+  const wrong = stats.wrong || 0;
+  const pct = answered > 0 ? Math.round(correct / answered * 100) : null;
+  let html = `
+    <div class="profil-stat-card"><div class="profil-stat-num" style="color:var(--text);">${answered}</div><div class="profil-stat-lbl">Megválaszolt</div></div>
+    <div class="profil-stat-card"><div class="profil-stat-num" style="color:var(--green);">${correct}</div><div class="profil-stat-lbl">Helyes</div></div>
+    <div class="profil-stat-card"><div class="profil-stat-num" style="color:var(--red);">${wrong}</div><div class="profil-stat-lbl">Helytelen</div></div>`;
+  if (pct !== null) {
+    html += `<div class="profil-stat-card"><div class="profil-stat-num" style="color:var(--accent);">${pct}%</div><div class="profil-stat-lbl">Pontosság</div></div>`;
+  }
+  box.innerHTML = html;
+}
+
+// ── E-MAIL MÓDOSÍTÁSA ─────────────────────────────────────────
+// A Firebase mára elavultnak (deprecated) nyilvánította a régi updateEmail()-t -
+// helyette a verifyBeforeUpdateEmail()-t várja: ez egy megerősítő linket küld az
+// ÚJ címre, és csak a link megnyitása UTÁN válik ténylegessé a váltás (addig a
+// bejelentkezés a RÉGI e-mail címmel működik). Ezt világosan jelezzük is.
+async function submitEmailChange() {
+  const newEmail = document.getElementById('profil-new-email-input').value.trim();
+  const currentPw = document.getElementById('profil-email-currentpw-input').value;
+  const errEl = document.getElementById('profil-email-error');
+  const noticeEl = document.getElementById('profil-email-notice');
+  errEl.textContent = ''; noticeEl.textContent = '';
+
+  if (!newEmail || !newEmail.includes('@')) { errEl.textContent = 'Adj meg egy érvényes e-mail címet!'; return; }
+  if (!currentPw) { errEl.textContent = 'Add meg a jelenlegi jelszavad a megerősítéshez!'; return; }
+
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) { errEl.textContent = 'A munkameneted lejárt, jelentkezz be újra!'; return; }
+  if (newEmail === currentUser.email) { errEl.textContent = 'Ez már a jelenlegi e-mail címed.'; return; }
+
+  const btn = document.querySelector('#email-change-form .menu-btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Küldés...'; }
+  try {
+    const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, currentPw);
+    await currentUser.reauthenticateWithCredential(cred);
+    await currentUser.verifyBeforeUpdateEmail(newEmail);
+    // Az adatbázisban is frissítjük az email mezőt, hogy a "Profilom" és az admin
+    // felület a szándékolt új címet mutassa — FONTOS: ez csak a KÉRELMEZETT címet
+    // tükrözi, a tényleges bejelentkezés a linkre kattintásig még a RÉGI e-mail
+    // címmel működik (nincs Cloud Function, ami észlelné a tényleges váltás
+    // megtörténtét, ezért ezt a UI szövegben is világosan jelezzük).
+    await firebase.database().ref('users/' + currentUser.uid + '/email').set(newEmail);
+    document.getElementById('profil-email-display').value = newEmail + ' (megerősítésre vár)';
+    noticeEl.textContent = '✓ Megerősítő linket küldtünk az új címre (' + newEmail + '). Kattints rá, hogy a váltás ténylegessé váljon — addig a jelenlegi (' + currentUser.email + ') e-mail címmel tudsz bejelentkezni.';
+    document.getElementById('profil-new-email-input').value = '';
+    document.getElementById('profil-email-currentpw-input').value = '';
+  } catch (e) {
+    const map = {
+      'auth/wrong-password': 'Hibás jelenlegi jelszó.',
+      'auth/invalid-credential': 'Hibás jelenlegi jelszó.',
+      'auth/email-already-in-use': 'Ezt az e-mail címet már használja egy másik fiók.',
+      'auth/invalid-email': 'Érvénytelen e-mail cím formátum.',
+      'auth/requires-recent-login': 'Biztonsági okból jelentkezz ki, majd be újra, és próbáld meg ismét közvetlenül utána.',
+      'auth/too-many-requests': 'Túl sok próbálkozás — kérlek várj egy kicsit.'
+    };
+    errEl.textContent = (e && e.code && map[e.code]) || ('Hiba történt: ' + (e && e.message ? e.message : e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Megerősítő link küldése'; }
+  }
+}
+
+// ── JELSZÓ MEGVÁLTOZTATÁSA ────────────────────────────────────
+async function submitPasswordChange() {
+  const currentPw = document.getElementById('profil-currentpw-input').value;
+  const newPw = document.getElementById('profil-newpw-input').value;
+  const newPw2 = document.getElementById('profil-newpw2-input').value;
+  const errEl = document.getElementById('profil-password-error');
+  const noticeEl = document.getElementById('profil-password-notice');
+  errEl.textContent = ''; noticeEl.textContent = '';
+
+  if (!currentPw) { errEl.textContent = 'Add meg a jelenlegi jelszavad!'; return; }
+  if (!newPw || newPw.length < 6) { errEl.textContent = 'Az új jelszónak legalább 6 karakternek kell lennie!'; return; }
+  if (newPw !== newPw2) { errEl.textContent = 'A két új jelszó nem egyezik!'; return; }
+
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) { errEl.textContent = 'A munkameneted lejárt, jelentkezz be újra!'; return; }
+
+  const btn = document.querySelector('#password-change-form .menu-btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Mentés...'; }
+  try {
+    const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, currentPw);
+    await currentUser.reauthenticateWithCredential(cred);
+    await currentUser.updatePassword(newPw);
+    noticeEl.textContent = '✓ A jelszavad sikeresen megváltozott!';
+    document.getElementById('profil-currentpw-input').value = '';
+    document.getElementById('profil-newpw-input').value = '';
+    document.getElementById('profil-newpw2-input').value = '';
+  } catch (e) {
+    const map = {
+      'auth/wrong-password': 'Hibás jelenlegi jelszó.',
+      'auth/invalid-credential': 'Hibás jelenlegi jelszó.',
+      'auth/weak-password': 'Az új jelszó túl gyenge, legalább 6 karakter legyen.',
+      'auth/requires-recent-login': 'Biztonsági okból jelentkezz ki, majd be újra, és próbáld meg ismét közvetlenül utána.',
+      'auth/too-many-requests': 'Túl sok próbálkozás — kérlek várj egy kicsit.'
+    };
+    errEl.textContent = (e && e.code && map[e.code]) || ('Hiba történt: ' + (e && e.message ? e.message : e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✓ Mentés'; }
+  }
+}
+
+// ── FIÓK TÖRLÉSE ───────────────────────────────────────────────
+// FONTOS BIZTONSÁGI KORLÁT: admin-jogosultságú fiók NEM törölhető ezen a
+// felületen — ez megelőzi, hogy véletlenül admin nélkül maradjon a rendszer.
+// Ha ez tényleg szükséges, azt közvetlenül a Firebase Console-ból kell
+// elvégezni, miután gondoskodtunk másik admin fiókról.
+async function openDeleteAccountModal() {
+  const errEl = document.getElementById('delete-account-error');
+  if (errEl) errEl.textContent = '';
+  const pwInput = document.getElementById('delete-account-password-input');
+  if (pwInput) pwInput.value = '';
+
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) return;
+  try {
+    const snap = await firebase.database().ref('users/' + currentUser.uid + '/role').once('value');
+    if (snap.val() === 'admin') {
+      alert('Adminisztrátori fiókot biztonsági okból nem lehet itt törölni — ez megelőzi, hogy admin nélkül maradjon a rendszer. Ha valóban törölni szeretnéd, előbb gondoskodj róla, hogy legyen másik admin fiók, majd a Firebase Console-ból végezd el a törlést.');
+      return;
+    }
+  } catch (e) {
+    alert('Nem sikerült ellenőrizni a fiók jogosultságát: ' + (e && e.message ? e.message : e));
+    return;
+  }
+  document.getElementById('delete-account-modal-overlay').classList.remove('hidden');
+}
+
+function closeDeleteAccountModal() {
+  document.getElementById('delete-account-modal-overlay').classList.add('hidden');
+}
+
+async function confirmDeleteAccount() {
+  const pw = document.getElementById('delete-account-password-input').value;
+  const errEl = document.getElementById('delete-account-error');
+  errEl.textContent = '';
+  if (!pw) { errEl.textContent = 'Add meg a jelenlegi jelszavad a megerősítéshez!'; return; }
+
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) { errEl.textContent = 'A munkameneted lejárt, jelentkezz be újra!'; return; }
+
+  const btn = document.getElementById('delete-account-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Törlés...'; }
+  try {
+    const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, pw);
+    await currentUser.reauthenticateWithCredential(cred);
+    // Adatbázis-rekord törlése ELŐBB, amíg még hitelesítve vagyunk ezzel a fiókkal -
+    // utána töröljük magát az Auth-fiókot is (utána már nem tudnánk írni a DB-be).
+    await firebase.database().ref('users/' + currentUser.uid).remove();
+    await firebase.database().ref('publicProfiles/' + currentUser.uid).remove();
+    removeMyPresence();
+    await currentUser.delete();
+    closeDeleteAccountModal();
+    alert('A fiókod véglegesen törölve lett. Viszlát!');
+    showAuthScreen();
+  } catch (e) {
+    const map = {
+      'auth/wrong-password': 'Hibás jelszó.',
+      'auth/invalid-credential': 'Hibás jelszó.',
+      'auth/requires-recent-login': 'Biztonsági okból jelentkezz ki, majd be újra, és próbáld meg ismét közvetlenül utána.',
+      'auth/too-many-requests': 'Túl sok próbálkozás — kérlek várj egy kicsit.'
+    };
+    errEl.textContent = (e && e.code && map[e.code]) || ('Hiba történt: ' + (e && e.message ? e.message : e));
+    if (btn) { btn.disabled = false; btn.textContent = '🗑 VÉGLEGES TÖRLÉS'; }
+  }
 }
 
 // ── AUTH-KAPU: eldönti induláskor, melyik képernyő jelenjen meg ──
@@ -1024,10 +1587,29 @@ function initAuthGate() {
         playerName = data.name;
         playerId = user.uid;
         if (!myColor) myColor = COLORS[Math.floor(Math.random() * COLORS.length)];
-        localStorage.setItem('quizPlayerName', data.name);
         const nameInput = document.getElementById('menu-name-input');
         if (nameInput) nameInput.value = data.name;
-        showMenu();
+        initPresenceSystem(user.uid);
+        // Önjavító pótlás: ha a publicProfiles "kirakat" bejegyzésünk még nem létezik
+        // (mert a mező bevezetése ELŐTT regisztráltunk/állítottuk be az adatainkat, és
+        // azóta sem nyitottuk meg a Profilomot), most pótoljuk - minden belépéskor
+        // lefut ez az egyszerű ellenőrzés, önmagát javítja bárkinél, aki még lemaradt.
+        try {
+          const pubSnap = await firebase.database().ref('publicProfiles/' + user.uid + '/name').once('value');
+          if (!pubSnap.exists()) {
+            await firebase.database().ref('publicProfiles/' + user.uid + '/name').set(data.name);
+            if (data.gyulekezet) await firebase.database().ref('publicProfiles/' + user.uid + '/gyulekezet').set(data.gyulekezet);
+            if (data.avatarId) await firebase.database().ref('publicProfiles/' + user.uid + '/avatarId').set(data.avatarId);
+          }
+        } catch (e) { console.warn('[QuizMaster] publicProfiles pótlás hiba:', e); }
+        // Meglévő, a gyülekezet mező bevezetése ELŐTT regisztrált felhasználóknál ez
+        // még hiányozhat — kötelező pótlás, mielőtt a főmenübe engednénk (l. PROJEKT_ALLAPOT).
+        const hasGyulekezet = data.gyulekezet && String(data.gyulekezet).trim().length > 0;
+        if (!hasGyulekezet) {
+          showGyulekezetGateScreen();
+        } else {
+          showMenu();
+        }
       } else if (data.status === 'rejected') {
         showRejectedScreen();
       } else {
@@ -1040,6 +1622,128 @@ function initAuthGate() {
   });
 }
 initAuthGate();
+
+// ── GYÜLEKEZET-PÓTLÁS KAPU ────────────────────────────────────
+// Csak azoknál a MÁR JÓVÁHAGYOTT felhasználóknál fut le, akiknél a
+// gyulekezet mező még hiányzik (mert a bevezetése előtt regisztráltak).
+// Amíg ezt ki nem töltik, a főmenübe nem juthatnak el.
+function showGyulekezetGateScreen() {
+  hideAll();
+  const screen = document.getElementById('gyulekezet-gate-screen');
+  screen.style.display = 'flex';
+  document.getElementById('gyulekezet-gate-error').textContent = '';
+  const input = document.getElementById('gyulekezet-gate-input');
+  if (input) {
+    input.value = '';
+    const btn = document.getElementById('gyulekezet-gate-submit-btn');
+    if (btn) { btn.disabled = false; btn.textContent = 'TOVÁBB'; }
+    setTimeout(() => input.focus(), 150);
+  }
+}
+
+async function submitGyulekezetGate() {
+  const input = document.getElementById('gyulekezet-gate-input');
+  const errEl = document.getElementById('gyulekezet-gate-error');
+  const btn = document.getElementById('gyulekezet-gate-submit-btn');
+  const val = input.value.trim();
+  errEl.textContent = '';
+
+  if (!val || val.length < 2) {
+    errEl.textContent = 'Add meg a gyülekezeted nevét (legalább 2 karakter)!';
+    return;
+  }
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) {
+    errEl.textContent = 'A munkameneted lejárt — frissítsd az oldalt, és jelentkezz be újra!';
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Mentés...'; }
+  try {
+    await firebase.database().ref('users/' + currentUser.uid + '/gyulekezet').set(val);
+    await firebase.database().ref('publicProfiles/' + currentUser.uid + '/gyulekezet').set(val);
+    showMenu();
+  } catch (e) {
+    errEl.textContent = 'Hiba történt a mentéskor: ' + (e && e.message ? e.message : e);
+    if (btn) { btn.disabled = false; btn.textContent = 'TOVÁBB'; }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ONLINE JÁTÉKOSOK (7. fázis) — a presence + publicProfiles adatokból
+// épül fel. Csak MEGJELENÍTÉS ebben a fázisban — a meghívás-funkció
+// (Váróteremből) egy következő fázisban érkezik.
+// ══════════════════════════════════════════════════════════════
+
+function showOnlinePlayersScreen() {
+  hideAll();
+  document.getElementById('online-players-screen').style.display = 'flex';
+  window.scrollTo({top:0});
+  loadOnlinePlayersList();
+}
+
+function loadOnlinePlayersList() {
+  const listEl = document.getElementById('online-players-list');
+  const subtitleEl = document.getElementById('online-players-subtitle');
+  listEl.innerHTML = '';
+  subtitleEl.textContent = 'Betöltés...';
+  if (onlinePlayersListenerRef) onlinePlayersListenerRef.off();
+  if (!db) db = firebase.database();
+  onlinePlayersListenerRef = db.ref('presence');
+  onlinePlayersListenerRef.on('value', async snap => {
+    const presenceData = snap.val() || {};
+    const uids = Object.keys(presenceData).filter(uid => uid !== playerId);
+    if (uids.length === 0) {
+      subtitleEl.textContent = 'Jelenleg nincs más online játékos.';
+      listEl.innerHTML = '';
+      return;
+    }
+    subtitleEl.textContent = uids.length + (uids.length === 1 ? ' játékos online' : ' játékos online');
+    try {
+      const profiles = await Promise.all(uids.map(async uid => {
+        const pSnap = await db.ref('publicProfiles/' + uid).once('value');
+        return { uid, presence: presenceData[uid], profile: pSnap.val() || {} };
+      }));
+      // Csak akkor rajzoljuk ki, ha még mindig ez a képernyő aktív (elkerülve, hogy egy
+      // időközben elnavigált képernyőn fusson le egy késve érkező aszinkron válasz)
+      if (document.getElementById('online-players-screen').style.display !== 'none') {
+        renderOnlinePlayersList(profiles);
+      }
+    } catch (e) {
+      subtitleEl.textContent = 'Hiba történt a lista betöltésekor.';
+      console.warn('[QuizMaster] Online játékosok lista hiba:', e);
+    }
+  });
+}
+
+function renderOnlinePlayersList(profiles) {
+  const listEl = document.getElementById('online-players-list');
+  profiles.sort((a, b) => (a.profile.name || '').localeCompare(b.profile.name || '', 'hu'));
+  listEl.innerHTML = profiles.map(p => {
+    const name = p.profile.name || '(névtelen)';
+    const gyulekezet = p.profile.gyulekezet || '—';
+    const avatarHtml = p.profile.avatarId ? renderAvatarBadge(p.profile.avatarId, 48) : null;
+    const badgeHtml = avatarHtml || renderMonogramBadge(name, '#f0c040', 48);
+    const isPlaying = p.presence && p.presence.state === 'playing';
+    const statusHtml = isPlaying
+      ? '<span class="online-status-playing">🎮 Játékban</span>'
+      : '<span class="online-status-idle">🟢 Elérhető</span>';
+    return `<div class="online-player-card">
+      <div class="online-player-avatar">${badgeHtml}</div>
+      <div class="online-player-info">
+        <div class="online-player-name">${escHtml(name)}</div>
+        <div class="online-player-gyulekezet">⛪ ${escHtml(gyulekezet)}</div>
+      </div>
+      ${statusHtml}
+    </div>`;
+  }).join('');
+}
+
+function showInfoScreen() {
+  hideAll();
+  document.getElementById('info-screen').style.display = 'flex';
+  window.scrollTo({top:0});
+}
 function showGuide() {
   hideAll();
   document.getElementById('guide-screen').style.display = 'flex';
@@ -1715,6 +2419,7 @@ function backToMenu() {
   document.getElementById('my-score').textContent = '0';
   document.getElementById('my-rank').textContent = '#—';
   updateGameModeUI();
+  updateMyPresence('menu');
   showMenu();
 }
 
@@ -1795,9 +2500,6 @@ async function confirmCreateRoom() {
   errEl.textContent = '';
   const currentUser = firebase.auth().currentUser;
   if (!currentUser) { errEl.textContent = 'Nincs bejelentkezve. Frissítsd az oldalt!'; return; }
-
-  const nameInput = document.getElementById('menu-name-input');
-  if (nameInput && nameInput.value.trim().length >= 2) playerName = nameInput.value.trim();
   if (!playerName) { errEl.textContent = 'Hiányzik a neved — lépj vissza a főmenübe!'; return; }
 
   let pool = crSelectedTopic === 'all'
@@ -1945,8 +2647,6 @@ function buildRoomCard(code, entry) {
 
 async function joinExistingRoom(code) {
   if (roomListListenerRef) { roomListListenerRef.off(); roomListListenerRef = null; }
-  const nameInput = document.getElementById('menu-name-input');
-  if (nameInput && nameInput.value.trim().length >= 2) playerName = nameInput.value.trim();
   if (!playerName) { alert('Hiányzik a neved — lépj vissza a főmenübe!'); return; }
   amIRoomHost = false;
   try {
@@ -1985,6 +2685,7 @@ async function connectAsPlayerToRoom(code) {
     hostScoringListenerAttached = true;
   }
 
+  updateMyPresence('playing');
   showLobby();
 }
 
@@ -2370,6 +3071,14 @@ function hostSetupScoringListener() {
       if (hostGameMode === 'teams' && players[pid] && players[pid].teamId) {
         roomRef.child('teams').child(players[pid].teamId).child('score').transaction(cur => (cur||0) + pts);
       }
+      // Élethosszig tartó válasz-statisztika (users/{pid}/stats) — SZOBÁTÓL FÜGGETLEN,
+      // a játékos fiókjához kötött. Ide csak akkor jutunk, ha ans.answer !== -1
+      // (pts>0 kizárja az időtúllépést), tehát a "megválaszolt" számláló pontosan
+      // a tényleges válaszadásokat számolja, időtúllépést sosem. Ugyanaz a bármely-
+      // approved-felhasználó-írhat elv érvényesül itt, mint a room-szintű pontozásnál —
+      // a szobát irányító host mindig más játékos fiókjába ír, nem a sajátjába.
+      db.ref('users/' + pid + '/stats/answered').transaction(cur => (cur||0) + 1);
+      db.ref('users/' + pid + '/stats/' + (isCorrect ? 'correct' : 'wrong')).transaction(cur => (cur||0) + 1);
     }
 
     roomRef.child('players').once('value', psnap => {
@@ -2814,7 +3523,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 2.8</div>
+<div class="version-badge">Játék verzió: 3.3</div>
 
 </body>
 </html>
