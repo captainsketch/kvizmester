@@ -141,6 +141,10 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   .online-player-gyulekezet { font-size:12px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .online-status-playing { font-size:11px; color:var(--accent2); font-weight:700; white-space:nowrap; }
   .online-status-idle { font-size:11px; color:var(--green); font-weight:700; white-space:nowrap; }
+  .online-status-invited { font-size:11px; color:var(--accent); font-weight:700; white-space:nowrap; }
+  .online-players-invite-hint { display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; background:rgba(240,192,64,0.08); border:1px solid rgba(240,192,64,0.25); border-radius:12px; padding:13px 16px; margin-bottom:16px; font-size:13px; color:var(--text); line-height:1.5; }
+  .online-player-card.invite-tappable { cursor:pointer; transition:all 0.15s; -webkit-user-select:none; user-select:none; }
+  .online-player-card.invite-tappable:active { transform:scale(0.97); border-color:var(--accent); background:rgba(240,192,64,0.06); }
   .guide-back { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; margin-bottom:28px; background:none; border:none; padding:0; }
   .guide-back:active { color:var(--accent); }
   .guide-title { font-family:var(--font-display); font-size:42px; letter-spacing:3px; color:var(--accent); margin-bottom:6px; }
@@ -349,6 +353,34 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   .hist-pts-val.pts-zero { color:var(--muted); }
 
   .hidden { display:none !important; }
+
+  /* ── MEGHÍVÓ ÉRTESÍTÉS (fix overlay, bármely képernyő fölött) ── */
+  #invite-notification-banner {
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--surface2); border:1px solid var(--accent);
+    border-radius:16px; padding:16px 18px; z-index:10000;
+    box-shadow:0 8px 32px rgba(0,0,0,0.55);
+    max-width:340px; width:calc(100% - 40px);
+    animation:slideUpBanner 0.4s ease;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .invite-notif-text { font-size:14px; line-height:1.5; color:var(--text); }
+  .invite-notif-text strong { color:var(--accent); }
+  .invite-notif-queue-hint { font-size:11px; color:var(--muted); margin-top:-4px; }
+  .invite-notif-actions { display:flex; gap:8px; }
+  .invite-notif-accept {
+    flex:2; padding:11px; background:var(--accent); color:#000; border:none;
+    border-radius:10px; font-family:var(--font-display); font-size:18px;
+    letter-spacing:1.5px; cursor:pointer; transition:all 0.15s;
+    box-shadow:0 4px 16px rgba(240,192,64,0.2);
+  }
+  .invite-notif-accept:active { transform:scale(0.96); }
+  .invite-notif-decline {
+    flex:1; padding:11px; background:transparent; color:var(--muted);
+    border:1px solid var(--border); border-radius:10px;
+    font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s;
+  }
+  .invite-notif-decline:active { border-color:var(--red); color:var(--red); }
 
   /* VERSION BADGE */
   .version-badge {
@@ -641,7 +673,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.3</div><div><div class="cl-desc">Új "Online Játékosok" gomb a főmenüben — megmutatja, kik vannak éppen csatlakoztatva az apphoz (avatarjukkal, nevükkel, gyülekezetükkel), és azt is jelzi, ki van épp játékban, ki elérhető. A szobába hívás funkciója egy következő frissítésben érkezik.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.4</div><div><div class="cl-desc">Elkészült a szobába hívás funkciója. A Váróteremben, a szoba irányítójaként új „📨 JÁTÉKOSOK MEGHÍVÁSA" gomb nyitja meg az Online Játékosok listáját meghívás módban — koppints valakire, és azonnal kap egy értesítést, bárhol is tart éppen az appban. Ha a meghívott nincs éppen szobában, egyenesen a te Váróterembe kerül; ha éppen máshol játszik, előbb megerősítést kérünk tőle, mert az addigi előrehaladása elveszne a váltással.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.3</div><div><div class="cl-desc">Új "Online Játékosok" gomb a főmenüben — megmutatja, kik vannak éppen csatlakoztatva az apphoz (avatarjukkal, nevükkel, gyülekezetükkel), és azt is jelzi, ki van épp játékban, ki elérhető. A szobába hívás funkciója egy következő frissítésben érkezik.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.2</div><div><div class="cl-desc">Alapozó munka egy jövőbeli "Online Játékosok" funkcióhoz: a rendszer mostantól nyomon követi, ki van éppen csatlakoztatva az apphoz és van-e éppen szobában. Ez a fázis még nem hoz látható változást — a tényleges lista a következő frissítésben érkezik.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.1</div><div><div class="cl-desc">Főmenü átrendezve: az Útmutató és a Verzióelőzmények mostantól egy közös "Információk" gomb mögé kerültek, és megjelent a "Kijelentkezés" gomb is. A "neved" mező a főmenün mostantól csak megjelenítés — a neved kizárólag a Profilomban módosítható.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.0</div><div><div class="cl-desc">Új "Profilom" képernyő a főmenüben: név és gyülekezet szerkesztése, avatar-választás 20 saját arc-ikon közül, e-mail cím módosítása (megerősítő linkkel az új címre), jelszó megváltoztatása, saját válasz-statisztika megtekintése, és fiók végleges törlése. Az e-mail- és jelszócsere, valamint a fiók törlése biztonsági okból mindig kéri a jelenlegi jelszavad megerősítését.</div></div></div>
@@ -796,9 +829,10 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
 
 <!-- ONLINE JÁTÉKOSOK -->
 <div id="online-players-screen">
-  <button class="guide-back" onclick="showMenu()">← Vissza</button>
-  <div class="guide-title">ONLINE JÁTÉKOSOK</div>
+  <button class="guide-back" id="online-players-back-btn" onclick="backFromOnlinePlayers()">← Vissza</button>
+  <div class="guide-title" id="online-players-title">ONLINE JÁTÉKOSOK</div>
   <div class="guide-subtitle" id="online-players-subtitle">Betöltés...</div>
+  <div class="online-players-invite-hint hidden" id="online-players-invite-hint">👆 Koppints valakire, hogy meghívd a szobádba</div>
   <div id="online-players-list"></div>
 </div>
 
@@ -834,7 +868,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     <div class="guide-section-title">🚪 Szoba indítása / csatlakozás</div>
     <p><strong style="color:var(--text)">➕ Új szoba:</strong> Bárki jóváhagyott játékos nyithat szobát. Válaszd ki a játékmódot, a témakört és a kérdésszámot — a szoba azonnal létrejön, és te leszel az <strong style="color:var(--text)">irányítója</strong>, miközben egyben te is részt veszel a játékban.</p>
     <p><strong style="color:var(--text)">🚪 Csatlakozás szobához:</strong> A nyitott szobák automatikusan megjelennek egy listában — nincs szükség kódra, csak koppints arra, amelyikhez csatlakozni szeretnél.</p>
-    <p><strong style="color:var(--text)">Szoba irányítójaként</strong> a váróteremben nálad jelenik meg a „▶ JÁTÉK INDÍTÁSA" gomb (csapatmódban előbb a „👥 CSAPATOK KEZELÉSE" is) — utána minden automatikusan zajlik, nincs szükség kézi vezérlésre a kérdések között.</p>
+    <p><strong style="color:var(--text)">Szoba irányítójaként</strong> a váróteremben nálad jelenik meg a „▶ JÁTÉK INDÍTÁSA" gomb (csapatmódban előbb a „👥 CSAPATOK KEZELÉSE" is), valamint a „📨 JÁTÉKOSOK MEGHÍVÁSA" gomb — ezzel az Online Játékosok listájából közvetlenül behívhatsz valakit a szobádba. Utána minden automatikusan zajlik, nincs szükség kézi vezérlésre a kérdések között.</p>
+    <p><strong style="color:var(--text)">Ha téged hívnak meg</strong> egy szobába, egy értesítés jelenik meg nálad — függetlenül attól, mit csinálsz éppen az appban. Ha nem vagy éppen szobában, egyből csatlakozhatsz; ha épp egy másik játékban vagy, előbb megerősítést kérünk, mert az addigi előrehaladásod elveszik a váltással.</p>
   </div>
   <div class="guide-section">
     <div class="guide-section-title">📋 Egyéni verseny — Játékmenet</div>
@@ -893,6 +928,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     <div class="lobby-joined-count" id="lobby-joined-count">0 játékos csatlakozott</div>
     <div class="lobby-team-status-text hidden" id="lobby-team-status"></div>
     <button class="menu-btn-secondary hidden" id="lobby-team-setup-btn" style="font-size:18px;padding:14px;margin-bottom:12px;" onclick="tsShowSetupScreen()">👥 CSAPATOK KEZELÉSE</button>
+    <button class="menu-btn-secondary" id="lobby-invite-btn" style="font-size:16px;padding:13px;margin-bottom:12px;" onclick="showOnlinePlayersScreen(true)">📨 JÁTÉKOSOK MEGHÍVÁSA</button>
     <button class="menu-btn-primary" id="lobby-start-btn" style="font-size:22px;padding:16px;" onclick="hostStartQuiz()">▶ JÁTÉK INDÍTÁSA</button>
   </div>
   <button class="btn-back-game" style="max-width:280px;margin-top:28px;" onclick="backToMenu()">↺ Vissza a főmenübe</button>
@@ -995,6 +1031,18 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   </div>
 </div>
 
+<!-- MEGHÍVÓ ÉRTESÍTÉS — önálló, fix overlay; NEM hideAll()-lal kezelt "screen",
+     tehát bármelyik képernyő fölött megjelenhet, függetlenül attól hol tartunk
+     éppen az appban (l. 8. fázis, meghívó-rendszer). -->
+<div id="invite-notification-banner" class="hidden">
+  <div class="invite-notif-text">📨 <strong id="invite-notif-name">Valaki</strong> meghívott a szobájába!</div>
+  <div class="invite-notif-queue-hint hidden" id="invite-notif-queue-hint"></div>
+  <div class="invite-notif-actions">
+    <button class="invite-notif-accept" onclick="acceptInvite()">CSATLAKOZÁS</button>
+    <button class="invite-notif-decline" onclick="dismissInviteNotification()">Elutasítás</button>
+  </div>
+</div>
+
 <!-- PWA BANNER -->
 <div id="install-banner" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c1c28;border:1px solid #f0c040;border-radius:16px;padding:14px 18px;align-items:center;gap:14px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:340px;width:calc(100% - 40px);animation:slideUpBanner 0.4s ease;">
   <img src="icons/icon-72.png" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;" alt="">
@@ -1056,6 +1104,14 @@ let crAvailableQuestions = [];    // a "kvizjatek" tartalom-szobából betöltö
 let roomListListenerRef = null;   // a szobalista élő figyelője
 let onlinePlayersListenerRef = null;   // az Online Játékosok lista élő figyelője (presence)
 let hostRoomTopicLabel = 'Vegyes';
+
+// ── SZOBA-MEGHÍVÓ RENDSZER (8. fázis) — globális állapot ──────
+let onlinePlayersInviteMode = false;   // igaz, ha az Online Játékosok lista "meghívás módban" van
+let lastLoadedOnlineProfiles = [];     // a legutóbb betöltött online-profil lista (újrarajzoláshoz meghívás után)
+let invitedUidsThisSession = new Set(); // kiket hívtunk már meg EBBEN a meghívás-munkamenetben
+let pendingInviteRoomCode = null;      // az épp megjelenített meghívó-értesítés szoba-kódja
+let inviteQueue = [];                  // {roomCode, data} - ha több meghívó érkezik egyszerre, ezek várnak sorra
+let inviteListenerRef = null;          // a saját invites/{uid} postaláda élő figyelője
 // Host mini-motor: a szobanyitó ebből vezérli az alap kvíz kört
 let hostGameMode = 'normal';       // az aktuális szoba játékmódja ('normal' | 'teams') — ez alapján dolgozik a mini-motor
 let hostQuestionsPool = [];
@@ -1255,7 +1311,23 @@ function removeMyPresence() {
 
 function doLogout() {
   removeMyPresence();
+  presenceRef = null;
+  cleanupInviteState();
   firebase.auth().signOut();
+}
+
+// Meghívó-rendszer teljes leállítása/nullázása kijelentkezéskor és fiók
+// törlésekor egyaránt — enélkül egy ugyanabban a böngésző-munkamenetben
+// (frissítés nélkül) történő újra-bejelentkezés a RÉGI felhasználó
+// invites/{uid} figyelőjét örökölné (az initInviteListener() guard-ja
+// "már fut" állapotban maradna), és a banner/pending állapot is átcsúszhatna
+// a következő fiókba.
+function cleanupInviteState() {
+  if (inviteListenerRef) { inviteListenerRef.off(); inviteListenerRef = null; }
+  pendingInviteRoomCode = null;
+  inviteQueue = [];
+  const banner = document.getElementById('invite-notification-banner');
+  if (banner) banner.classList.add('hidden');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1545,6 +1617,8 @@ async function confirmDeleteAccount() {
     await firebase.database().ref('users/' + currentUser.uid).remove();
     await firebase.database().ref('publicProfiles/' + currentUser.uid).remove();
     removeMyPresence();
+    presenceRef = null;
+    cleanupInviteState();
     await currentUser.delete();
     closeDeleteAccountModal();
     alert('A fiókod véglegesen törölve lett. Viszlát!');
@@ -1590,6 +1664,7 @@ function initAuthGate() {
         const nameInput = document.getElementById('menu-name-input');
         if (nameInput) nameInput.value = data.name;
         initPresenceSystem(user.uid);
+        initInviteListener(user.uid);
         // Önjavító pótlás: ha a publicProfiles "kirakat" bejegyzésünk még nem létezik
         // (mert a mező bevezetése ELŐTT regisztráltunk/állítottuk be az adatainkat, és
         // azóta sem nyitottuk meg a Profilomot), most pótoljuk - minden belépéskor
@@ -1671,15 +1746,37 @@ async function submitGyulekezetGate() {
 
 // ══════════════════════════════════════════════════════════════
 // ONLINE JÁTÉKOSOK (7. fázis) — a presence + publicProfiles adatokból
-// épül fel. Csak MEGJELENÍTÉS ebben a fázisban — a meghívás-funkció
-// (Váróteremből) egy következő fázisban érkezik.
+// épül fel. A 8. fázistól kezdve két módban működik:
+//   - normál megjelenítés (a főmenüből nyitva)
+//   - "meghívás mód" (a Váróteremből, a szoba nyitójaként nyitva) —
+//     ilyenkor a már bent lévők kimaradnak, a kártyák koppinthatók,
+//     és koppintásra meghívót küldünk a kiválasztott játékosnak.
 // ══════════════════════════════════════════════════════════════
 
-function showOnlinePlayersScreen() {
+function showOnlinePlayersScreen(inviteMode) {
   hideAll();
+  onlinePlayersInviteMode = !!inviteMode;
+  if (onlinePlayersInviteMode) invitedUidsThisSession = new Set();
   document.getElementById('online-players-screen').style.display = 'flex';
   window.scrollTo({top:0});
+  const backBtn = document.getElementById('online-players-back-btn');
+  if (backBtn) backBtn.textContent = onlinePlayersInviteMode ? '← Vissza a váróterembe' : '← Vissza';
+  const titleEl = document.getElementById('online-players-title');
+  if (titleEl) titleEl.textContent = onlinePlayersInviteMode ? 'JÁTÉKOSOK MEGHÍVÁSA' : 'ONLINE JÁTÉKOSOK';
+  const hint = document.getElementById('online-players-invite-hint');
+  if (hint) hint.classList.toggle('hidden', !onlinePlayersInviteMode);
   loadOnlinePlayersList();
+}
+
+// A "← Vissza" gomb célja attól függ, honnan nyitottuk a képernyőt:
+// meghívás módban (a Váróteremből indítva) a Váróterembe térünk vissza,
+// egyébként (a főmenüből indítva) a főmenübe.
+function backFromOnlinePlayers() {
+  if (onlinePlayersInviteMode) {
+    showLobby();
+  } else {
+    showMenu();
+  }
 }
 
 function loadOnlinePlayersList() {
@@ -1694,11 +1791,13 @@ function loadOnlinePlayersList() {
     const presenceData = snap.val() || {};
     const uids = Object.keys(presenceData).filter(uid => uid !== playerId);
     if (uids.length === 0) {
-      subtitleEl.textContent = 'Jelenleg nincs más online játékos.';
+      lastLoadedOnlineProfiles = [];
+      subtitleEl.textContent = onlinePlayersInviteMode
+        ? 'Jelenleg nincs kit meghívni — nincs más online játékos.'
+        : 'Jelenleg nincs más online játékos.';
       listEl.innerHTML = '';
       return;
     }
-    subtitleEl.textContent = uids.length + (uids.length === 1 ? ' játékos online' : ' játékos online');
     try {
       const profiles = await Promise.all(uids.map(async uid => {
         const pSnap = await db.ref('publicProfiles/' + uid).once('value');
@@ -1707,6 +1806,7 @@ function loadOnlinePlayersList() {
       // Csak akkor rajzoljuk ki, ha még mindig ez a képernyő aktív (elkerülve, hogy egy
       // időközben elnavigált képernyőn fusson le egy késve érkező aszinkron válasz)
       if (document.getElementById('online-players-screen').style.display !== 'none') {
+        lastLoadedOnlineProfiles = profiles;
         renderOnlinePlayersList(profiles);
       }
     } catch (e) {
@@ -1718,17 +1818,55 @@ function loadOnlinePlayersList() {
 
 function renderOnlinePlayersList(profiles) {
   const listEl = document.getElementById('online-players-list');
-  profiles.sort((a, b) => (a.profile.name || '').localeCompare(b.profile.name || '', 'hu'));
-  listEl.innerHTML = profiles.map(p => {
+  const subtitleEl = document.getElementById('online-players-subtitle');
+
+  // Meghívás módban kihagyjuk azokat, akik már a JELENLEGI szobában (players) bent
+  // vannak — őket felesleges volna meghívni, hiszen már részt vesznek.
+  let visibleProfiles = profiles;
+  if (onlinePlayersInviteMode) {
+    visibleProfiles = profiles.filter(p => !(players && players[p.uid]));
+  }
+
+  if (visibleProfiles.length === 0) {
+    subtitleEl.textContent = onlinePlayersInviteMode
+      ? 'Nincs kit meghívni — mindenki, aki most online van, már a szobádban van.'
+      : 'Jelenleg nincs más online játékos.';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  subtitleEl.textContent = onlinePlayersInviteMode
+    ? visibleProfiles.length + ' játékos hívható meg'
+    : visibleProfiles.length + (visibleProfiles.length === 1 ? ' játékos online' : ' játékos online');
+
+  visibleProfiles.sort((a, b) => (a.profile.name || '').localeCompare(b.profile.name || '', 'hu'));
+  listEl.innerHTML = visibleProfiles.map(p => {
     const name = p.profile.name || '(névtelen)';
     const gyulekezet = p.profile.gyulekezet || '—';
     const avatarHtml = p.profile.avatarId ? renderAvatarBadge(p.profile.avatarId, 48) : null;
     const badgeHtml = avatarHtml || renderMonogramBadge(name, '#f0c040', 48);
     const isPlaying = p.presence && p.presence.state === 'playing';
-    const statusHtml = isPlaying
-      ? '<span class="online-status-playing">🎮 Játékban</span>'
-      : '<span class="online-status-idle">🟢 Elérhető</span>';
-    return `<div class="online-player-card">
+
+    let cardClass = 'online-player-card';
+    let clickAttr = '';
+    let statusHtml;
+    if (onlinePlayersInviteMode) {
+      if (invitedUidsThisSession.has(p.uid)) {
+        statusHtml = '<span class="online-status-invited">✓ Meghívva</span>';
+      } else {
+        cardClass += ' invite-tappable';
+        clickAttr = ` onclick="sendRoomInvite('${p.uid}')"`;
+        statusHtml = isPlaying
+          ? '<span class="online-status-playing">🎮 Játékban</span>'
+          : '<span class="online-status-idle">🟢 Elérhető</span>';
+      }
+    } else {
+      statusHtml = isPlaying
+        ? '<span class="online-status-playing">🎮 Játékban</span>'
+        : '<span class="online-status-idle">🟢 Elérhető</span>';
+    }
+
+    return `<div class="${cardClass}"${clickAttr}>
       <div class="online-player-avatar">${badgeHtml}</div>
       <div class="online-player-info">
         <div class="online-player-name">${escHtml(name)}</div>
@@ -1737,6 +1875,128 @@ function renderOnlinePlayersList(profiles) {
       ${statusHtml}
     </div>`;
   }).join('');
+}
+
+// ── Meghívó küldése (host oldal, Váróteremből) ────────────────
+// A Firebase Rules szerver-oldalon is kikényszeríti, hogy csak a hivatkozott
+// szoba tényleges hostja írhat ide (l. database_rules.json "invites" ág) —
+// ez a kliens-oldali "amIRoomHost" ellenőrzés csak a felesleges hálózati
+// kör elkerülésére és a felhasználói élményre szolgál, NEM biztonsági határ.
+async function sendRoomInvite(targetUid) {
+  if (!amIRoomHost || !roomCode) return;
+  if (invitedUidsThisSession.has(targetUid)) return;
+  try {
+    await firebase.database().ref('invites/' + targetUid + '/' + roomCode).set({
+      fromName: playerName,
+      ts: firebase.database.ServerValue.TIMESTAMP
+    });
+    invitedUidsThisSession.add(targetUid);
+    renderOnlinePlayersList(lastLoadedOnlineProfiles);
+  } catch (e) {
+    alert('Hiba a meghívó küldésekor: ' + (e && e.message ? e.message : e));
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// MEGHÍVÓ FOGADÁSA (8. fázis) — perzisztens figyelő a saját
+// invites/{playerId} postaládán, ami BÁRMELYIK képernyő fölött
+// megjeleníthet egy értesítő sávot, függetlenül attól, hol tartunk
+// éppen az appban. Egyszer indul el, a bejelentkezett munkamenet
+// egészére (l. initAuthGate() -> initInviteListener hívás).
+// ══════════════════════════════════════════════════════════════
+
+function initInviteListener(uid) {
+  if (inviteListenerRef) return; // már fut ebben a munkamenetben
+  inviteListenerRef = firebase.database().ref('invites/' + uid);
+  inviteListenerRef.on('child_added', snap => {
+    queueInviteNotification(snap.key, snap.val() || {});
+  });
+}
+
+// Egyszerre TÖBB szoba is meghívhatja ugyanazt a személyt (l. Rules-tervezés
+// indoklása database_rules.json-ban) — ha épp látszik egy értesítés, az
+// újabbat sorba állítjuk, nehogy némán elvesszen, amíg az elsőt el nem
+// döntöttük (elfogadás vagy elutasítás).
+function queueInviteNotification(inviteRoomCode, inviteData) {
+  if (pendingInviteRoomCode === inviteRoomCode) return;
+  if (inviteQueue.some(inv => inv.roomCode === inviteRoomCode)) return;
+  if (!pendingInviteRoomCode) {
+    showInviteNotification(inviteRoomCode, inviteData);
+  } else {
+    inviteQueue.push({ roomCode: inviteRoomCode, data: inviteData });
+    updateInviteQueueHint();
+  }
+}
+
+function showInviteNotification(inviteRoomCode, inviteData) {
+  pendingInviteRoomCode = inviteRoomCode;
+  document.getElementById('invite-notif-name').textContent = inviteData.fromName || 'Valaki';
+  updateInviteQueueHint();
+  document.getElementById('invite-notification-banner').classList.remove('hidden');
+}
+
+function updateInviteQueueHint() {
+  const hintEl = document.getElementById('invite-notif-queue-hint');
+  if (!hintEl) return;
+  if (inviteQueue.length > 0) {
+    hintEl.textContent = '+' + inviteQueue.length + (inviteQueue.length === 1 ? ' további meghívás vár' : ' további meghívás vár');
+    hintEl.classList.remove('hidden');
+  } else {
+    hintEl.classList.add('hidden');
+  }
+}
+
+function showNextQueuedInviteIfAny() {
+  if (inviteQueue.length === 0) return;
+  const next = inviteQueue.shift();
+  showInviteNotification(next.roomCode, next.data);
+}
+
+function dismissInviteNotification() {
+  document.getElementById('invite-notification-banner').classList.add('hidden');
+  if (pendingInviteRoomCode && playerId) {
+    firebase.database().ref('invites/' + playerId + '/' + pendingInviteRoomCode).remove().catch(() => {});
+  }
+  pendingInviteRoomCode = null;
+  showNextQueuedInviteIfAny();
+}
+
+// Igaz, ha épp valamelyik "szobához kötött" képernyőn vagyunk — ez dönti el,
+// hogy meghívás elfogadásakor kell-e megerősítést kérni (elveszik-e valódi
+// előrehaladás), vagy egyenesen csatlakozhatunk.
+function isCurrentlyInARoom() {
+  const roomScreenIds = ['lobby-screen','team-setup-screen','waiting-screen','game-screen','result-screen','history-screen'];
+  return roomScreenIds.some(id => document.getElementById(id).style.display !== 'none');
+}
+
+async function acceptInvite() {
+  if (!pendingInviteRoomCode) return;
+  const targetRoom = pendingInviteRoomCode;
+
+  const doJoin = async () => {
+    document.getElementById('invite-notification-banner').classList.add('hidden');
+    firebase.database().ref('invites/' + playerId + '/' + targetRoom).remove().catch(() => {});
+    pendingInviteRoomCode = null;
+    amIRoomHost = false;
+    try {
+      await connectAsPlayerToRoom(targetRoom);
+    } catch (e) {
+      alert('Nem sikerült csatlakozni a szobához: ' + (e && e.message ? e.message : e));
+    }
+    showNextQueuedInviteIfAny();
+  };
+
+  if (isCurrentlyInARoom()) {
+    if (confirm('Biztos ki akarsz lépni a jelenlegi játékból? Az előrehaladásod elveszik.')) {
+      backToMenu();
+      await doJoin();
+    }
+    // Ha "Mégse"-t választja: a banner változatlanul, érintetlenül látható
+    // marad — később még eldöntheti (elfogadás vagy elutasítás), a meghívó
+    // nem vész el némán a háttérben.
+  } else {
+    await doJoin();
+  }
 }
 
 function showInfoScreen() {
@@ -2659,6 +2919,13 @@ async function joinExistingRoom(code) {
 
 // ── Közös csatlakozási logika (létrehozás UTÁN és listából csatlakozáskor egyaránt) ──
 async function connectAsPlayerToRoom(code) {
+  // Az esetlegesen még aktív, MÁS képernyőkhöz tartozó élő figyelők leállítása.
+  // FONTOS a meghívás-funkció miatt: a meghívó-értesítés BÁRMELYIK képernyőn
+  // felugorhat, tehát ide a Szobák listájáról vagy az Online Játékosok
+  // képernyőről is eljuthatunk, nem csak a menüből induló, eddig megszokott
+  // (és ott már egyenként lekezelt) útvonalakon.
+  if (roomListListenerRef) { roomListListenerRef.off(); roomListListenerRef = null; }
+  if (onlinePlayersListenerRef) { onlinePlayersListenerRef.off(); onlinePlayersListenerRef = null; }
   if (roomRef) {
     roomRef.child('gameState').off();
     roomRef.child('players').off();
@@ -2671,6 +2938,11 @@ async function connectAsPlayerToRoom(code) {
   const snap = await roomRef.child('gameState').once('value');
   const gameState = snap.val();
   if (!gameState) { showUnavailable(); return; }
+  // Meghívás-alapú csatlakozás közvetlen roomCode-dal megkerüli a roomIndex-
+  // alapú "csak várakozó szobák látszanak" szűrést — ha időközben elindult a
+  // kör (fázis már nem 'waiting'), ne engedjünk csatlakozni, mert holtvágányba
+  // kerülne a játékos (sosem kapna kérdést, hiszen 'lobby' státusszal ragadna).
+  if (gameState.phase !== 'waiting') { showUnavailable(); return; }
 
   await roomRef.child('players').child(playerId).set({
     name: playerName, score: 0, color: myColor, status: 'lobby',
@@ -3523,7 +3795,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.3</div>
+<div class="version-badge">Játék verzió: 3.4</div>
 
 </body>
 </html>
