@@ -24,6 +24,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check-compat.js"></script>
 <script>
 const FIREBASE_CONFIG = {
   apiKey:        "AIzaSyDUFXHdzdn6DaehVN44vRPGaNV3x-jhHXA",
@@ -32,8 +33,41 @@ const FIREBASE_CONFIG = {
   projectId:     "kvizmester-ded38",
 };
 const DEFAULT_ROOM = "kvizjatek";
+// ── APP CHECK / reCAPTCHA v3 (10. fázis) ──────────────────────────────────
+// Ide illeszd be a saját reCAPTCHA v3 SITE KEY-edet, miután regisztráltad a
+// https://www.google.com/recaptcha/admin oldalon ("v3" típus, domainként add
+// meg: captainsketch.github.io), ÉS bekapcsoltad az App Check-et a Firebase
+// Console → Build → App Check felületén, ugyanezzel a kulccsal. UGYANEZT a
+// site key-t használd a quiz-host.html "reCAPTCHA v3 Site Key" mezőjében is —
+// mindkét oldal ugyanazt a Firebase Web App-ot jelenti a Console szemében.
+// Amíg ez a placeholder marad, az App Check egyszerűen NEM aktiválódik, és az
+// alkalmazás — pontosan úgy, mint eddig — App Check nélkül működik tovább.
+const RECAPTCHA_V3_SITE_KEY = "IDE_ILLESZD_BE_A_RECAPTCHA_SITE_KEY-T";
+
 if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   firebase.initializeApp(FIREBASE_CONFIG);
+  if (RECAPTCHA_V3_SITE_KEY !== "IDE_ILLESZD_BE_A_RECAPTCHA_SITE_KEY-T") {
+    try {
+      // A `typeof firebase.appCheck === 'function'` védelem arra az esetre
+      // szolgál, ha a fenti firebase-app-check-compat.js script valamiért
+      // (hálózati hiba, ad-blocker, vagy egy jövőbeli SDK-verziónál esetleg
+      // hiányzó bundle a gstatic CDN-en) mégsem töltődött volna be — ilyenkor
+      // az app App Check NÉLKÜL, de egyébként teljesen hibátlanul fut tovább,
+      // csak egy figyelmeztetést ír a böngésző konzoljára.
+      if (typeof firebase.appCheck === 'function') {
+        firebase.appCheck().activate(
+          new firebase.appCheck.ReCaptchaV3Provider(RECAPTCHA_V3_SITE_KEY),
+          true // isTokenAutoRefreshEnabled — a token automatikus frissítése
+        );
+      } else {
+        console.warn('[QuizMaster] Az App Check SDK nem töltődött be (firebase.appCheck hiányzik) — ellenőrizd a firebase-app-check-compat.js script betöltését a hálózati fülön.');
+      }
+    } catch (e) {
+      console.warn('[QuizMaster] App Check aktiválási hiba:', e);
+    }
+  } else {
+    console.info('[QuizMaster] App Check nincs aktiválva: a RECAPTCHA_V3_SITE_KEY még a placeholder értéken áll (l. a kód eleji megjegyzést).');
+  }
 }
 </script>
 <style>
@@ -676,7 +710,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.5</div><div><div class="cl-desc">A szoba irányítója mostantól élő visszajelzést kap arról, mi történt egy elküldött meghívással: „✓ Meghívva" → „👁️ Látta" → „✅ Elfogadta" vagy „❌ Elutasította" — ez az Online Játékosok (meghívás mód) képernyőn látszik, akkor is, ha időközben ki- majd visszalépsz erre a képernyőre. Ha ugyanattól a szobától érkezik második meghívás ugyanannak a személynek, az egyszerűen felülírja az elsőt (nem történik automatikus visszavonás vagy ütközés-kezelés). Emellett javítva egy hiba: a jelenlét- és meghívó-rendszer mostantól csak azután indul el, hogy egy régóta regisztrált, gyülekezet nélküli felhasználó kitöltötte a kötelező „Gyülekezeted" képernyőt — korábban ez a két rendszer már a kapu előtt elindult, így elméletileg felugorhatott egy meghívás-értesítés a kapun ragadt felhasználónál, aminek elfogadása megkerülte volna a kötelező kitöltést.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.6</div><div><div class="cl-desc">Előkészítve (de alapértelmezetten kikapcsolva) a Firebase App Check támogatás — ez egy extra biztonsági réteg, ami igazolja, hogy a Firebase-hívások ténylegesen ebből az appból érkeznek, nem egy scriptelt, idegen kliensből. Amíg nincs beállítva a hozzá tartozó reCAPTCHA-kulcs, semmilyen látható változást nem okoz, az app pontosan úgy működik, mint eddig.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.5</div><div><div class="cl-desc">A szoba irányítója mostantól élő visszajelzést kap arról, mi történt egy elküldött meghívással: „✓ Meghívva" → „👁️ Látta" → „✅ Elfogadta" vagy „❌ Elutasította" — ez az Online Játékosok (meghívás mód) képernyőn látszik, akkor is, ha időközben ki- majd visszalépsz erre a képernyőre. Ha ugyanattól a szobától érkezik második meghívás ugyanannak a személynek, az egyszerűen felülírja az elsőt (nem történik automatikus visszavonás vagy ütközés-kezelés). Emellett javítva egy hiba: a jelenlét- és meghívó-rendszer mostantól csak azután indul el, hogy egy régóta regisztrált, gyülekezet nélküli felhasználó kitöltötte a kötelező „Gyülekezeted" képernyőt — korábban ez a két rendszer már a kapu előtt elindult, így elméletileg felugorhatott egy meghívás-értesítés a kapun ragadt felhasználónál, aminek elfogadása megkerülte volna a kötelező kitöltést.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.4</div><div><div class="cl-desc">Elkészült a szobába hívás funkciója. A Váróteremben, a szoba irányítójaként új „📨 JÁTÉKOSOK MEGHÍVÁSA" gomb nyitja meg az Online Játékosok listáját meghívás módban — koppints valakire, és azonnal kap egy értesítést, bárhol is tart éppen az appban. Ha a meghívott nincs éppen szobában, egyenesen a te Váróterembe kerül; ha éppen máshol játszik, előbb megerősítést kérünk tőle, mert az addigi előrehaladása elveszne a váltással.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.3</div><div><div class="cl-desc">Új "Online Játékosok" gomb a főmenüben — megmutatja, kik vannak éppen csatlakoztatva az apphoz (avatarjukkal, nevükkel, gyülekezetükkel), és azt is jelzi, ki van épp játékban, ki elérhető. A szobába hívás funkciója egy következő frissítésben érkezik.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.2</div><div><div class="cl-desc">Alapozó munka egy jövőbeli "Online Játékosok" funkcióhoz: a rendszer mostantól nyomon követi, ki van éppen csatlakoztatva az apphoz és van-e éppen szobában. Ez a fázis még nem hoz látható változást — a tényleges lista a következő frissítésben érkezik.</div></div></div>
@@ -3925,7 +3960,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.5</div>
+<div class="version-badge">Játék verzió: 3.6</div>
 
 </body>
 </html>
