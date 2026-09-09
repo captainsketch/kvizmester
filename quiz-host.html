@@ -178,7 +178,7 @@
     <div class="field"><label>Database URL</label><input type="text" id="cfg-databaseURL" placeholder="https://projekt-id-default-rtdb.europe-west1.firebasedatabase.app" value="https://kvizmester-ded38-default-rtdb.europe-west1.firebasedatabase.app"></div>
     <div class="field"><label>Project ID</label><input type="text" id="cfg-projectId" placeholder="projekt-id" value="kvizmester-ded38"></div>
     <div class="field"><label>Tartalom-adatbázis kódja</label><input type="text" id="cfg-room" placeholder="pl. kvizjatek" value="kvizjatek"></div>
-    <div class="field"><label>reCAPTCHA v3 Site Key <span style="color:var(--muted);text-transform:none;letter-spacing:0;">(App Check, opcionális)</span></label><input type="text" id="cfg-recaptchaKey" placeholder="hagyd üresen, ha még nincs beállítva App Check"></div>
+    <div class="field"><label>reCAPTCHA Enterprise Key <span style="color:var(--muted);text-transform:none;letter-spacing:0;">(App Check, opcionális)</span></label><input type="text" id="cfg-recaptchaKey" placeholder="hagyd üresen, ha még nincs beállítva App Check" value="6Le34rAtAAAAAD6fKXortiyCUtu00HRpq1AQFZIN"></div>
     <button class="btn" onclick="initFirebase()">KAPCSOLÓDÁS →</button>
   </div>
 </div>
@@ -382,17 +382,21 @@ function initFirebase() {
   try{
     if(firebase.apps.length)firebase.app().delete();
     firebase.initializeApp({apiKey,authDomain,databaseURL,projectId});
-    // App Check / reCAPTCHA v3 (10. fázis) — csak akkor próbáljuk aktiválni, ha
-    // az admin ténylegesen megadott egy site key-t a mezőben; ha üres, az app
-    // App Check nélkül működik tovább (ugyanúgy, mint eddig). Szándékosan SAJÁT
-    // try/catch-ben fut, elkülönítve a Firebase-kapcsolódás fő hibakezelésétől —
-    // egy esetleges App Check hiba (pl. hibás kulcs, be nem töltött SDK) ne
-    // akadályozza meg magát az admin-panelbe való bejutást.
+    // App Check / reCAPTCHA Enterprise (10. fázis, javítva) — csak akkor
+    // próbáljuk aktiválni, ha az admin ténylegesen megadott egy kulcsot a
+    // mezőben; ha üres, az app App Check nélkül működik tovább (ugyanúgy,
+    // mint eddig). FONTOS: a Firebase Console App Check felülete a
+    // klasszikus reCAPTCHA (v3) szolgáltatót elavultnak jelöli — jelenleg
+    // kizárólag a reCAPTCHA Enterprise szolgáltatóval regisztrálható egy
+    // webalkalmazás, ezért itt is az Enterprise providert használjuk.
+    // Szándékosan SAJÁT try/catch-ben fut, elkülönítve a Firebase-kapcsolódás
+    // fő hibakezelésétől — egy esetleges App Check hiba (pl. hibás kulcs, be
+    // nem töltött SDK) ne akadályozza meg magát az admin-panelbe való bejutást.
     if(recaptchaKey){
       try{
         if(typeof firebase.appCheck === 'function'){
           firebase.appCheck().activate(
-            new firebase.appCheck.ReCaptchaV3Provider(recaptchaKey),
+            new firebase.appCheck.ReCaptchaEnterpriseProvider(recaptchaKey),
             true // isTokenAutoRefreshEnabled
           );
         } else {
@@ -1045,7 +1049,7 @@ function renumberAllQuestions() {
 
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.3</div>
+<div class="version-badge">Admin panel verzió: 3.5</div>
 
 <script>
 // ============================================================

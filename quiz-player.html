@@ -33,20 +33,27 @@ const FIREBASE_CONFIG = {
   projectId:     "kvizmester-ded38",
 };
 const DEFAULT_ROOM = "kvizjatek";
-// ── APP CHECK / reCAPTCHA v3 (10. fázis) ──────────────────────────────────
-// Ide illeszd be a saját reCAPTCHA v3 SITE KEY-edet, miután regisztráltad a
-// https://www.google.com/recaptcha/admin oldalon ("v3" típus, domainként add
-// meg: captainsketch.github.io), ÉS bekapcsoltad az App Check-et a Firebase
-// Console → Build → App Check felületén, ugyanezzel a kulccsal. UGYANEZT a
-// site key-t használd a quiz-host.html "reCAPTCHA v3 Site Key" mezőjében is —
-// mindkét oldal ugyanazt a Firebase Web App-ot jelenti a Console szemében.
+// ── APP CHECK / reCAPTCHA Enterprise (10. fázis, javítva) ─────────────────
+// FONTOS: a Firebase Console App Check felülete a klasszikus reCAPTCHA (v3)
+// szolgáltatót "deprecated"-nek (elavultnak) jelöli és letiltja a mezőit —
+// jelenleg KIZÁRÓLAG a reCAPTCHA Enterprise szolgáltató regisztrálható. Ide
+// illeszd be a Google Cloud Console → Security → reCAPTCHA (Fraud Defense)
+// felületén létrehozott Website-típusú kulcsot ("Use checkbox challenge"
+// KIKAPCSOLVA, domain: captainsketch.github.io), ÉS ugyanezzel a kulccsal
+// regisztráld a webalkalmazást a Firebase Console → Security → App Check →
+// Apps fülön, a "reCAPTCHA Enterprise" szolgáltatóval. UGYANEZT a kulcsot
+// használd a quiz-host.html "reCAPTCHA Enterprise Key" mezőjében is — mindkét
+// oldal ugyanazt a Firebase Web App-ot jelenti a Console szemében.
+// FONTOS: ehhez NEM kell bankkártya / számlázás bekapcsolása a Google Cloud
+// projekten, amíg a havi használat 10 000 alatt marad (ez erre az alkalmazás-
+// méretre gyakorlatilag sosem fog megtörténni).
 // Amíg ez a placeholder marad, az App Check egyszerűen NEM aktiválódik, és az
 // alkalmazás — pontosan úgy, mint eddig — App Check nélkül működik tovább.
-const RECAPTCHA_V3_SITE_KEY = "IDE_ILLESZD_BE_A_RECAPTCHA_SITE_KEY-T";
+const RECAPTCHA_ENTERPRISE_KEY = "6Le34rAtAAAAAD6fKXortiyCUtu00HRpq1AQFZIN";
 
 if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   firebase.initializeApp(FIREBASE_CONFIG);
-  if (RECAPTCHA_V3_SITE_KEY !== "IDE_ILLESZD_BE_A_RECAPTCHA_SITE_KEY-T") {
+  if (RECAPTCHA_ENTERPRISE_KEY !== "IDE_ILLESZD_BE_A_RECAPTCHA_ENTERPRISE_KULCSOT") {
     try {
       // A `typeof firebase.appCheck === 'function'` védelem arra az esetre
       // szolgál, ha a fenti firebase-app-check-compat.js script valamiért
@@ -56,7 +63,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
       // csak egy figyelmeztetést ír a böngésző konzoljára.
       if (typeof firebase.appCheck === 'function') {
         firebase.appCheck().activate(
-          new firebase.appCheck.ReCaptchaV3Provider(RECAPTCHA_V3_SITE_KEY),
+          new firebase.appCheck.ReCaptchaEnterpriseProvider(RECAPTCHA_ENTERPRISE_KEY),
           true // isTokenAutoRefreshEnabled — a token automatikus frissítése
         );
       } else {
@@ -66,7 +73,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
       console.warn('[QuizMaster] App Check aktiválási hiba:', e);
     }
   } else {
-    console.info('[QuizMaster] App Check nincs aktiválva: a RECAPTCHA_V3_SITE_KEY még a placeholder értéken áll (l. a kód eleji megjegyzést).');
+    console.info('[QuizMaster] App Check nincs aktiválva: a RECAPTCHA_ENTERPRISE_KEY még a placeholder értéken áll (l. a kód eleji megjegyzést).');
   }
 }
 </script>
@@ -710,7 +717,9 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.6</div><div><div class="cl-desc">Előkészítve (de alapértelmezetten kikapcsolva) a Firebase App Check támogatás — ez egy extra biztonsági réteg, ami igazolja, hogy a Firebase-hívások ténylegesen ebből az appból érkeznek, nem egy scriptelt, idegen kliensből. Amíg nincs beállítva a hozzá tartozó reCAPTCHA-kulcs, semmilyen látható változást nem okoz, az app pontosan úgy működik, mint eddig.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.8</div><div><div class="cl-desc">Beillesztve a tényleges reCAPTCHA Enterprise kulcs — az App Check mostantól ténylegesen aktiválódik minden betöltéskor (feltéve, hogy Dani a Firebase Console → Security → App Check felületén a "reCAPTCHA Enterprise" szolgáltatóval regisztrálta a webalkalmazást ugyanezzel a kulccsal). Amíg a Console-oldali "Enforce" mód nincs bekapcsolva, ez egyelőre csak megfigyelő (monitoring) módban működik — a Realtime Database-hozzáférést még nem korlátozza.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.7</div><div><div class="cl-desc">Javítás: a 3.6-ban előkészített App Check integráció a klasszikus reCAPTCHA v3 szolgáltatóra épült, de kiderült, hogy a Firebase Console időközben elavultnak jelölte ezt az App Check-nél — mostantól a jelenleg támogatott reCAPTCHA Enterprise szolgáltatót használja a kód. Ehhez nem szükséges bankkártya vagy számlázás beállítása, amíg a havi használat 10 000 alatt marad. Látható változást ez sem okoz, amíg nincs beállítva a hozzá tartozó kulcs.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.6</div><div><div class="cl-desc">Előkészítve (de alapértelmezetten kikapcsolva) a Firebase App Check támogatás — ez egy extra biztonsági réteg, ami igazolja, hogy a Firebase-hívások ténylegesen ebből az appból érkeznek, nem egy scriptelt, idegen kliensből. Amíg nincs beállítva a hozzá tartozó reCAPTCHA-kulcs, semmilyen látható változást nem okoz, az app pontosan úgy működik, mint eddig.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.5</div><div><div class="cl-desc">A szoba irányítója mostantól élő visszajelzést kap arról, mi történt egy elküldött meghívással: „✓ Meghívva" → „👁️ Látta" → „✅ Elfogadta" vagy „❌ Elutasította" — ez az Online Játékosok (meghívás mód) képernyőn látszik, akkor is, ha időközben ki- majd visszalépsz erre a képernyőre. Ha ugyanattól a szobától érkezik második meghívás ugyanannak a személynek, az egyszerűen felülírja az elsőt (nem történik automatikus visszavonás vagy ütközés-kezelés). Emellett javítva egy hiba: a jelenlét- és meghívó-rendszer mostantól csak azután indul el, hogy egy régóta regisztrált, gyülekezet nélküli felhasználó kitöltötte a kötelező „Gyülekezeted" képernyőt — korábban ez a két rendszer már a kapu előtt elindult, így elméletileg felugorhatott egy meghívás-értesítés a kapun ragadt felhasználónál, aminek elfogadása megkerülte volna a kötelező kitöltést.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.4</div><div><div class="cl-desc">Elkészült a szobába hívás funkciója. A Váróteremben, a szoba irányítójaként új „📨 JÁTÉKOSOK MEGHÍVÁSA" gomb nyitja meg az Online Játékosok listáját meghívás módban — koppints valakire, és azonnal kap egy értesítést, bárhol is tart éppen az appban. Ha a meghívott nincs éppen szobában, egyenesen a te Váróterembe kerül; ha éppen máshol játszik, előbb megerősítést kérünk tőle, mert az addigi előrehaladása elveszne a váltással.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.3</div><div><div class="cl-desc">Új "Online Játékosok" gomb a főmenüben — megmutatja, kik vannak éppen csatlakoztatva az apphoz (avatarjukkal, nevükkel, gyülekezetükkel), és azt is jelzi, ki van épp játékban, ki elérhető. A szobába hívás funkciója egy következő frissítésben érkezik.</div></div></div>
@@ -3960,7 +3969,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.6</div>
+<div class="version-badge">Játék verzió: 3.8</div>
 
 </body>
 </html>
