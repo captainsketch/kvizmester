@@ -389,20 +389,24 @@ function initFirebase() {
     // klasszikus reCAPTCHA (v3) szolgáltatót elavultnak jelöli — jelenleg
     // kizárólag a reCAPTCHA Enterprise szolgáltatóval regisztrálható egy
     // webalkalmazás, ezért itt is az Enterprise providert használjuk.
-    // Szándékosan SAJÁT try/catch-ben fut, elkülönítve a Firebase-kapcsolódás
-    // fő hibakezelésétől — egy esetleges App Check hiba (pl. hibás kulcs, be
-    // nem töltött SDK) ne akadályozza meg magát az admin-panelbe való bejutást.
+    // KRITIKUS VÉDELEM (l. quiz-player.html azonos indoklású kommentje):
+    // setTimeout(...,0)-val KÉSLELTETVE indítjuk, hogy semmiképp ne
+    // akadályozhassa a db/roomRef beállítását és az admin-bejelentkezés
+    // képernyőjének megjelenítését, még akkor sem, ha valami szinkron
+    // probléma lenne az aktiválással.
     if(recaptchaKey){
-      try{
-        if(typeof firebase.appCheck === 'function'){
-          firebase.appCheck().activate(
-            new firebase.appCheck.ReCaptchaEnterpriseProvider(recaptchaKey),
-            true // isTokenAutoRefreshEnabled
-          );
-        } else {
-          console.warn('[QuizMaster] Az App Check SDK nem töltődött be (firebase.appCheck hiányzik) — ellenőrizd a firebase-app-check-compat.js script betöltését.');
-        }
-      }catch(e){ console.warn('[QuizMaster] App Check aktiválási hiba:', e); }
+      setTimeout(function(){
+        try{
+          if(typeof firebase.appCheck === 'function'){
+            firebase.appCheck().activate(
+              new firebase.appCheck.ReCaptchaEnterpriseProvider(recaptchaKey),
+              true // isTokenAutoRefreshEnabled
+            );
+          } else {
+            console.warn('[QuizMaster] Az App Check SDK nem töltődött be (firebase.appCheck hiányzik) — ellenőrizd a firebase-app-check-compat.js script betöltését.');
+          }
+        }catch(e){ console.warn('[QuizMaster] App Check aktiválási hiba:', e); }
+      }, 0);
     }
     db=firebase.database(); roomRef=db.ref('rooms/'+roomCode);
     document.getElementById('setup-screen').style.display='none';
@@ -1049,7 +1053,7 @@ function renumberAllQuestions() {
 
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.5</div>
+<div class="version-badge">Admin panel verzió: 3.6</div>
 
 <script>
 // ============================================================
