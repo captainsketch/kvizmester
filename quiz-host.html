@@ -8,7 +8,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root {
@@ -178,7 +177,6 @@
     <div class="field"><label>Database URL</label><input type="text" id="cfg-databaseURL" placeholder="https://projekt-id-default-rtdb.europe-west1.firebasedatabase.app" value="https://kvizmester-ded38-default-rtdb.europe-west1.firebasedatabase.app"></div>
     <div class="field"><label>Project ID</label><input type="text" id="cfg-projectId" placeholder="projekt-id" value="kvizmester-ded38"></div>
     <div class="field"><label>Tartalom-adatbázis kódja</label><input type="text" id="cfg-room" placeholder="pl. kvizjatek" value="kvizjatek"></div>
-    <div class="field"><label>reCAPTCHA Enterprise Key <span style="color:var(--muted);text-transform:none;letter-spacing:0;">(App Check, opcionális)</span></label><input type="text" id="cfg-recaptchaKey" placeholder="hagyd üresen, ha még nincs beállítva App Check" value="6Le34rAtAAAAAD6fKXortiyCUtu00HRpq1AQFZIN"></div>
     <button class="btn" onclick="initFirebase()">KAPCSOLÓDÁS →</button>
   </div>
 </div>
@@ -376,38 +374,11 @@ function initFirebase() {
   const authDomain=document.getElementById('cfg-authDomain').value.trim();
   const databaseURL=document.getElementById('cfg-databaseURL').value.trim();
   const projectId=document.getElementById('cfg-projectId').value.trim();
-  const recaptchaKey=document.getElementById('cfg-recaptchaKey').value.trim();
   roomCode=document.getElementById('cfg-room').value.trim()||'kvizjatek';
   if(!apiKey||!databaseURL){alert('Kérlek töltsd ki az API Key és Database URL mezőket!');return;}
   try{
     if(firebase.apps.length)firebase.app().delete();
     firebase.initializeApp({apiKey,authDomain,databaseURL,projectId});
-    // App Check / reCAPTCHA Enterprise (10. fázis, javítva) — csak akkor
-    // próbáljuk aktiválni, ha az admin ténylegesen megadott egy kulcsot a
-    // mezőben; ha üres, az app App Check nélkül működik tovább (ugyanúgy,
-    // mint eddig). FONTOS: a Firebase Console App Check felülete a
-    // klasszikus reCAPTCHA (v3) szolgáltatót elavultnak jelöli — jelenleg
-    // kizárólag a reCAPTCHA Enterprise szolgáltatóval regisztrálható egy
-    // webalkalmazás, ezért itt is az Enterprise providert használjuk.
-    // KRITIKUS VÉDELEM (l. quiz-player.html azonos indoklású kommentje):
-    // setTimeout(...,0)-val KÉSLELTETVE indítjuk, hogy semmiképp ne
-    // akadályozhassa a db/roomRef beállítását és az admin-bejelentkezés
-    // képernyőjének megjelenítését, még akkor sem, ha valami szinkron
-    // probléma lenne az aktiválással.
-    if(recaptchaKey){
-      setTimeout(function(){
-        try{
-          if(typeof firebase.appCheck === 'function'){
-            firebase.appCheck().activate(
-              new firebase.appCheck.ReCaptchaEnterpriseProvider(recaptchaKey),
-              true // isTokenAutoRefreshEnabled
-            );
-          } else {
-            console.warn('[QuizMaster] Az App Check SDK nem töltődött be (firebase.appCheck hiányzik) — ellenőrizd a firebase-app-check-compat.js script betöltését.');
-          }
-        }catch(e){ console.warn('[QuizMaster] App Check aktiválási hiba:', e); }
-      }, 0);
-    }
     db=firebase.database(); roomRef=db.ref('rooms/'+roomCode);
     document.getElementById('setup-screen').style.display='none';
     requireAdminLogin();
@@ -1053,7 +1024,7 @@ function renumberAllQuestions() {
 
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.6</div>
+<div class="version-badge">Admin panel verzió: 3.7</div>
 
 <script>
 // ============================================================

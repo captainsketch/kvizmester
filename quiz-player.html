@@ -24,7 +24,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check-compat.js"></script>
 <script>
 const FIREBASE_CONFIG = {
   apiKey:        "AIzaSyDUFXHdzdn6DaehVN44vRPGaNV3x-jhHXA",
@@ -33,62 +32,8 @@ const FIREBASE_CONFIG = {
   projectId:     "kvizmester-ded38",
 };
 const DEFAULT_ROOM = "kvizjatek";
-// ── APP CHECK / reCAPTCHA Enterprise (10. fázis, javítva) ─────────────────
-// FONTOS: a Firebase Console App Check felülete a klasszikus reCAPTCHA (v3)
-// szolgáltatót "deprecated"-nek (elavultnak) jelöli és letiltja a mezőit —
-// jelenleg KIZÁRÓLAG a reCAPTCHA Enterprise szolgáltató regisztrálható. Ide
-// illeszd be a Google Cloud Console → Security → reCAPTCHA (Fraud Defense)
-// felületén létrehozott Website-típusú kulcsot ("Use checkbox challenge"
-// KIKAPCSOLVA, domain: captainsketch.github.io), ÉS ugyanezzel a kulccsal
-// regisztráld a webalkalmazást a Firebase Console → Security → App Check →
-// Apps fülön, a "reCAPTCHA Enterprise" szolgáltatóval. UGYANEZT a kulcsot
-// használd a quiz-host.html "reCAPTCHA Enterprise Key" mezőjében is — mindkét
-// oldal ugyanazt a Firebase Web App-ot jelenti a Console szemében.
-// FONTOS: ehhez NEM kell bankkártya / számlázás bekapcsolása a Google Cloud
-// projekten, amíg a havi használat 10 000 alatt marad (ez erre az alkalmazás-
-// méretre gyakorlatilag sosem fog megtörténni).
-// Amíg ez a placeholder marad, az App Check egyszerűen NEM aktiválódik, és az
-// alkalmazás — pontosan úgy, mint eddig — App Check nélkül működik tovább.
-const RECAPTCHA_ENTERPRISE_KEY = "6Le34rAtAAAAAD6fKXortiyCUtu00HRpq1AQFZIN";
-
 if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   firebase.initializeApp(FIREBASE_CONFIG);
-  if (RECAPTCHA_ENTERPRISE_KEY !== "IDE_ILLESZD_BE_A_RECAPTCHA_ENTERPRISE_KULCSOT") {
-    // KRITIKUS VÉDELEM: az aktiválást setTimeout(...,0)-val KÉSLELTETVE indítjuk,
-    // NEM azonnal, ugyanebben a szinkron script-blokkban. Ez a script-blokk fut
-    // le ELSŐKÉNT az oldalon, MÉG A FŐ JÁTÉKLOGIKA (és benne initAuthGate(),
-    // ami a bejelentkezés/főmenü képernyőt megjeleníti) előtt — tehát ha itt
-    // bármi (SDK-inkompatibilitás, a reCAPTCHA Enterprise könyvtár betöltési
-    // hibája, vagy bármi más, akár a try/catch-en kívül eső probléma) szinkron
-    // módon elakadna vagy dobna, az korábban teljes, üres/fehér oldalt
-    // eredményezett volna, mert a fő script-blokk soha nem futott volna le.
-    // A setTimeout(...,0) biztosítja, hogy ez a kód csak AZUTÁN fut le, hogy a
-    // böngésző már feldolgozta és lefuttatta az összes többi script-blokkot —
-    // az App Check egy KIEGÉSZÍTŐ biztonsági réteg, sosem szabad, hogy egy
-    // vele kapcsolatos hiba magát az app betöltését blokkolja.
-    setTimeout(function() {
-      try {
-        // A `typeof firebase.appCheck === 'function'` védelem arra az esetre
-        // szolgál, ha a fenti firebase-app-check-compat.js script valamiért
-        // (hálózati hiba, ad-blocker, vagy egy jövőbeli SDK-verziónál esetleg
-        // hiányzó bundle a gstatic CDN-en) mégsem töltődött volna be — ilyenkor
-        // az app App Check NÉLKÜL, de egyébként teljesen hibátlanul fut tovább,
-        // csak egy figyelmeztetést ír a böngésző konzoljára.
-        if (typeof firebase.appCheck === 'function') {
-          firebase.appCheck().activate(
-            new firebase.appCheck.ReCaptchaEnterpriseProvider(RECAPTCHA_ENTERPRISE_KEY),
-            true // isTokenAutoRefreshEnabled — a token automatikus frissítése
-          );
-        } else {
-          console.warn('[QuizMaster] Az App Check SDK nem töltődött be (firebase.appCheck hiányzik) — ellenőrizd a firebase-app-check-compat.js script betöltését a hálózati fülön.');
-        }
-      } catch (e) {
-        console.warn('[QuizMaster] App Check aktiválási hiba:', e);
-      }
-    }, 0);
-  } else {
-    console.info('[QuizMaster] App Check nincs aktiválva: a RECAPTCHA_ENTERPRISE_KEY még a placeholder értéken áll (l. a kód eleji megjegyzést).');
-  }
 }
 </script>
 <style>
@@ -731,7 +676,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.9</div><div><div class="cl-desc">SÜRGŐSSÉGI JAVÍTÁS: a 3.8-as App Check aktiváció a betöltés legelején, szinkron módon futott — ha ez bármi okból elakadt volna, az egész oldal üresen maradt (a főmenü, bejelentkezés stb. sosem jelent meg). Mostantól az App Check aktiválása egy tick-kel késleltetve indul, így semmiképp nem akadályozhatja a többi képernyő betöltését, függetlenül attól, mi történik az App Check-kel. Ez tisztán belső, védelmi jellegű javítás — az App Check tényleges működését nem érinti.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.10</div><div><div class="cl-desc">A Firebase App Check / reCAPTCHA Enterprise integráció teljes egészében eltávolításra került — a hozzá tartozó script-betöltés, aktiválási kód és a quiz-host.html beállítási mezője is. A Google Cloud oldali reCAPTCHA-kulcs tartósan "Incomplete" állapotban ragadt, emiatt a védelmi réteg sosem tudott ténylegesen aktiválódni, ezért a döntés az volt, hogy ezt a funkciót nem használjuk tovább. Az alkalmazás mostantól pontosan úgy működik, mint az App Check bevezetése (3.6-os verzió) előtt — ez a változás semmilyen látható különbséget nem okoz a játékmenetben.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.9</div><div><div class="cl-desc">SÜRGŐSSÉGI JAVÍTÁS: a 3.8-as App Check aktiváció a betöltés legelején, szinkron módon futott — ha ez bármi okból elakadt volna, az egész oldal üresen maradt (a főmenü, bejelentkezés stb. sosem jelent meg). Mostantól az App Check aktiválása egy tick-kel késleltetve indul, így semmiképp nem akadályozhatja a többi képernyő betöltését, függetlenül attól, mi történik az App Check-kel. Ez tisztán belső, védelmi jellegű javítás — az App Check tényleges működését nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.8</div><div><div class="cl-desc">Beillesztve a tényleges reCAPTCHA Enterprise kulcs — az App Check mostantól ténylegesen aktiválódik minden betöltéskor (feltéve, hogy Dani a Firebase Console → Security → App Check felületén a "reCAPTCHA Enterprise" szolgáltatóval regisztrálta a webalkalmazást ugyanezzel a kulccsal). Amíg a Console-oldali "Enforce" mód nincs bekapcsolva, ez egyelőre csak megfigyelő (monitoring) módban működik — a Realtime Database-hozzáférést még nem korlátozza.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.7</div><div><div class="cl-desc">Javítás: a 3.6-ban előkészített App Check integráció a klasszikus reCAPTCHA v3 szolgáltatóra épült, de kiderült, hogy a Firebase Console időközben elavultnak jelölte ezt az App Check-nél — mostantól a jelenleg támogatott reCAPTCHA Enterprise szolgáltatót használja a kód. Ehhez nem szükséges bankkártya vagy számlázás beállítása, amíg a havi használat 10 000 alatt marad. Látható változást ez sem okoz, amíg nincs beállítva a hozzá tartozó kulcs.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.6</div><div><div class="cl-desc">Előkészítve (de alapértelmezetten kikapcsolva) a Firebase App Check támogatás — ez egy extra biztonsági réteg, ami igazolja, hogy a Firebase-hívások ténylegesen ebből az appból érkeznek, nem egy scriptelt, idegen kliensből. Amíg nincs beállítva a hozzá tartozó reCAPTCHA-kulcs, semmilyen látható változást nem okoz, az app pontosan úgy működik, mint eddig.</div></div></div>
@@ -3984,7 +3930,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.9</div>
+<div class="version-badge">Játék verzió: 3.10</div>
 
 </body>
 </html>
