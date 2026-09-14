@@ -676,7 +676,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.10</div><div><div class="cl-desc">A Firebase App Check / reCAPTCHA Enterprise integráció teljes egészében eltávolításra került — a hozzá tartozó script-betöltés, aktiválási kód és a quiz-host.html beállítási mezője is. A Google Cloud oldali reCAPTCHA-kulcs tartósan "Incomplete" állapotban ragadt, emiatt a védelmi réteg sosem tudott ténylegesen aktiválódni, ezért a döntés az volt, hogy ezt a funkciót nem használjuk tovább. Az alkalmazás mostantól pontosan úgy működik, mint az App Check bevezetése (3.6-os verzió) előtt — ez a változás semmilyen látható különbséget nem okoz a játékmenetben.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.11</div><div><div class="cl-desc">Négy célzott javítás a 2026.09.12-i átfogó tesztelési jelentés alapján. KRITIKUS biztonsági javítás: a játékos- és csapatnév eddig 6 helyen (a Játékosok/Csapattársak lista játék közben, valamint az egyéni és csapat-ranglisták) a már meglévő védelmi becsomagolás nélkül került a képernyőre — egy tudatosan rosszindulatúan megválasztott névvel bárki futtatható kódot csempészhetett volna más játékosok böngészőjébe (stored XSS); mind a 6 hely javítva, ugyanazzal a mintával, amit a kód más helyeken már eddig is helyesen alkalmazott. Emellett: az „éppen szobában vagyok-e" ellenőrzés mostantól az Online Játékosok (meghívás mód) képernyőt is felismeri, így egy másik szobába szóló meghívás elfogadásakor a korábbi szoba többé nem maradhat személytelen „szellemszobaként" a listán; a jelenlét-rendszer figyelője mostantól kijelentkezéskor és fiók törlésekor is explicit módon leáll, megelőzve egy listener-felhalmozódási hibát; és megtörtént egy sor rendrakás: törölve egy teljesen holt Firebase-ág és a hozzá tartozó írások, két sosem olvasott mező, két soha nem hívott függvény, két nem használt CSS-stílus, valamint egyszerűsítve egy felesleges belső feltétel.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.10</div><div><div class="cl-desc">A Firebase App Check / reCAPTCHA Enterprise integráció teljes egészében eltávolításra került — a hozzá tartozó script-betöltés, aktiválási kód és a quiz-host.html beállítási mezője is. A Google Cloud oldali reCAPTCHA-kulcs tartósan "Incomplete" állapotban ragadt, emiatt a védelmi réteg sosem tudott ténylegesen aktiválódni, ezért a döntés az volt, hogy ezt a funkciót nem használjuk tovább. Az alkalmazás mostantól pontosan úgy működik, mint az App Check bevezetése (3.6-os verzió) előtt — ez a változás semmilyen látható különbséget nem okoz a játékmenetben.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.9</div><div><div class="cl-desc">SÜRGŐSSÉGI JAVÍTÁS: a 3.8-as App Check aktiváció a betöltés legelején, szinkron módon futott — ha ez bármi okból elakadt volna, az egész oldal üresen maradt (a főmenü, bejelentkezés stb. sosem jelent meg). Mostantól az App Check aktiválása egy tick-kel késleltetve indul, így semmiképp nem akadályozhatja a többi képernyő betöltését, függetlenül attól, mi történik az App Check-kel. Ez tisztán belső, védelmi jellegű javítás — az App Check tényleges működését nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.8</div><div><div class="cl-desc">Beillesztve a tényleges reCAPTCHA Enterprise kulcs — az App Check mostantól ténylegesen aktiválódik minden betöltéskor (feltéve, hogy Dani a Firebase Console → Security → App Check felületén a "reCAPTCHA Enterprise" szolgáltatóval regisztrálta a webalkalmazást ugyanezzel a kulccsal). Amíg a Console-oldali "Enforce" mód nincs bekapcsolva, ez egyelőre csak megfigyelő (monitoring) módban működik — a Realtime Database-hozzáférést még nem korlátozza.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.7</div><div><div class="cl-desc">Javítás: a 3.6-ban előkészített App Check integráció a klasszikus reCAPTCHA v3 szolgáltatóra épült, de kiderült, hogy a Firebase Console időközben elavultnak jelölte ezt az App Check-nél — mostantól a jelenleg támogatott reCAPTCHA Enterprise szolgáltatót használja a kód. Ehhez nem szükséges bankkártya vagy számlázás beállítása, amíg a havi használat 10 000 alatt marad. Látható változást ez sem okoz, amíg nincs beállítva a hozzá tartozó kulcs.</div></div></div>
@@ -1158,8 +1159,6 @@ let myPlayerStatus = 'lobby';
 // "Vissza a játékba" gomb: csak akkor aktív ha a host már visszalépett (phase:'waiting')
 let hostReadyForRejoin = false;
 
-function getParam(n) { return new URLSearchParams(window.location.search).get(n); }
-
 // ── KÉPERNYŐ VÁLTÁS ──────────────────────────────────────────
 function hideAll() {
   ['auth-screen','pending-screen','rejected-screen','gyulekezet-gate-screen',
@@ -1295,6 +1294,8 @@ async function doPasswordReset() {
 // ══════════════════════════════════════════════════════════════
 
 let presenceRef = null;
+let connectedRef = null;       // a '.info/connected' Firebase-referencia — kijelentkezéskor ezen hívjuk az .off()-ot
+let connectedCallback = null;  // a ténylegesen regisztrált callback-hivatkozás (.off()-hoz szükséges, l. 3. pont)
 
 // Egyszer hívandó, amint a felhasználó jóváhagyottként belép az appba.
 // A .info/connected figyelő minden (újra)csatlakozáskor újraregisztrálja
@@ -1304,13 +1305,15 @@ let presenceRef = null;
 function initPresenceSystem(uid) {
   if (presenceRef) return; // már fut ebben a munkamenetben
   presenceRef = firebase.database().ref('presence/' + uid);
-  firebase.database().ref('.info/connected').on('value', snap => {
+  connectedRef = firebase.database().ref('.info/connected');
+  connectedCallback = snap => {
     if (snap.val() === true) {
       presenceRef.onDisconnect().remove().then(() => {
         updateMyPresence('menu');
       });
     }
-  });
+  };
+  connectedRef.on('value', connectedCallback);
 }
 
 // Könnyű súlyú állapot-frissítés — az onDisconnect-et NEM regisztrálja újra,
@@ -1327,8 +1330,23 @@ function removeMyPresence() {
   presenceRef.remove().catch(() => {});
 }
 
+// A .info/connected-re regisztrált figyelő explicit leszedése — enélkül a
+// figyelő kijelentkezés (vagy fiók törlés) után is tovább futna: egy újbóli
+// bejelentkezéskor (ugyanabban a böngésző-tabban, oldalfrissítés nélkül) egyre
+// több példány rakódna rá ugyanarra a .info/connected referenciára, és egy
+// esetleges websocket-újracsatlakozás egy már null presenceRef-fel próbálna
+// dolgozni (l. 2026.09.12-i tesztelési jelentés, 3. pont).
+function stopPresenceConnectedListener() {
+  if (connectedRef && connectedCallback) {
+    connectedRef.off('value', connectedCallback);
+  }
+  connectedRef = null;
+  connectedCallback = null;
+}
+
 function doLogout() {
   removeMyPresence();
+  stopPresenceConnectedListener();
   presenceRef = null;
   cleanupInviteState();
   firebase.auth().signOut();
@@ -1636,6 +1654,7 @@ async function confirmDeleteAccount() {
     await firebase.database().ref('users/' + currentUser.uid).remove();
     await firebase.database().ref('publicProfiles/' + currentUser.uid).remove();
     removeMyPresence();
+    stopPresenceConnectedListener();
     presenceRef = null;
     cleanupInviteState();
     await currentUser.delete();
@@ -2087,7 +2106,7 @@ function dismissInviteNotification() {
 // hogy meghívás elfogadásakor kell-e megerősítést kérni (elveszik-e valódi
 // előrehaladás), vagy egyenesen csatlakozhatunk.
 function isCurrentlyInARoom() {
-  const roomScreenIds = ['lobby-screen','team-setup-screen','waiting-screen','game-screen','result-screen','history-screen'];
+  const roomScreenIds = ['lobby-screen','online-players-screen','team-setup-screen','waiting-screen','game-screen','result-screen','history-screen'];
   return roomScreenIds.some(id => document.getElementById(id).style.display !== 'none');
 }
 
@@ -2502,10 +2521,9 @@ function showResults() {
   // az "Új kör indítása" gombot (lásd hostStartNewRound()).
   const btnReturn = document.getElementById('btn-return-to-game');
   const btnNewRound = document.getElementById('btn-host-new-round');
-  const isSelfServiceHost = amIRoomHost && (hostGameMode === 'normal' || hostGameMode === 'teams');
-  if (btnReturn) btnReturn.style.display = isSelfServiceHost ? 'none' : '';
+  if (btnReturn) btnReturn.style.display = amIRoomHost ? 'none' : '';
   if (btnNewRound) {
-    btnNewRound.style.display = isSelfServiceHost ? '' : 'none';
+    btnNewRound.style.display = amIRoomHost ? '' : 'none';
     btnNewRound.disabled = false;
     btnNewRound.textContent = '🔄 ÚJ KÖR INDÍTÁSA';
   }
@@ -2526,7 +2544,7 @@ function showNormalResults() {
   sbHTML += Object.values(players).sort((a,b)=>(b.score||0)-(a.score||0)).map((p, i) => `
     <div class="rsb-row${p.name === playerName ? ' me' : ''}">
       <div class="rsb-rank">${medals[i] || (i+1) + '.'}</div>
-      <div class="rsb-name">${p.name || 'Névtelen'}${p.name === playerName ? ' 👤' : ''}</div>
+      <div class="rsb-name">${escHtml(p.name || 'Névtelen')}${p.name === playerName ? ' 👤' : ''}</div>
       <div class="rsb-pts">${p.score || 0} pt</div>
     </div>`).join('');
   document.getElementById('result-scoreboard').innerHTML = sbHTML;
@@ -2545,7 +2563,7 @@ function showTeamResults() {
 
   // Rang sor
   document.getElementById('final-rank').innerHTML = myTeamName
-    ? `Csapatod: <strong>${myTeamName}</strong> — #${myTeamRank} helyezés`
+    ? `Csapatod: <strong>${escHtml(myTeamName)}</strong> — #${myTeamRank} helyezés`
     : 'Csapatverseny vége';
 
   // Csapat ranglista
@@ -2555,7 +2573,7 @@ function showTeamResults() {
     const isMe = tid===myTeamId;
     return `<div class="rsb-row${isMe?' me':''}">
       <div class="rsb-rank">${medals[i]||(i+1)+'.'}</div>
-      <div class="rsb-name">${t.name||'Névtelen csapat'}${isMe?' 👥':''}</div>
+      <div class="rsb-name">${escHtml(t.name||'Névtelen csapat')}${isMe?' 👥':''}</div>
       <div class="rsb-pts">${t.score||0} pt</div>
     </div>`;
   }).join('');
@@ -2569,11 +2587,11 @@ function showTeamResults() {
       .sort((a,b)=>(b.score||0)-(a.score||0));
 
     if(memberData.length>0){
-      sbHTML += `<h4 style="margin-top:16px;">A TE CSAPATOD: ${myTeamName||''}${isWinner?' 🏆':''}</h4>`;
+      sbHTML += `<h4 style="margin-top:16px;">A TE CSAPATOD: ${escHtml(myTeamName||'')}${isWinner?' 🏆':''}</h4>`;
       sbHTML += memberData.map(p=>`
         <div class="rsb-row${p.name===playerName?' me':''}">
           <div class="rsb-rank" style="font-size:13px;color:var(--muted);">👤</div>
-          <div class="rsb-name">${p.name||'Névtelen'}${p.name===playerName?' (te)':''}</div>
+          <div class="rsb-name">${escHtml(p.name||'Névtelen')}${p.name===playerName?' (te)':''}</div>
           <div class="rsb-pts">${p.score||0} pt</div>
         </div>`).join('');
     }
@@ -2709,7 +2727,6 @@ async function returnToGame() {
       score: 0,
       color: myColor,
       status: 'active',
-      connected: true,
       rejoinedAt: firebase.database.ServerValue.TIMESTAMP
     };
     // Team módban: teamId megmarad (1. opció)
@@ -2717,12 +2734,6 @@ async function returnToGame() {
       rejoinData.teamId = myTeamId;
     }
     await roomRef.child('players').child(playerId).set(rejoinData);
-
-    // onDisconnect hook újraregisztrálása
-    await roomRef.child('players').child(playerId).onDisconnect().update({
-      connected: false,
-      disconnectedAt: firebase.database.ServerValue.TIMESTAMP
-    });
 
     // Teljes state reset az új körre
     hasAnswered = false;
@@ -3610,8 +3621,6 @@ async function hostStartNewRound() {
     await roomRef.child('answerKeys').set(answerKeysObj);
     await roomRef.child('revealedQuestions').remove();
     await roomRef.child('answers').remove();
-    await roomRef.child('votes').remove();
-    await roomRef.child('voteResult').remove();
     await roomRef.child('players').remove();
     await roomRef.child('gameState').set({
       phase: 'waiting',
@@ -3693,7 +3702,7 @@ function updatePlayersChips(answeredSet) {
   container.innerHTML = displayPlayers.map(p => {
     const isAnswered = answeredSet && answeredSet.has(p.name);
     return `<div class="p-chip${isAnswered ? ' answered' : ''}">
-      <div class="p-chip-dot"></div>${p.name}
+      <div class="p-chip-dot"></div>${escHtml(p.name)}
     </div>`;
   }).join('');
 }
@@ -3930,7 +3939,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.10</div>
+<div class="version-badge">Játék verzió: 3.11</div>
 
 </body>
 </html>

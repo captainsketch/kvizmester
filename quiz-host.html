@@ -141,10 +141,8 @@
 
   .hidden{display:none!important;}
   .tag{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:4px;}
-  .tag-green{background:rgba(62,207,142,0.15);color:var(--green);}
   .tag-yellow{background:rgba(240,192,64,0.15);color:var(--accent);}
   .q-num-badge{display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:13px;letter-spacing:1px;color:var(--accent);background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.25);border-radius:5px;padding:1px 7px;margin-right:7px;flex-shrink:0;}
-  .q-num-inline{font-family:var(--font-display);font-size:13px;color:var(--muted);margin-right:4px;}
   /* VERSION BADGE */
   .version-badge {
     position:fixed; bottom:12px; right:14px; z-index:9999;
@@ -831,10 +829,6 @@ function renderQuestions() {
 }
 
 // ============================================================
-// UI SEGÉDFÜGGVÉNYEK
-// ============================================================
-function htmlEsc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-// ============================================================
 // EXPORT / IMPORT
 // ============================================================
 function openExportModal() {
@@ -1024,7 +1018,7 @@ function renumberAllQuestions() {
 
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.7</div>
+<div class="version-badge">Admin panel verzió: 3.8</div>
 
 <script>
 // ============================================================
