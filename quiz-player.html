@@ -626,7 +626,10 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     <div id="cr-mode-list" class="cr-mode-list"></div>
   </div>
   <div class="menu-name-wrap">
-    <label class="menu-name-label">Témakör</label>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <label class="menu-name-label" style="margin-bottom:0;">Témakör</label>
+      <button type="button" id="cr-topic-refresh-btn" onclick="loadTopicOptionsForCreate(true)" title="Kérdésbank frissítése a Firebase-ből" style="background:none;border:none;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;padding:2px 4px;letter-spacing:0.5px;">🔄 Frissítés</button>
+    </div>
     <div id="cr-topic-list" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
   <div class="menu-name-wrap">
@@ -676,7 +679,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.11</div><div><div class="cl-desc">Négy célzott javítás a 2026.09.12-i átfogó tesztelési jelentés alapján. KRITIKUS biztonsági javítás: a játékos- és csapatnév eddig 6 helyen (a Játékosok/Csapattársak lista játék közben, valamint az egyéni és csapat-ranglisták) a már meglévő védelmi becsomagolás nélkül került a képernyőre — egy tudatosan rosszindulatúan megválasztott névvel bárki futtatható kódot csempészhetett volna más játékosok böngészőjébe (stored XSS); mind a 6 hely javítva, ugyanazzal a mintával, amit a kód más helyeken már eddig is helyesen alkalmazott. Emellett: az „éppen szobában vagyok-e" ellenőrzés mostantól az Online Játékosok (meghívás mód) képernyőt is felismeri, így egy másik szobába szóló meghívás elfogadásakor a korábbi szoba többé nem maradhat személytelen „szellemszobaként" a listán; a jelenlét-rendszer figyelője mostantól kijelentkezéskor és fiók törlésekor is explicit módon leáll, megelőzve egy listener-felhalmozódási hibát; és megtörtént egy sor rendrakás: törölve egy teljesen holt Firebase-ág és a hozzá tartozó írások, két sosem olvasott mező, két soha nem hívott függvény, két nem használt CSS-stílus, valamint egyszerűsítve egy felesleges belső feltétel.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.12</div><div><div class="cl-desc">A 2026.09.12-i tesztelési jelentés 5. és 6. pontja alapján további keményítés és teljesítmény-javítás. Firebase Rules: mostantól séma-szinten (nem csak a kliens-kód jóhiszeműségére hagyatkozva) is védve van, hogy egy éles szoba nyilvánosan olvasható kérdés-ága soha ne tartalmazhassa a helyes válasz indexét — ez a mező kizárólag a védett admin-kérdésbankban engedélyezett; emellett a szobalista (roomIndex) bejegyzései és az élethosszig tartó válasz-statisztika mezői is szigorúbb, mezőnkénti ellenőrzés alá kerültek (utóbbinál egy írás mostantól csakis pontosan +1-gyel növelheti a számlálót, nem tetszőleges mértékben). Teljesítmény: a teljes kérdésbank egy munkameneten belül már csak egyszer töltődik le a Firebase-ből — akár többször nyitod meg az Új szoba képernyőt, akár egymás után több kört is indítasz ugyanabban a szobában —, kifejezett frissítést az Új szoba képernyő "🔄 Frissítés" gombjával kérhetsz; az Online Játékosok lista pedig mostantól minden játékos profilját csak egyszer kéri le, amíg az illető online marad, nem minden egyes jelenlét-változásnál újra mindenkiét.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.11</div><div><div class="cl-desc">Négy célzott javítás a 2026.09.12-i átfogó tesztelési jelentés alapján. KRITIKUS biztonsági javítás: a játékos- és csapatnév eddig 6 helyen (a Játékosok/Csapattársak lista játék közben, valamint az egyéni és csapat-ranglisták) a már meglévő védelmi becsomagolás nélkül került a képernyőre — egy tudatosan rosszindulatúan megválasztott névvel bárki futtatható kódot csempészhetett volna más játékosok böngészőjébe (stored XSS); mind a 6 hely javítva, ugyanazzal a mintával, amit a kód más helyeken már eddig is helyesen alkalmazott. Emellett: az „éppen szobában vagyok-e" ellenőrzés mostantól az Online Játékosok (meghívás mód) képernyőt is felismeri, így egy másik szobába szóló meghívás elfogadásakor a korábbi szoba többé nem maradhat személytelen „szellemszobaként" a listán; a jelenlét-rendszer figyelője mostantól kijelentkezéskor és fiók törlésekor is explicit módon leáll, megelőzve egy listener-felhalmozódási hibát; és megtörtént egy sor rendrakás: törölve egy teljesen holt Firebase-ág és a hozzá tartozó írások, két sosem olvasott mező, két soha nem hívott függvény, két nem használt CSS-stílus, valamint egyszerűsítve egy felesleges belső feltétel.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.10</div><div><div class="cl-desc">A Firebase App Check / reCAPTCHA Enterprise integráció teljes egészében eltávolításra került — a hozzá tartozó script-betöltés, aktiválási kód és a quiz-host.html beállítási mezője is. A Google Cloud oldali reCAPTCHA-kulcs tartósan "Incomplete" állapotban ragadt, emiatt a védelmi réteg sosem tudott ténylegesen aktiválódni, ezért a döntés az volt, hogy ezt a funkciót nem használjuk tovább. Az alkalmazás mostantól pontosan úgy működik, mint az App Check bevezetése (3.6-os verzió) előtt — ez a változás semmilyen látható különbséget nem okoz a játékmenetben.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.9</div><div><div class="cl-desc">SÜRGŐSSÉGI JAVÍTÁS: a 3.8-as App Check aktiváció a betöltés legelején, szinkron módon futott — ha ez bármi okból elakadt volna, az egész oldal üresen maradt (a főmenü, bejelentkezés stb. sosem jelent meg). Mostantól az App Check aktiválása egy tick-kel késleltetve indul, így semmiképp nem akadályozhatja a többi képernyő betöltését, függetlenül attól, mi történik az App Check-kel. Ez tisztán belső, védelmi jellegű javítás — az App Check tényleges működését nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.8</div><div><div class="cl-desc">Beillesztve a tényleges reCAPTCHA Enterprise kulcs — az App Check mostantól ténylegesen aktiválódik minden betöltéskor (feltéve, hogy Dani a Firebase Console → Security → App Check felületén a "reCAPTCHA Enterprise" szolgáltatóval regisztrálta a webalkalmazást ugyanezzel a kulccsal). Amíg a Console-oldali "Enforce" mód nincs bekapcsolva, ez egyelőre csak megfigyelő (monitoring) módban működik — a Realtime Database-hozzáférést még nem korlátozza.</div></div></div>
@@ -1115,9 +1119,44 @@ let roomListListenerRef = null;   // a szobalista élő figyelője
 let onlinePlayersListenerRef = null;   // az Online Játékosok lista élő figyelője (presence)
 let hostRoomTopicLabel = 'Vegyes';
 
+// ── KÉRDÉSBANK CACHE (10. fázis, teljesítmény-javítás — l. TESZTELESI_JELENTES.md 6.1) ──
+// A teljes "kvizjatek" kérdésbank korábban minden ÚJ SZOBA-képernyő megnyitásakor ÉS
+// minden "Új kör indítása"-kor újra letöltődött a Firebase-ből, akkor is, ha a tartalma
+// időközben biztosan nem változott. Ez a munkamenet-szintű cache azt biztosítja, hogy
+// egy adott böngésző-munkameneten belül csak EGYSZER töltsük le ténylegesen a bankot —
+// a további hívások (pl. ugyanannak a hostnak több egymást követő "Új kör indítása"
+// művelete, vagy a Szoba létrehozása képernyő ismételt megnyitása) a memóriában tárolt
+// másolatot használják újra. Explicit frissítést a felhasználó a "🔄 Frissítés" gombbal
+// kérhet (l. loadTopicOptionsForCreate(true) hívás a create-room-screen-en).
+let cachedQuestionBank = null;
+
+// Visszaadja a teljes "kvizjatek" kérdésbankot. Alapesetben (forceRefresh nélkül) a
+// cache-elt másolatot adja vissza, ha az már létezik — csak akkor tölt le ténylegesen
+// a Firebase-ből, ha még sosem töltöttük be EBBEN a munkamenetben, vagy a hívó fél
+// kifejezetten friss adatot kért (forceRefresh=true).
+async function getQuestionBank(forceRefresh) {
+  if (cachedQuestionBank && !forceRefresh) return cachedQuestionBank;
+  if (!db) db = firebase.database();
+  const snap = await db.ref('rooms/kvizjatek/questions').once('value');
+  cachedQuestionBank = snap.val() ? Object.values(snap.val()) : [];
+  return cachedQuestionBank;
+}
+
 // ── SZOBA-MEGHÍVÓ RENDSZER (8. fázis) — globális állapot ──────
 let onlinePlayersInviteMode = false;   // igaz, ha az Online Játékosok lista "meghívás módban" van
 let lastLoadedOnlineProfiles = [];     // a legutóbb betöltött online-profil lista (újrarajzoláshoz meghívás után)
+
+// ── PUBLICPROFILES CACHE (10. fázis, teljesítmény-javítás — l. TESZTELESI_JELENTES.md 6.2) ──
+// Korábban minden EGYES presence-változás (pl. amikor bárki menü és szoba között lép) a
+// TELJES online-listát újra letöltötte a publicProfiles ágból, uid-onként külön kéréssel —
+// annak ellenére, hogy egy adott felhasználó neve/gyülekezete/avatarja a gyakorlatban
+// ritkán változik egy munkameneten belül. Ez a cache uid → profiladat leképezést tárol:
+// egy adott uid profilját csak EGYSZER kérjük le, amíg "újonnan" jelenik meg az online
+// listában — utána a memóriában tárolt másolatot használjuk újra. Kijelentkezéskor és
+// fiók törlésekor nullázzuk (l. doLogout(), confirmDeleteAccount()), ugyanúgy, ahogy a
+// többi munkamenet-szintű állapotot is — nehogy egy ugyanabban a lapban történő, új
+// bejelentkezés örökölje az előző felhasználó gyorsítótárazott adatait.
+let publicProfileCache = {};
 let invitedUidsThisSession = new Set(); // kiket hívtunk már meg EBBEN a meghívás-munkamenetben
 let pendingInviteRoomCode = null;      // az épp megjelenített meghívó-értesítés szoba-kódja
 let inviteQueue = [];                  // {roomCode, data} - ha több meghívó érkezik egyszerre, ezek várnak sorra
@@ -1349,6 +1388,7 @@ function doLogout() {
   stopPresenceConnectedListener();
   presenceRef = null;
   cleanupInviteState();
+  publicProfileCache = {};
   firebase.auth().signOut();
 }
 
@@ -1657,6 +1697,7 @@ async function confirmDeleteAccount() {
     stopPresenceConnectedListener();
     presenceRef = null;
     cleanupInviteState();
+    publicProfileCache = {};
     await currentUser.delete();
     closeDeleteAccountModal();
     alert('A fiókod véglegesen törölve lett. Viszlát!');
@@ -1884,10 +1925,21 @@ function loadOnlinePlayersList() {
       return;
     }
     try {
-      const profiles = await Promise.all(uids.map(async uid => {
-        const pSnap = await db.ref('publicProfiles/' + uid).once('value');
-        return { uid, presence: presenceData[uid], profile: pSnap.val() || {} };
-      }));
+      // Csak az EBBEN A MUNKAMENETBEN még nem ismert (cache-elt) uid-okra kérünk le
+      // ténylegesen friss profilt a Firebase-ből — a már ismert uid-ok esetén a korábban
+      // letöltött, cache-elt profilt használjuk újra. Enélkül egyetlen presence-változás
+      // (pl. valaki menüből szobába lép) is mindenki profilját újra letöltötte volna,
+      // pedig maguk a profiladatok ilyenkor a gyakorlatban nem változtak (l.
+      // TESZTELESI_JELENTES.md 6.2. pont).
+      const uncachedUids = uids.filter(uid => !publicProfileCache[uid]);
+      if (uncachedUids.length > 0) {
+        const freshProfiles = await Promise.all(uncachedUids.map(async uid => {
+          const pSnap = await db.ref('publicProfiles/' + uid).once('value');
+          return { uid, profile: pSnap.val() || {} };
+        }));
+        freshProfiles.forEach(({ uid, profile }) => { publicProfileCache[uid] = profile; });
+      }
+      const profiles = uids.map(uid => ({ uid, presence: presenceData[uid], profile: publicProfileCache[uid] || {} }));
       // Csak akkor rajzoljuk ki, ha még mindig ez a képernyő aktív (elkerülve, hogy egy
       // időközben elnavigált képernyőn fusson le egy késve érkező aszinkron válasz)
       if (document.getElementById('online-players-screen').style.display !== 'none') {
@@ -2850,17 +2902,21 @@ function showCreateRoom() {
   loadTopicOptionsForCreate();
 }
 
-async function loadTopicOptionsForCreate() {
+async function loadTopicOptionsForCreate(forceRefresh) {
   const list = document.getElementById('cr-topic-list');
+  const refreshBtn = document.getElementById('cr-topic-refresh-btn');
   list.innerHTML = '';
   const loadingEl = document.createElement('div');
   loadingEl.style.cssText = 'color:var(--muted);font-size:13px;text-align:center;padding:12px;';
-  loadingEl.textContent = 'Betöltés...';
+  loadingEl.textContent = forceRefresh ? 'Frissítés...' : 'Betöltés...';
   list.appendChild(loadingEl);
+  if (refreshBtn) refreshBtn.disabled = true;
   try {
-    if (!db) db = firebase.database();
-    const snap = await db.ref('rooms/kvizjatek/questions').once('value');
-    const qs = snap.val() ? Object.values(snap.val()) : [];
+    // A teljes kérdésbankot a getQuestionBank() cache-elt helperen keresztül kérjük —
+    // ismételt képernyő-megnyitáskor NEM tölti le újra a Firebase-ből, csak ha még
+    // sosem történt letöltés ebben a munkamenetben, vagy kifejezett frissítést kértünk
+    // a "🔄 Frissítés" gombbal (l. TESZTELESI_JELENTES.md 6.1. pont).
+    const qs = await getQuestionBank(forceRefresh);
     crAvailableQuestions = qs;
     const cats = {};
     qs.forEach(q => { if (q && q.category) cats[q.category] = (cats[q.category]||0) + 1; });
@@ -2876,6 +2932,8 @@ async function loadTopicOptionsForCreate() {
     errEl.style.cssText = 'color:var(--red);font-size:13px;text-align:center;padding:12px;';
     errEl.textContent = 'Hiba a kérdések betöltésekor: ' + e.message;
     list.appendChild(errEl);
+  } finally {
+    if (refreshBtn) refreshBtn.disabled = false;
   }
 }
 
@@ -3563,8 +3621,13 @@ async function hostStartNewRound() {
     const desiredCount = hostQuestionsPool.length || questions.length || 10;
     let pool = [];
     try {
-      const bankSnap = await db.ref('rooms/kvizjatek/questions').once('value');
-      const allBank = bankSnap.val() ? Object.values(bankSnap.val()) : [];
+      // A teljes bankot a getQuestionBank() cache-elt helperen keresztül kérjük —
+      // ha ebben a munkamenetben már letöltöttük (pl. a szoba eredeti létrehozásakor,
+      // a Szoba létrehozása képernyőn), itt NEM töltjük le újra feleslegesen a
+      // Firebase-ből, hanem a memóriában lévő másolatot használjuk (l.
+      // TESZTELESI_JELENTES.md 6.1. pont — korábban ez a bank duplán, cache nélkül
+      // töltődött le: egyszer szoba-létrehozáskor, majd újra itt is).
+      const allBank = await getQuestionBank();
       pool = (!hostRoomTopicLabel || hostRoomTopicLabel === 'Vegyes')
         ? allBank
         : allBank.filter(q => q && q.category === hostRoomTopicLabel);
@@ -3939,7 +4002,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.11</div>
+<div class="version-badge">Játék verzió: 3.12</div>
 
 </body>
 </html>
