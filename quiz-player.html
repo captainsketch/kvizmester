@@ -679,7 +679,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.12</div><div><div class="cl-desc">A 2026.09.12-i tesztelési jelentés 5. és 6. pontja alapján további keményítés és teljesítmény-javítás. Firebase Rules: mostantól séma-szinten (nem csak a kliens-kód jóhiszeműségére hagyatkozva) is védve van, hogy egy éles szoba nyilvánosan olvasható kérdés-ága soha ne tartalmazhassa a helyes válasz indexét — ez a mező kizárólag a védett admin-kérdésbankban engedélyezett; emellett a szobalista (roomIndex) bejegyzései és az élethosszig tartó válasz-statisztika mezői is szigorúbb, mezőnkénti ellenőrzés alá kerültek (utóbbinál egy írás mostantól csakis pontosan +1-gyel növelheti a számlálót, nem tetszőleges mértékben). Teljesítmény: a teljes kérdésbank egy munkameneten belül már csak egyszer töltődik le a Firebase-ből — akár többször nyitod meg az Új szoba képernyőt, akár egymás után több kört is indítasz ugyanabban a szobában —, kifejezett frissítést az Új szoba képernyő "🔄 Frissítés" gombjával kérhetsz; az Online Játékosok lista pedig mostantól minden játékos profilját csak egyszer kéri le, amíg az illető online marad, nem minden egyes jelenlét-változásnál újra mindenkiét.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.13</div><div><div class="cl-desc">A 2026.09.12-i tesztelési jelentés 5.2. pontjának TELJES megoldása: a szoba irányítója mostantól Rules-szinten is bizonyítottan a célzott játékos szobájának tényleges hostjaként kell azonosítania magát ahhoz, hogy annak élethosszig tartó válasz-statisztikáját frissíthesse — eddig ehhez elég volt bármely jóváhagyott fióknak lenni. Új, "activeHosts" nevű belső nyilvántartás jegyzi fel élőben, ki melyik szobát hosztolja éppen; ezt a Firebase saját maga ellenőrzi (hamis bejegyzés nem hozható létre), és hálózati kapcsolat-megszakadás után is automatikusan újraéled, amint a host böngészője újracsatlakozik — így egy átmeneti net-hiba sem szakítja meg csendben a statisztika-gyűjtést. Ezzel az idén szeptemberi átfogó tesztelési jelentés mind az 5, mind a 6 alpontja lezárult.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.12</div><div><div class="cl-desc">A 2026.09.12-i tesztelési jelentés 5. és 6. pontja alapján további keményítés és teljesítmény-javítás. Firebase Rules: mostantól séma-szinten (nem csak a kliens-kód jóhiszeműségére hagyatkozva) is védve van, hogy egy éles szoba nyilvánosan olvasható kérdés-ága soha ne tartalmazhassa a helyes válasz indexét — ez a mező kizárólag a védett admin-kérdésbankban engedélyezett; emellett a szobalista (roomIndex) bejegyzései és az élethosszig tartó válasz-statisztika mezői is szigorúbb, mezőnkénti ellenőrzés alá kerültek (utóbbinál egy írás mostantól csakis pontosan +1-gyel növelheti a számlálót, nem tetszőleges mértékben). Teljesítmény: a teljes kérdésbank egy munkameneten belül már csak egyszer töltődik le a Firebase-ből — akár többször nyitod meg az Új szoba képernyőt, akár egymás után több kört is indítasz ugyanabban a szobában —, kifejezett frissítést az Új szoba képernyő "🔄 Frissítés" gombjával kérhetsz; az Online Játékosok lista pedig mostantól minden játékos profilját csak egyszer kéri le, amíg az illető online marad, nem minden egyes jelenlét-változásnál újra mindenkiét.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.11</div><div><div class="cl-desc">Négy célzott javítás a 2026.09.12-i átfogó tesztelési jelentés alapján. KRITIKUS biztonsági javítás: a játékos- és csapatnév eddig 6 helyen (a Játékosok/Csapattársak lista játék közben, valamint az egyéni és csapat-ranglisták) a már meglévő védelmi becsomagolás nélkül került a képernyőre — egy tudatosan rosszindulatúan megválasztott névvel bárki futtatható kódot csempészhetett volna más játékosok böngészőjébe (stored XSS); mind a 6 hely javítva, ugyanazzal a mintával, amit a kód más helyeken már eddig is helyesen alkalmazott. Emellett: az „éppen szobában vagyok-e" ellenőrzés mostantól az Online Játékosok (meghívás mód) képernyőt is felismeri, így egy másik szobába szóló meghívás elfogadásakor a korábbi szoba többé nem maradhat személytelen „szellemszobaként" a listán; a jelenlét-rendszer figyelője mostantól kijelentkezéskor és fiók törlésekor is explicit módon leáll, megelőzve egy listener-felhalmozódási hibát; és megtörtént egy sor rendrakás: törölve egy teljesen holt Firebase-ág és a hozzá tartozó írások, két sosem olvasott mező, két soha nem hívott függvény, két nem használt CSS-stílus, valamint egyszerűsítve egy felesleges belső feltétel.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.10</div><div><div class="cl-desc">A Firebase App Check / reCAPTCHA Enterprise integráció teljes egészében eltávolításra került — a hozzá tartozó script-betöltés, aktiválási kód és a quiz-host.html beállítási mezője is. A Google Cloud oldali reCAPTCHA-kulcs tartósan "Incomplete" állapotban ragadt, emiatt a védelmi réteg sosem tudott ténylegesen aktiválódni, ezért a döntés az volt, hogy ezt a funkciót nem használjuk tovább. Az alkalmazás mostantól pontosan úgy működik, mint az App Check bevezetése (3.6-os verzió) előtt — ez a változás semmilyen látható különbséget nem okoz a játékmenetben.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.9</div><div><div class="cl-desc">SÜRGŐSSÉGI JAVÍTÁS: a 3.8-as App Check aktiváció a betöltés legelején, szinkron módon futott — ha ez bármi okból elakadt volna, az egész oldal üresen maradt (a főmenü, bejelentkezés stb. sosem jelent meg). Mostantól az App Check aktiválása egy tick-kel késleltetve indul, így semmiképp nem akadályozhatja a többi képernyő betöltését, függetlenül attól, mi történik az App Check-kel. Ez tisztán belső, védelmi jellegű javítás — az App Check tényleges működését nem érinti.</div></div></div>
@@ -1119,6 +1120,44 @@ let roomListListenerRef = null;   // a szobalista élő figyelője
 let onlinePlayersListenerRef = null;   // az Online Játékosok lista élő figyelője (presence)
 let hostRoomTopicLabel = 'Vegyes';
 
+// ── AKTÍV HOST BEJEGYZÉS — "activeHosts" fordított index (13. fázis, l.
+//    TESZTELESI_JELENTES.md 5.2. pont, teljes megoldás) ──────────────────
+// A users/{uid}/stats írása a Rules-ben mostantól megköveteli, hogy az író
+// TÉNYLEGESEN annak a szobának a hostja legyen, amiben a célzott játékos részt
+// vesz — ezt a Rules az activeHosts/{auth.uid} bejegyzésből olvassa ki
+// ("melyik szobát hosztolom éppen"), majd ellenőrzi, hogy a célzott uid
+// valóban abban a szobában van-e. A kliens csak KÉRI ezt a bejegyzést; a
+// Rules saját maga (l. database_rules.json "activeHosts" ág validate-je)
+// ellenőrzi, hogy a bejegyzett szobakódhoz valóban ez az uid tartozik-e
+// hostUid-ként — egy hamis bejegyzést tehát a Rules eleve elutasít.
+let activeHostRef = null;
+
+// Bejegyzi (vagy frissíti), hogy ÉPPEN ezt a szobát hosztolom. Hívva: (1)
+// amikor ténylegesen csatlakozom egy szobához hostként (connectAsPlayerToRoom),
+// és (2) minden újracsatlakozáskor (l. initPresenceSystem() ".info/connected"
+// figyelője) — utóbbi azért szükséges, mert egy hálózati kapcsolat-megszakadás
+// törli a korábban regisztrált onDisconnect-műveletet is, tehát enélkül egy
+// átmeneti net-hiba után a host stats-írási jogosultsága némán megszűnne.
+async function registerActiveHost(code) {
+  if (!db) db = firebase.database();
+  try {
+    activeHostRef = db.ref('activeHosts/' + playerId);
+    await activeHostRef.set(code);
+    activeHostRef.onDisconnect().remove();
+  } catch (e) {
+    console.warn('[QuizMaster] activeHosts regisztráció hiba:', e);
+  }
+}
+
+// Explicit eltávolítás — akkor hívjuk, amikor már nem vagyunk aktívan egy
+// szoba hostjai (szoba elhagyása, kijelentkezés, fiók törlése). Nem várjuk
+// meg (nem kritikus, és nem szabad blokkolnia a főmenübe lépést).
+function clearActiveHost() {
+  if (!activeHostRef) return;
+  activeHostRef.remove().catch(() => {});
+  activeHostRef = null;
+}
+
 // ── KÉRDÉSBANK CACHE (10. fázis, teljesítmény-javítás — l. TESZTELESI_JELENTES.md 6.1) ──
 // A teljes "kvizjatek" kérdésbank korábban minden ÚJ SZOBA-képernyő megnyitásakor ÉS
 // minden "Új kör indítása"-kor újra letöltődött a Firebase-ből, akkor is, ha a tartalma
@@ -1350,6 +1389,15 @@ function initPresenceSystem(uid) {
       presenceRef.onDisconnect().remove().then(() => {
         updateMyPresence('menu');
       });
+      // 13. fázis: ha ÉPP AKTÍVAN hosztolunk egy szobát, az activeHosts
+      // bejegyzést (és annak onDisconnect-jét) is újra kell regisztrálni
+      // MINDEN (újra)csatlakozáskor — pontosan ugyanazon okból, mint a fenti
+      // presence-onDisconnect-nél: egy kapcsolat-megszakadás ezt is törli.
+      // Az amIRoomHost/roomCode itt mindig a HÍVÁS PILLANATÁBAN aktuális
+      // értéket tükrözi (záró változók, nem a regisztráláskori pillanatképet).
+      if (amIRoomHost && roomCode) {
+        registerActiveHost(roomCode);
+      }
     }
   };
   connectedRef.on('value', connectedCallback);
@@ -1389,6 +1437,7 @@ function doLogout() {
   presenceRef = null;
   cleanupInviteState();
   publicProfileCache = {};
+  clearActiveHost();
   firebase.auth().signOut();
 }
 
@@ -1698,6 +1747,7 @@ async function confirmDeleteAccount() {
     presenceRef = null;
     cleanupInviteState();
     publicProfileCache = {};
+    clearActiveHost();
     await currentUser.delete();
     closeDeleteAccountModal();
     alert('A fiókod véglegesen törölve lett. Viszlát!');
@@ -2859,6 +2909,10 @@ function backToMenu() {
   if (amIRoomHost && db && roomCode) {
     db.ref('roomIndex/' + roomCode).remove().catch(() => {});
   }
+  // 13. fázis: az activeHosts bejegyzés is törlendő, amint már nem vagyunk aktívan
+  // egy szoba hostjai — enélkül a users/{uid}/stats írási jogosultságunk (l.
+  // database_rules.json) tovább élne egy már elhagyott szobára hivatkozva.
+  clearActiveHost();
   hasAnswered = false; myScore = 0; currentQIndex = -1;
   players = {}; questions = []; answeredNamesThisRound = new Set();
   myQuestionHistory = []; pendingQuestion = null;
@@ -3156,9 +3210,12 @@ async function connectAsPlayerToRoom(code) {
 
   setupListeners();
 
-  if (amIRoomHost && !hostScoringListenerAttached) {
-    hostSetupScoringListener();
-    hostScoringListenerAttached = true;
+  if (amIRoomHost) {
+    if (!hostScoringListenerAttached) {
+      hostSetupScoringListener();
+      hostScoringListenerAttached = true;
+    }
+    await registerActiveHost(roomCode);
   }
 
   updateMyPresence('playing');
@@ -4002,7 +4059,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.12</div>
+<div class="version-badge">Játék verzió: 3.13</div>
 
 </body>
 </html>
