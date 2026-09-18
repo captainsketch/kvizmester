@@ -486,7 +486,7 @@ function buildRegCard(uid, u, showActions){
 
   const gyulekezetEl = document.createElement('div');
   gyulekezetEl.style.cssText = 'color:var(--muted);font-size:12px;margin-bottom:8px;';
-  gyulekezetEl.textContent = '⛪ ' + ((u && u.gyulekezet) || '—');
+  gyulekezetEl.textContent = '🏠 ' + ((u && u.gyulekezet) || '—');
   card.appendChild(gyulekezetEl);
 
   // Válasz-statisztika: users/{uid}/stats — hiányzó mezők (még nem játszott felhasználóknál,
@@ -1018,7 +1018,7 @@ function renumberAllQuestions() {
 
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.8</div>
+<div class="version-badge">Admin panel verzió: 3.9</div>
 
 <script>
 // ============================================================

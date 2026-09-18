@@ -495,6 +495,13 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     background:rgba(224,90,90,0.1); border:1px solid rgba(224,90,90,0.3); color:var(--red);
   }
   .report-status.hidden { display:none !important; }
+
+  /* ── REGISZTRÁCIÓS FIGYELMEZTETŐ (Fázis 15) — a .report-modal-* váz újrafelhasználásával ── */
+  .gate-header-title { font-family:var(--font-display); font-size:22px; letter-spacing:2px; color:var(--accent); }
+  .gate-info-title { font-size:14px; font-weight:700; margin-bottom:4px; }
+  .gate-info-text { font-size:12.5px; color:var(--muted); line-height:1.6; }
+  .report-submit-btn.confirm-step { background:var(--green); box-shadow:0 4px 16px rgba(62,207,142,0.3); }
+
   .hist-report-btn {
     display:flex; align-items:center; gap:6px;
     margin-top:10px; padding:8px 14px;
@@ -563,6 +570,34 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
 
   <div class="auth-error" id="auth-error"></div>
   <div class="auth-notice" id="auth-notice"></div>
+
+  <!-- REGISZTRÁCIÓS FIGYELMEZTETŐ (Fázis 15) — minden alkalommal megjelenik, amikor a
+       REGISZTRÁCIÓ fülre kattintanak, még mielőtt az űrlap láthatóvá válna. Kétlépéses
+       gombos megerősítést igényel; szándékosan nincs háttérre kattintós vagy X-es
+       bezárás — kizárólag a lenti gombsoron át léphető át (l. PROJEKT_ALLAPOT.md, Fázis 15). -->
+  <div class="report-modal-overlay hidden" id="register-notice-gate">
+    <div class="report-modal" style="max-width:340px;">
+      <div class="report-modal-header" style="justify-content:center;">
+        <div class="gate-header-title">FONTOS</div>
+      </div>
+      <div class="report-modal-body">
+        <div style="margin-bottom:14px;">
+          <div class="gate-info-title">👤 Név</div>
+          <div class="gate-info-text">Azért fontos, hogy a testvérek tudják, hogy ki vagy.</div>
+        </div>
+        <div style="margin-bottom:2px;">
+          <div class="gate-info-title">🏠 Gyülekezet</div>
+          <div class="gate-info-text">Azért fontos, hogy a testvérek lássák, hogy hova tartozol, illetve hogy én mint a játék készítője lássam, hogy az országban hányan, melyik gyülekezetekből használjátok a játékot.</div>
+        </div>
+      </div>
+      <div class="report-modal-footer" style="flex-direction:column;">
+        <button class="report-submit-btn" id="register-gate-btn1" onclick="registerGateFirstClick()" style="width:100%;">✓ ELFOGADOM</button>
+        <div class="hidden" id="register-gate-btn2-wrap" style="width:100%;margin-top:10px;">
+          <button class="report-submit-btn confirm-step" onclick="registerGateSecondClick()" style="width:100%;">BIZTOS VAGY BENNE?</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ELBÍRÁLÁS ALATT -->
@@ -679,7 +714,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.14</div><div><div class="cl-desc">Biztonsági audit — "mit tud tenni valaki a Játékos-linkkel a konzolon keresztül" kérdés alapos kivizsgálása, Rules-szimulátorral empirikusan bizonyítva és lezárva 3 kritikus rés: (1) a `kvizjatek` admin-kérdésbank eddig bárki (nem csak admin) által "host"-tá tehető volt egyetlen konzolparanccsal, ami a teljes kérdésbank törlését/felülírását tette lehetővé — mostantól a `kvizjatek` szobakód a self-service host-igénylésből (és a `questions` írásból, kétszeres védelemként) kifejezetten ki van zárva; (2) egy játékos eddig tetszőleges értéket írhatott a SAJÁT `players/{uid}/score` mezőjébe (pl. 999999) — mostantól a mező adatszinten korlátozott: új érték csak pontosan 0 (csatlakozás/új kör) vagy a régi értékhez képest legfeljebb +5 (a tényleges pontozási képlet felső határa) lehet, függetlenül attól, ki írja; (3) egy játékos eddig olyan `teamId`-t is beállíthatott magának, amelyiknek valójában nem tagja — ez idegen csapatok eredményét tudta hamisan módosítani; mostantól a `teamId` csak akkor fogadható el, ha a hivatkozott csapat `members` ága ténylegesen tartalmazza az adott játékost (ehhez kapcsolódó kliens-oldali kiegészítés: a csapat-figyelő mostantól automatikusan nullázza a helyi `myTeamId`-t, ha az időközben érvénytelenné vált, nehogy egy visszacsatlakozás emiatt elakadjon). A `players/{uid}` séma emellett `$other:false`-fal is lezárásra került (ismeretlen mezők becsempészése ellen), és a `users/{uid}` név/e-mail/gyülekezet/avatar mezők önírása mostantól jóváhagyott státuszt is megkövetel. Mindezt egy saját Rules-szimulátorral 43 automatizált teszt (8 regressziós + 6 sebezhetőség-bizonyítás eredetin + 15 zárás-igazolás + 14 legitim-folyamat regresszió javítotton) igazolja vissza, mind zöld. További 3, kisebb-nagyobb tervezési döntést igénylő találat (élő válaszok korai leolvashatósága, felfedés utáni válaszbeadás időzítési rése, és a teljes kérdésbank "correct" mezőjének szerkezeti kitettsége) egyelőre szándékosan nyitva maradt — részletek és javaslat a beszélgetésben.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.15</div><div><div class="cl-desc">Regisztráció előtt megjelenő "FONTOS" figyelmeztető képernyő: a REGISZTRÁCIÓ fülre kattintva — minden alkalommal — egy kétlépéses megerősítést igénylő tájékoztató jelenik meg arról, miért kérjük a valódi nevet ("hogy a testvérek tudják, ki vagy") és a gyülekezetet ("hogy a testvérek lássák, hova tartozol, és hogy a játék készítője lássa, az országban hányan, melyik gyülekezetekből használják a játékot"); a regisztrációs űrlap csak azután válik láthatóvá, hogy előbb a "✓ ELFOGADOM" gombra, majd az arra megjelenő önálló "BIZTOS VAGY BENNE?" gombra is rákattintottak — háttérre kattintva vagy más módon nem zárható be. Emellett a "gyülekezet" ikonja mindenhol, ahol eddig ⛪ szerepelt (az Online Játékosok listában, illetve a quiz-host.html admin-felület regisztráció-kártyáin), lecserélve 🏠-ra — összhangban a "Gyülekezeted" képernyő már 2.11 óta érvényes ikonjával.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.14</div><div><div class="cl-desc">Biztonsági audit — "mit tud tenni valaki a Játékos-linkkel a konzolon keresztül" kérdés alapos kivizsgálása, Rules-szimulátorral empirikusan bizonyítva és lezárva 3 kritikus rés: (1) a `kvizjatek` admin-kérdésbank eddig bárki (nem csak admin) által "host"-tá tehető volt egyetlen konzolparanccsal, ami a teljes kérdésbank törlését/felülírását tette lehetővé — mostantól a `kvizjatek` szobakód a self-service host-igénylésből (és a `questions` írásból, kétszeres védelemként) kifejezetten ki van zárva; (2) egy játékos eddig tetszőleges értéket írhatott a SAJÁT `players/{uid}/score` mezőjébe (pl. 999999) — mostantól a mező adatszinten korlátozott: új érték csak pontosan 0 (csatlakozás/új kör) vagy a régi értékhez képest legfeljebb +5 (a tényleges pontozási képlet felső határa) lehet, függetlenül attól, ki írja; (3) egy játékos eddig olyan `teamId`-t is beállíthatott magának, amelyiknek valójában nem tagja — ez idegen csapatok eredményét tudta hamisan módosítani; mostantól a `teamId` csak akkor fogadható el, ha a hivatkozott csapat `members` ága ténylegesen tartalmazza az adott játékost (ehhez kapcsolódó kliens-oldali kiegészítés: a csapat-figyelő mostantól automatikusan nullázza a helyi `myTeamId`-t, ha az időközben érvénytelenné vált, nehogy egy visszacsatlakozás emiatt elakadjon). A `players/{uid}` séma emellett `$other:false`-fal is lezárásra került (ismeretlen mezők becsempészése ellen), és a `users/{uid}` név/e-mail/gyülekezet/avatar mezők önírása mostantól jóváhagyott státuszt is megkövetel. Mindezt egy saját Rules-szimulátorral 43 automatizált teszt (8 regressziós + 6 sebezhetőség-bizonyítás eredetin + 15 zárás-igazolás + 14 legitim-folyamat regresszió javítotton) igazolja vissza, mind zöld. További 3, kisebb-nagyobb tervezési döntést igénylő találat (élő válaszok korai leolvashatósága, felfedés utáni válaszbeadás időzítési rése, és a teljes kérdésbank "correct" mezőjének szerkezeti kitettsége) egyelőre szándékosan nyitva maradt — részletek és javaslat a beszélgetésben.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.13</div><div><div class="cl-desc">A 2026.09.12-i tesztelési jelentés 5.2. pontjának TELJES megoldása: a szoba irányítója mostantól Rules-szinten is bizonyítottan a célzott játékos szobájának tényleges hostjaként kell azonosítania magát ahhoz, hogy annak élethosszig tartó válasz-statisztikáját frissíthesse — eddig ehhez elég volt bármely jóváhagyott fióknak lenni. Új, "activeHosts" nevű belső nyilvántartás jegyzi fel élőben, ki melyik szobát hosztolja éppen; ezt a Firebase saját maga ellenőrzi (hamis bejegyzés nem hozható létre), és hálózati kapcsolat-megszakadás után is automatikusan újraéled, amint a host böngészője újracsatlakozik — így egy átmeneti net-hiba sem szakítja meg csendben a statisztika-gyűjtést. Ezzel az idén szeptemberi átfogó tesztelési jelentés mind az 5, mind a 6 alpontja lezárult.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.12</div><div><div class="cl-desc">A 2026.09.12-i tesztelési jelentés 5. és 6. pontja alapján további keményítés és teljesítmény-javítás. Firebase Rules: mostantól séma-szinten (nem csak a kliens-kód jóhiszeműségére hagyatkozva) is védve van, hogy egy éles szoba nyilvánosan olvasható kérdés-ága soha ne tartalmazhassa a helyes válasz indexét — ez a mező kizárólag a védett admin-kérdésbankban engedélyezett; emellett a szobalista (roomIndex) bejegyzései és az élethosszig tartó válasz-statisztika mezői is szigorúbb, mezőnkénti ellenőrzés alá kerültek (utóbbinál egy írás mostantól csakis pontosan +1-gyel növelheti a számlálót, nem tetszőleges mértékben). Teljesítmény: a teljes kérdésbank egy munkameneten belül már csak egyszer töltődik le a Firebase-ből — akár többször nyitod meg az Új szoba képernyőt, akár egymás után több kört is indítasz ugyanabban a szobában —, kifejezett frissítést az Új szoba képernyő "🔄 Frissítés" gombjával kérhetsz; az Online Játékosok lista pedig mostantól minden játékos profilját csak egyszer kéri le, amíg az illető online marad, nem minden egyes jelenlét-változásnál újra mindenkiét.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.11</div><div><div class="cl-desc">Négy célzott javítás a 2026.09.12-i átfogó tesztelési jelentés alapján. KRITIKUS biztonsági javítás: a játékos- és csapatnév eddig 6 helyen (a Játékosok/Csapattársak lista játék közben, valamint az egyéni és csapat-ranglisták) a már meglévő védelmi becsomagolás nélkül került a képernyőre — egy tudatosan rosszindulatúan megválasztott névvel bárki futtatható kódot csempészhetett volna más játékosok böngészőjébe (stored XSS); mind a 6 hely javítva, ugyanazzal a mintával, amit a kód más helyeken már eddig is helyesen alkalmazott. Emellett: az „éppen szobában vagyok-e" ellenőrzés mostantól az Online Játékosok (meghívás mód) képernyőt is felismeri, így egy másik szobába szóló meghívás elfogadásakor a korábbi szoba többé nem maradhat személytelen „szellemszobaként" a listán; a jelenlét-rendszer figyelője mostantól kijelentkezéskor és fiók törlésekor is explicit módon leáll, megelőzve egy listener-felhalmozódási hibát; és megtörtént egy sor rendrakás: törölve egy teljesen holt Firebase-ág és a hozzá tartozó írások, két sosem olvasott mező, két soha nem hívott függvény, két nem használt CSS-stílus, valamint egyszerűsítve egy felesleges belső feltétel.</div></div></div>
@@ -1274,9 +1310,40 @@ function setAuthMode(mode) {
   document.getElementById('auth-tab-login').classList.toggle('active', mode === 'login');
   document.getElementById('auth-tab-register').classList.toggle('active', mode === 'register');
   document.getElementById('auth-form-login').style.display = mode === 'login' ? 'block' : 'none';
-  document.getElementById('auth-form-register').style.display = mode === 'register' ? 'block' : 'none';
   document.getElementById('auth-error').textContent = '';
   document.getElementById('auth-notice').textContent = '';
+  if (mode === 'register') {
+    // Az űrlap csak a "Fontos" figyelmeztetés kétlépéses elfogadása UTÁN válik
+    // láthatóvá — a gate minden egyes belépéskor újraindul (l. Fázis 15).
+    document.getElementById('auth-form-register').style.display = 'none';
+    resetRegisterGate();
+    document.getElementById('register-notice-gate').classList.remove('hidden');
+  } else {
+    document.getElementById('auth-form-register').style.display = 'none';
+    document.getElementById('register-notice-gate').classList.add('hidden');
+  }
+}
+
+// ── REGISZTRÁCIÓS FIGYELMEZTETŐ (Fázis 15) ────────────────────
+// Kétlépéses gombos megerősítés, mielőtt az auth-form-register láthatóvá
+// válna: "✓ ELFOGADOM" → (a gomb inaktívvá válik, egy ÖNÁLLÓ "BIZTOS VAGY
+// BENNE?" gomb jelenik meg alatta) → csak ennek megnyomására tűnik el a gate
+// és jelenik meg az űrlap. Nincs háttér-kattintós vagy Escape-es bezárás.
+function resetRegisterGate() {
+  const btn1 = document.getElementById('register-gate-btn1');
+  btn1.textContent = '✓ ELFOGADOM';
+  btn1.disabled = false;
+  document.getElementById('register-gate-btn2-wrap').classList.add('hidden');
+}
+function registerGateFirstClick() {
+  const btn1 = document.getElementById('register-gate-btn1');
+  btn1.textContent = '✓ Elfogadva';
+  btn1.disabled = true;
+  document.getElementById('register-gate-btn2-wrap').classList.remove('hidden');
+}
+function registerGateSecondClick() {
+  document.getElementById('register-notice-gate').classList.add('hidden');
+  document.getElementById('auth-form-register').style.display = 'block';
 }
 
 function translateAuthError(e) {
@@ -2081,7 +2148,7 @@ function renderOnlinePlayersList(profiles) {
       <div class="online-player-avatar">${badgeHtml}</div>
       <div class="online-player-info">
         <div class="online-player-name">${escHtml(name)}</div>
-        <div class="online-player-gyulekezet">⛪ ${escHtml(gyulekezet)}</div>
+        <div class="online-player-gyulekezet">🏠 ${escHtml(gyulekezet)}</div>
       </div>
       ${statusHtml}
     </div>`;
@@ -4071,7 +4138,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.14</div>
+<div class="version-badge">Játék verzió: 3.15</div>
 
 </body>
 </html>
