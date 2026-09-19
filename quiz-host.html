@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
 <title>QuizMaster — Host Panel</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -19,8 +20,9 @@
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;}
 
-  /* SETUP */
-  #setup-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;}
+  /* BELÉPÉS ELŐTTI KÉPERNYŐK (betöltés / admin bejelentkezés) */
+  #loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;}
+  #admin-login-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;}
   .setup-logo{font-family:var(--font-display);font-size:72px;letter-spacing:4px;color:var(--accent);line-height:1;margin-bottom:8px;}
   .setup-sub{color:var(--muted);font-size:14px;letter-spacing:3px;text-transform:uppercase;margin-bottom:48px;}
   .setup-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px;width:100%;max-width:560px;}
@@ -163,24 +165,18 @@
 </head>
 <body>
 
-<!-- SETUP -->
-<div id="setup-screen">
+<!-- BETÖLTÉS — a Firebase automatikusan, rögzített konfigurációval kapcsolódik;
+     ez a képernyő csak addig látszik, amíg eldől, hogy admin bejelentkezés
+     vagy a főképernyő jön-e (l. requireAdminLogin()). Nincs szerkeszthető
+     mező — a kapcsolati adatok szándékosan nem a felhasználó által
+     megadhatók, l. PROJEKT_ALLAPOT.md. -->
+<div id="loading-screen">
   <div class="setup-logo">QUIZMASTER</div>
-  <div class="setup-sub">Tartalomkezelő — Host Panel</div>
-  <div class="setup-card">
-    <h2>FIREBASE BEÁLLÍTÁS</h2>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">Illeszd be a Firebase projekted konfigurációját a kérdés- és szóadatbázis eléréséhez.</p>
-    <div class="field"><label>API Key</label><input type="text" id="cfg-apiKey" placeholder="AIzaSy..." value="AIzaSyDUFXHdzdn6DaehVN44vRPGaNV3x-jhHXA"></div>
-    <div class="field"><label>Auth Domain</label><input type="text" id="cfg-authDomain" placeholder="projekt-id.firebaseapp.com" value="kvizmester-ded38.firebaseapp.com"></div>
-    <div class="field"><label>Database URL</label><input type="text" id="cfg-databaseURL" placeholder="https://projekt-id-default-rtdb.europe-west1.firebasedatabase.app" value="https://kvizmester-ded38-default-rtdb.europe-west1.firebasedatabase.app"></div>
-    <div class="field"><label>Project ID</label><input type="text" id="cfg-projectId" placeholder="projekt-id" value="kvizmester-ded38"></div>
-    <div class="field"><label>Tartalom-adatbázis kódja</label><input type="text" id="cfg-room" placeholder="pl. kvizjatek" value="kvizjatek"></div>
-    <button class="btn" onclick="initFirebase()">KAPCSOLÓDÁS →</button>
-  </div>
+  <div class="setup-sub">Betöltés...</div>
 </div>
 
 <!-- ADMIN BEJELENTKEZÉS -->
-<div id="admin-login-screen" style="display:none;">
+<div id="admin-login-screen">
   <div class="setup-logo">QUIZMASTER</div>
   <div class="setup-sub">Admin bejelentkezés szükséges</div>
   <div class="setup-card">
@@ -190,9 +186,6 @@
     <div class="field"><label>Jelszó</label><input type="password" id="admin-login-password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"></div>
     <button class="btn" onclick="doAdminLogin()">BEJELENTKEZÉS →</button>
     <div id="admin-login-error" style="color:var(--red);font-size:13px;margin-top:12px;min-height:18px;line-height:1.5;"></div>
-    <div style="margin-top:14px;padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
-      <p style="font-size:11px;color:var(--muted);line-height:1.6;">Az admin-fiók ugyanabban a Firebase Auth felhasználói listában van, mint a játékosoké — csak a <code>role: admin</code> jelölő különbözteti meg. Ha ez az első admin-fiók, regisztráld magad a felhasználói felületen, majd a Firebase Console → Realtime Database nézetében írd be kézzel a <code>users/&lt;uid&gt;/role</code> mezőt <code>"admin"</code> értékkel.</p>
-    </div>
   </div>
 </div>
 
@@ -367,18 +360,28 @@ let currentInlineEditId=null,inlineCorrectOpt=0;
 // ============================================================
 // FIREBASE
 // ============================================================
+// A tartalom-adatbázis kapcsolati adatai — Fázis 16 óta rögzített, nem
+// felhasználó által szerkeszthető értékek (korábban egy szabadon
+// átírható, előre kitöltött "Firebase beállítás" űrlap adta meg ezeket,
+// ami feleslegesen nyitott, "csatlakozz bármihez" benyomást keltett annak,
+// aki idetéved — l. PROJEKT_ALLAPOT.md, Fázis 16). Ugyanaz a nyilvános
+// kliens-konfiguráció, amit a quiz-player.html is használ; a Firebase
+// modellje szerint ez a kulcs eleve publikus, a valódi védelmi határ a
+// Realtime Database Rules (l. PROJEKT_ALLAPOT.md 14. szakasz).
+const FIREBASE_CONFIG = {
+  apiKey:      "AIzaSyDUFXHdzdn6DaehVN44vRPGaNV3x-jhHXA",
+  authDomain:  "kvizmester-ded38.firebaseapp.com",
+  databaseURL: "https://kvizmester-ded38-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:   "kvizmester-ded38"
+};
+const CONTENT_ROOM_CODE = 'kvizjatek';
+
 function initFirebase() {
-  const apiKey=document.getElementById('cfg-apiKey').value.trim();
-  const authDomain=document.getElementById('cfg-authDomain').value.trim();
-  const databaseURL=document.getElementById('cfg-databaseURL').value.trim();
-  const projectId=document.getElementById('cfg-projectId').value.trim();
-  roomCode=document.getElementById('cfg-room').value.trim()||'kvizjatek';
-  if(!apiKey||!databaseURL){alert('Kérlek töltsd ki az API Key és Database URL mezőket!');return;}
+  roomCode = CONTENT_ROOM_CODE;
   try{
     if(firebase.apps.length)firebase.app().delete();
-    firebase.initializeApp({apiKey,authDomain,databaseURL,projectId});
+    firebase.initializeApp(FIREBASE_CONFIG);
     db=firebase.database(); roomRef=db.ref('rooms/'+roomCode);
-    document.getElementById('setup-screen').style.display='none';
     requireAdminLogin();
   }catch(e){alert('Firebase hiba: '+e.message);}
 }
@@ -386,6 +389,8 @@ function initFirebase() {
 // ── ADMIN BEJELENTKEZÉS KAPU ─────────────────────────────────
 function requireAdminLogin(){
   firebase.auth().onAuthStateChanged(async (user) => {
+    const loadingEl = document.getElementById('loading-screen');
+    if(loadingEl) loadingEl.style.display='none';
     if(!user){
       document.getElementById('admin-login-screen').style.display='flex';
       return;
@@ -547,7 +552,6 @@ function setupListeners() {
 }
 
 function showMain() {
-  document.getElementById('setup-screen').style.display='none';
   document.getElementById('main-screen').style.display='block';
   document.getElementById('room-code-display').textContent=roomCode.toUpperCase();
   renderAll();
@@ -1016,9 +1020,12 @@ function renumberAllQuestions() {
   alert(`✅ Sorszámozás kész! ${noNum===0?questions.length+' kérdés újraszámozva':withoutNum.length+' kérdés kapott sorszámot.'}`);
 }
 
+// Automatikus kapcsolódás rögzített konfigurációval — nincs többé szerkeszthető
+// beállítási képernyő (l. FIREBASE_CONFIG a fájl elején, Fázis 16).
+initFirebase();
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.9</div>
+<div class="version-badge">Admin panel verzió: 3.10</div>
 
 <script>
 // ============================================================
