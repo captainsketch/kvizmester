@@ -382,7 +382,24 @@ function initFirebase() {
     if(firebase.apps.length)firebase.app().delete();
     firebase.initializeApp(FIREBASE_CONFIG);
     db=firebase.database(); roomRef=db.ref('rooms/'+roomCode);
-    requireAdminLogin();
+    // Fázis 18: a Firebase Auth alapértelmezés szerint TARTÓSAN (böngésző-
+    // újraindítás után is) megjegyezné a bejelentkezett állapotot, itt viszont
+    // Dani kifejezett kérése, hogy a host felület MINDEN egyes alkalommal kérje
+    // be újra az email+jelszó párost — nincs "megjegyzett eszköz" kivétel.
+    // Ehhez: (1) a perzisztencia-módot NONE-ra állítjuk — ez azt jelenti, hogy
+    // a bejelentkezett állapot csak memóriában él, egyetlen oldalbetöltésen
+    // belül, és a KÖVETKEZŐ betöltéskor (akár frissítés, akár új látogatás)
+    // már nem létezik —, MIELŐTT bármilyen auth-ellenőrzés elindulna; (2) egy
+    // explicit signOut()-tal biztosra megyünk, hogy egy a fázis ELŐTTI
+    // (LOCAL-perzisztenciával mentett) régi munkamenet se maradjon érvényben
+    // ezen az eszközön. Ha a setPersistence bármiért hibázna (pl. a böngésző
+    // letiltja az IndexedDB-t), a .catch utáni requireAdminLogin() akkor is
+    // lefut — legrosszabb esetben az alapértelmezett perzisztencia marad
+    // érvényben, de a bejelentkezési képernyő NEM marad ki.
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE)
+      .then(() => firebase.auth().signOut())
+      .catch(e => console.warn('[QuizMaster] Auth persistence/signOut hiba:', e))
+      .finally(() => requireAdminLogin());
   }catch(e){alert('Firebase hiba: '+e.message);}
 }
 
@@ -1025,7 +1042,7 @@ function renumberAllQuestions() {
 initFirebase();
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.10</div>
+<div class="version-badge">Admin panel verzió: 3.11</div>
 
 <script>
 // ============================================================
