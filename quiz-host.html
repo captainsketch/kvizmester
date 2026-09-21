@@ -161,6 +161,19 @@
   .panel-tab-content { display:none; flex-direction:column; flex:1; overflow:hidden; min-height:0; }
   .panel-tab-content.active { display:flex; }
 
+  /* ── BEJELENTKEZETT ESZKÖZÖK (Fázis 19) ────────────────────── */
+  .loginlog-section-title { font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:4px 2px 8px;font-weight:700; }
+  .loginlog-divider { height:1px;background:var(--border);margin:16px 0 14px; }
+  .loginlog-more-btn { width:100%;padding:7px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:1px;text-align:left; }
+  .loginlog-card { background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px; }
+  .loginlog-card.rejected { border-left:3px solid var(--red); }
+  .loginlog-card.success { border-left:3px solid var(--green); }
+  .loginlog-card-top { display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px; }
+  .loginlog-name { font-weight:700;font-size:14px; }
+  .loginlog-meta { color:var(--muted);font-size:12px;line-height:1.6; }
+  .loginlog-count-badge { font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--border);color:var(--text);white-space:nowrap;flex-shrink:0; }
+  .loginlog-blocked-tag { font-size:11px;font-weight:700;color:var(--red); }
+
 </style>
 </head>
 <body>
@@ -210,6 +223,7 @@
       <div class="panel-tabs">
         <button class="panel-tab active" id="tab-questions" onclick="switchPanelTab('questions')">Kvíz kérdések</button>
         <button class="panel-tab" id="tab-registrations" onclick="switchPanelTab('registrations')">Regisztrációk <span class="tag" id="reg-pending-badge" style="display:none;background:var(--accent2);color:#fff;margin-left:3px;">0</span></button>
+        <button class="panel-tab" id="tab-loginlog" onclick="switchPanelTab('loginlog')">Bejelentkezett eszközök</button>
       </div>
 
       <!-- TAB: KÉRDÉSEK -->
@@ -282,6 +296,34 @@
           <div style="margin-top:16px;">
             <button id="reg-show-all-btn" onclick="toggleRegShowAll()" style="width:100%;padding:7px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:1px;text-align:left;">Elbírált regisztrációk mutatása ▶</button>
             <div class="hidden" id="reg-decided-list" style="margin-top:8px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BEJELENTKEZETT ESZKÖZÖK (Fázis 19) — az admin-panelhez tartozó sikeres és
+           elutasított belépési kísérletek naplója. FONTOS KORLÁT, amit a fájl végén,
+           a logAdminAccess() kódkommentje is elmagyaráz: "elutasított" itt KIZÁRÓLAG
+           azt jelentheti, hogy egy VALÓDI, regisztrált (de nem-admin) fiókkal sikeresen
+           bejelentkeztek, csak a role-ellenőrzésen buktak el — rossz jelszót / nemlétező
+           email-t próbálgató látogatóról NEM tudunk itt semmit rögzíteni, mert Firebase
+           Auth hitelesítés nélkül a kliensnek nincs mivel írnia az adatbázisba (l.
+           PROJEKT_ALLAPOT.md, Fázis 19 szakasz a teljes indoklásért). -->
+      <div class="panel-tab-content" id="tabcontent-loginlog">
+        <div class="panel-header">
+          <h3 style="color:var(--accent);">BEJELENTKEZETT ESZKÖZÖK</h3>
+        </div>
+        <div class="panel-content" id="loginlog-panel-content" style="padding:8px 10px;">
+          <div class="loginlog-section-title">✅ Sikeres admin-belépések</div>
+          <div id="loginlog-success-list"></div>
+          <div class="hidden" id="loginlog-success-more-wrap" style="margin-bottom:18px;">
+            <button id="loginlog-success-more-btn" class="loginlog-more-btn" onclick="toggleLoginLogShowAll('success')"></button>
+          </div>
+          <div class="loginlog-divider"></div>
+          <div class="loginlog-section-title">🚫 Elutasított próbálkozások</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.6;margin:0 2px 10px;">Csak a jóváhagyott, de nem-admin fiókkal tett próbálkozásokat mutatja — l. fent.</div>
+          <div id="loginlog-rejected-list"></div>
+          <div class="hidden" id="loginlog-rejected-more-wrap">
+            <button id="loginlog-rejected-more-btn" class="loginlog-more-btn" onclick="toggleLoginLogShowAll('rejected')"></button>
           </div>
         </div>
       </div>
@@ -416,10 +458,16 @@ function requireAdminLogin(){
       const snap = await db.ref('users/'+user.uid+'/role').once('value');
       if(snap.val()==='admin'){
         document.getElementById('admin-login-screen').style.display='none';
-        setupListeners(); showMain(); loadPendingRegistrations();
+        setupListeners(); showMain(); loadPendingRegistrations(); startLoginLogListeners();
+        logAdminAccess('success', user.uid);
       }else{
         document.getElementById('admin-login-error').textContent='Ez a fiók nincs admin-jogosultsággal felruházva.';
         document.getElementById('admin-login-screen').style.display='flex';
+        // A "sikertelen" naplózást a signOut() ELŐTT indítjuk el és megvárjuk —
+        // a Rules-ben az író saját (approved) fiókjához kötött write csak addig
+        // engedélyezett, amíg ő maga hitelesítve van; ha előbb jelentkeztetnénk
+        // ki, a kérés már auth nélkül futna le és a Rules elutasítaná.
+        await logAdminAccess('rejected', user.uid).catch(()=>{});
         firebase.auth().signOut();
       }
     }catch(e){
@@ -427,6 +475,249 @@ function requireAdminLogin(){
       document.getElementById('admin-login-screen').style.display='flex';
     }
   });
+}
+
+// ══════════════════════════════════════════════════════════════
+// BEJELENTKEZETT ESZKÖZÖK — admin-belépés napló (Fázis 19)
+// Minden admin-bejelentkezési KÍSÉRLET (siker VAGY egy már regisztrált,
+// jóváhagyott, de nem-admin fiók elutasítása) egy rekordot kap az
+// adminLoginLog/{success|rejected}/{uid}/{deviceKey} ágban. A deviceKey egy
+// egyszerű, determinisztikus hash az (IP+eszközleírás) párból — ugyanattól
+// a személytől, ugyanarról az eszközről/helyről érkező ISMÉTELT próbálkozás
+// UGYANAZT a rekordot frissíti (count+1, lastSeen), nem hoz létre új sort —
+// enélkül egy kíváncsi látogató néhány tucat kattintása percek alatt
+// olvashatatlanná tenné a listát (l. Dani kérése, PROJEKT_ALLAPOT.md Fázis 19).
+//
+// KORLÁT (nem választás, technikai adottság): "elutasított próbálkozás"
+// KIZÁRÓLAG azt jelentheti, hogy valaki egy VALÓDI, létező, jóváhagyott
+// fiókkal sikeresen hitelesítette magát a Firebase Auth-nál, és csak utána,
+// a role-ellenőrzésen bukott el — ilyenkor VAN auth.uid, amihez a Rules
+// engedélyezheti a saját-rekord írását. Rossz jelszó vagy nemlétező
+// email-cím próbálgatása SOHA nem jut el idáig: a signInWithEmailAndPassword
+// maga dob hibát, auth nélkül — és Firebase Rules-szal (backend/Cloud
+// Function nélkül) nincs mód olyasmit naplózni, amihez a kliensnek soha
+// nem volt hitelesített jogosultsága írni. Ugyanez az ok miatt VALÓDI
+// IP-cím-alapú tiltás sem lehetséges: a Rules nem látja a kérés IP-címét,
+// csak a hitelesített auth.uid-t — ezért a "Letiltás" gomb (l. lent) egy
+// FIÓKOT tilt le (a már meglévő, Rules-szinten kikényszerített
+// users/{uid}/status='rejected' mechanizmussal), nem egy IP-t.
+// ══════════════════════════════════════════════════════════════
+
+function describeDevice(ua) {
+  ua = ua || '';
+  let os = 'Ismeretlen eszköz';
+  if (/iPhone/.test(ua)) os = 'iPhone';
+  else if (/iPad/.test(ua)) os = 'iPad';
+  else if (/Android/.test(ua)) os = /Mobile/.test(ua) ? 'Android telefon' : 'Android tablet';
+  else if (/Macintosh/.test(ua)) os = 'Mac';
+  else if (/Windows/.test(ua)) os = 'Windows PC';
+  else if (/Linux/.test(ua)) os = 'Linux PC';
+  let browser = '';
+  if (/Edg\//.test(ua)) browser = 'Edge';
+  else if (/OPR\//.test(ua) || /\bOpera\b/.test(ua)) browser = 'Opera';
+  else if (/SamsungBrowser/.test(ua)) browser = 'Samsung Internet';
+  else if (/CriOS/.test(ua)) browser = 'Chrome';
+  else if (/FxiOS/.test(ua)) browser = 'Firefox';
+  else if (/Firefox\//.test(ua)) browser = 'Firefox';
+  else if (/Chrome\//.test(ua)) browser = 'Chrome';
+  else if (/Safari\//.test(ua)) browser = 'Safari';
+  return browser ? (os + ' · ' + browser) : os;
+}
+
+// Nem kriptográfiai célú, rövid determinisztikus hash — csak arra kell,
+// hogy ugyanaz az (ip+eszköz) pár mindig ugyanazt a Firebase-kulcsot adja.
+function simpleHash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+// IP + hozzávetőleges (VÁROS/ORSZÁG szintű, NEM pontos cím) hely lekérdezése
+// az ipapi.co ingyenes, API-kulcs nélküli szolgáltatásával (kb. 1000
+// lekérdezés/nap keret — ennél a projektméretnél ez bőven elég). Csak a
+// munkameneten belül EGYSZER hívjuk (cache), és soha nem dobunk hibát
+// kifelé: ha a szolgáltatás elérhetetlen/rate-limitelt, "ismeretlen" marad —
+// ez NEM akadályozhatja/lassíthatja a tényleges bejelentkezést.
+let cachedIpLocation = null;
+async function resolveIpLocation() {
+  if (cachedIpLocation) return cachedIpLocation;
+  try {
+    const resp = await fetch('https://ipapi.co/json/');
+    const data = await resp.json();
+    if (data && data.error) throw new Error(data.reason || 'ipapi.co hiba');
+    const parts = [data.city, data.country_name].filter(Boolean);
+    cachedIpLocation = { ip: (data && data.ip) || null, location: parts.length ? parts.join(', ') : null };
+  } catch (e) {
+    console.warn('[QuizMaster] IP-helymeghatározás sikertelen (ipapi.co):', e);
+    cachedIpLocation = { ip: null, location: null };
+  }
+  return cachedIpLocation;
+}
+
+async function logAdminAccess(category, uid) {
+  try {
+    const device = describeDevice(navigator.userAgent);
+    const { ip, location } = await resolveIpLocation();
+    const deviceKey = simpleHash((ip || 'ismeretlen') + '|' + device);
+    const ref = db.ref('adminLoginLog/' + category + '/' + uid + '/' + deviceKey);
+    const snap = await ref.once('value');
+    const prev = snap.val();
+    const updates = {
+      lastSeen: firebase.database.ServerValue.TIMESTAMP,
+      count: (prev && typeof prev.count === 'number' ? prev.count : 0) + 1,
+      device: device,
+      ip: ip || 'ismeretlen',
+      location: location || 'ismeretlen',
+    };
+    if (!prev) updates.firstSeen = firebase.database.ServerValue.TIMESTAMP;
+    await ref.update(updates);
+  } catch (e) {
+    // Szándékosan csak console.warn — a napló írása sosem szabad, hogy
+    // megakassza vagy hibaüzenettel zavarja a tényleges be-/kiléptetést.
+    console.warn('[QuizMaster] Admin-belépés naplózása sikertelen:', e);
+  }
+}
+
+// ── Élő figyelők + megjelenítés ──────────────────────────────
+let loginLogCache = { success: {}, rejected: {} };
+let loginLogShowAll = { success: false, rejected: false };
+const LOGINLOG_COLLAPSE_AT = 8;
+
+function startLoginLogListeners() {
+  ['success', 'rejected'].forEach(cat => {
+    db.ref('adminLoginLog/' + cat).on('value', snap => {
+      loginLogCache[cat] = snap.val() || {};
+      renderLoginLog(cat);
+    });
+  });
+}
+
+// Lapos, lastSeen szerint csökkenő sorrendbe rendezett tömbbé alakítja a
+// {uid: {deviceKey: rekord}} fát. A felhasználó nevét/állapotát az amúgy is
+// élő allUsersCache-ből olvassuk (l. loadPendingRegistrations()) — nem
+// kérünk le semmit duplán.
+function flattenLoginLog(cat) {
+  const rows = [];
+  Object.entries(loginLogCache[cat] || {}).forEach(([uid, devices]) => {
+    Object.entries(devices || {}).forEach(([deviceKey, rec]) => {
+      rows.push(Object.assign({ uid, deviceKey }, rec));
+    });
+  });
+  rows.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+  return rows;
+}
+
+function fmtLoginLogTime(ts) {
+  if (!ts) return '—';
+  try {
+    return new Date(ts).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest', dateStyle: 'short', timeStyle: 'short' });
+  } catch (e) { return '—'; }
+}
+
+// FONTOS: a name/device/location/ip mezők közül több is olyan adat, amit
+// végső soron a LÁTOGATÓ fél (böngésző User-Agent, illetve — ha valaki a
+// konzolon keresztül ír a saját rejected-rekordjába — bármi más szöveg is)
+// határoz meg, tehát NEM megbízható. Pontosan úgy, ahogy a buildRegCard()
+// is teszi: mindent textContent-tel építünk fel, SOHA nem innerHTML-lel
+// összefűzött string-sablonnal — a Rules csak típust/hosszt validál, HTML-
+// biztonságot nem (l. a korábbi, name-mezőben talált stored XSS javítása).
+function buildLoginLogCard(cat, r) {
+  const u = allUsersCache[r.uid] || {};
+  const name = u.name || '(törölt vagy ismeretlen fiók)';
+  const isBlocked = u.status === 'rejected';
+
+  const card = document.createElement('div');
+  card.className = 'loginlog-card ' + cat;
+
+  const top = document.createElement('div');
+  top.className = 'loginlog-card-top';
+  const nameEl = document.createElement('div');
+  nameEl.className = 'loginlog-name';
+  nameEl.textContent = name;
+  top.appendChild(nameEl);
+  if (r.count > 1) {
+    const badge = document.createElement('span');
+    badge.className = 'loginlog-count-badge';
+    badge.textContent = r.count + '×';
+    top.appendChild(badge);
+  }
+  card.appendChild(top);
+
+  const meta = document.createElement('div');
+  meta.className = 'loginlog-meta';
+  const line1 = document.createElement('div');
+  line1.textContent = '📱 ' + (r.device || 'ismeretlen eszköz') + '  ·  📍 ' + (r.location || 'ismeretlen hely');
+  const line2 = document.createElement('div');
+  line2.textContent = '🕒 Utoljára: ' + fmtLoginLogTime(r.lastSeen) +
+    (r.count > 1 ? '  ·  Először: ' + fmtLoginLogTime(r.firstSeen) : '');
+  meta.appendChild(line1);
+  meta.appendChild(line2);
+  card.appendChild(meta);
+
+  if (cat === 'rejected') {
+    const actionWrap = document.createElement('div');
+    actionWrap.style.cssText = 'margin-top:8px;';
+    if (isBlocked) {
+      const tag = document.createElement('span');
+      tag.className = 'loginlog-blocked-tag';
+      tag.textContent = '⛔ Fiók letiltva';
+      actionWrap.appendChild(tag);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'btn-danger';
+      btn.textContent = '🚫 Letiltás';
+      btn.onclick = () => blockLoginLogUser(r.uid);
+      actionWrap.appendChild(btn);
+    }
+    card.appendChild(actionWrap);
+  }
+  return card;
+}
+
+function renderLoginLog(cat) {
+  const listEl = document.getElementById('loginlog-' + cat + '-list');
+  const moreWrap = document.getElementById('loginlog-' + cat + '-more-wrap');
+  const moreBtn = document.getElementById('loginlog-' + cat + '-more-btn');
+  if (!listEl) return;
+  const rows = flattenLoginLog(cat);
+  const showAll = loginLogShowAll[cat];
+  const visible = showAll ? rows : rows.slice(0, LOGINLOG_COLLAPSE_AT);
+
+  listEl.innerHTML = '';
+  if (rows.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'color:var(--muted);font-size:13px;padding:8px 2px;';
+    empty.textContent = cat === 'success' ? 'Még nem volt admin-bejelentkezés.' : 'Nincs elutasított próbálkozás.';
+    listEl.appendChild(empty);
+    if (moreWrap) moreWrap.classList.add('hidden');
+    return;
+  }
+  visible.forEach(r => listEl.appendChild(buildLoginLogCard(cat, r)));
+
+  if (moreWrap && moreBtn) {
+    if (rows.length > LOGINLOG_COLLAPSE_AT) {
+      moreWrap.classList.remove('hidden');
+      moreBtn.textContent = showAll ? 'Kevesebb mutatása ▲' : ('+' + (rows.length - LOGINLOG_COLLAPSE_AT) + ' további megjelenítése ▶');
+    } else {
+      moreWrap.classList.add('hidden');
+    }
+  }
+}
+
+function toggleLoginLogShowAll(cat) {
+  loginLogShowAll[cat] = !loginLogShowAll[cat];
+  renderLoginLog(cat);
+}
+
+// A meglévő, MÁR TESZTELT elutasítási mechanizmust (Regisztrációk fül, "✗
+// Elutasít" gomb) hívja meg — szándékosan NEM egy külön "blokkolás" logikát
+// vezetünk be: egy elutasított (status:'rejected') fiók a Rules szerint
+// gyakorlatilag semmit nem tud írni/olvasni az appban, nem csak az admin
+// panelt nem éri el. Ez a valódi, Rules-szinten kikényszerített védelem.
+function blockLoginLogUser(uid) {
+  const name = (allUsersCache[uid] && allUsersCache[uid].name) || 'ez a fiók';
+  if (!confirm('Biztosan letiltod "' + name + '" fiókját? Ezután semmit nem tud tenni az appban, amíg vissza nem vonod (Regisztrációk fül).')) return;
+  rejectUser(uid);
 }
 
 async function doAdminLogin(){
@@ -458,6 +749,12 @@ function loadPendingRegistrations(){
   db.ref('users').on('value', snap => {
     allUsersCache = snap.val() || {};
     renderRegistrations();
+    // A bejelentkezett eszközök listája a fiók nevét/állapotát erről a
+    // gyorsítótárról olvassa (nem kér le semmit duplán) — ezért minden
+    // frissítésekor újra kell rajzolni, függetlenül attól, melyik figyelő
+    // (users vagy adminLoginLog) frissült elsőként.
+    renderLoginLog('success');
+    renderLoginLog('rejected');
   });
 }
 
@@ -1042,14 +1339,14 @@ function renumberAllQuestions() {
 initFirebase();
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.11</div>
+<div class="version-badge">Admin panel verzió: 3.12</div>
 
 <script>
 // ============================================================
 // PANEL TAB SWITCHING
 // ============================================================
 function switchPanelTab(tab) {
-  ['questions','registrations'].forEach(t => {
+  ['questions','registrations','loginlog'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('tabcontent-'+t).classList.toggle('active', t===tab);
   });
