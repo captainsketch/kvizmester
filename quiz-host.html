@@ -214,6 +214,7 @@
       <button class="btn-secondary" onclick="openExportModal()">⬇ Export</button>
       <button class="btn-secondary" onclick="openImportModal()">⬆ Import</button>
       <button class="btn-secondary" onclick="renumberAllQuestions()" title="Visszamenőleges sorszámozás az összes kérdéshez"># Sorszámozás</button>
+      <button class="btn-secondary" id="migrate-answerkeys-btn" onclick="migrateAnswerKeys()" title="Egyszeri migráció: a válaszkulcsok szétválasztása egy admin-only ágba (l. PROJEKT_ALLAPOT.md Fázis 22)">🔀 Válaszkulcsok migrálása</button>
     </div>
   </div>
 
@@ -236,6 +237,7 @@
           </div>
         </div>
         <div class="panel-content" id="panel-content">
+          <div class="hidden" id="questions-error-banner" style="background:rgba(224,90,90,0.1);border:1px solid rgba(224,90,90,0.35);color:var(--red);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;line-height:1.6;"></div>
 
           <!-- NEW Q FORM -->
           <div class="add-q-form hidden" id="add-q-form">
@@ -896,12 +898,60 @@ function toggleRegShowAll(){
     regShowAll ? 'Elbírált regisztrációk elrejtése ▼' : 'Elbírált regisztrációk mutatása ▶';
 }
 
+// ══════════════════════════════════════════════════════════════
+// KÉRDÉSBANK — questions (publikus mezők) + answerKeys (védett "correct")
+// külön ágból összefésülve (Fázis 22, l. PROJEKT_ALLAPOT.md 13.3/24. szakasz).
+// Két FÜGGETLEN élő figyelő van: bármelyik változásra újra összefésüljük a
+// teljes 'questions' tömböt — ez pontosan ugyanaz a minta, mint a player-oldali
+// teams+players dupla-figyelős összefésülés (l. quiz-player.html).
+//
+// Visszamenőleges kompatibilitás a migráció előtti állapotra: amíg a
+// "🔀 Válaszkulcsok migrálása" gomb (l. migrateAnswerKeys()) még nem futott le
+// egy adott kérdésre, annak "correct" mezője MÉG a régi helyen, a questions/{qId}
+// alatt van — ilyenkor onnan olvassuk vissza, hogy a szerkesztőfelület a
+// migráció állapotától FÜGGETLENÜL mindig a valós helyes választ mutassa.
+// ══════════════════════════════════════════════════════════════
+let dbQuestionsCache = {};
+let dbAnswerKeysCache = {};
+
+function rebuildQuestionsFromCache() {
+  questions = Object.entries(dbQuestionsCache).map(([id, q]) => {
+    const ak = dbAnswerKeysCache[id];
+    let correct;
+    if (ak && typeof ak.correct === 'number') correct = ak.correct;
+    else if (typeof q.correct === 'number') correct = q.correct; // még migrálatlan, régi helyről
+    else correct = 0;
+    return { ...q, id, correct, type: q.type || autoDetectType(q) };
+  });
+  renderAll();
+}
+
+function setQuestionsLoadError(msg) {
+  const el = document.getElementById('questions-error-banner');
+  if (!el) return;
+  if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
+  el.textContent = '⚠️ ' + msg;
+  el.classList.remove('hidden');
+}
+
 function setupListeners() {
   if(!db)return;
-  roomRef.child('questions').on('value',snap=>{
-    const dbQ=snap.val();
-    questions=dbQ?Object.entries(dbQ).map(([id,q])=>({...q,id,type:q.type||autoDetectType(q)})):[];
-    renderAll();
+  roomRef.child('questions').on('value', snap => {
+    setQuestionsLoadError(null);
+    dbQuestionsCache = snap.val() || {};
+    rebuildQuestionsFromCache();
+  }, err => {
+    console.warn('[QuizMaster] questions olvasási hiba:', err);
+    setQuestionsLoadError('Nem sikerült betölteni a kérdéseket (' + (err && err.message ? err.message : err) + ').');
+  });
+  roomRef.child('answerKeys').on('value', snap => {
+    dbAnswerKeysCache = snap.val() || {};
+    rebuildQuestionsFromCache();
+  }, err => {
+    // Ha ez PERMISSION_DENIED-et ad, a legvalószínűbb ok, hogy a Fázis 22-es
+    // database_rules.json még nincs publikálva — l. PROJEKT_ALLAPOT.md.
+    console.warn('[QuizMaster] answerKeys olvasási hiba:', err);
+    setQuestionsLoadError('Nem sikerült betölteni a válaszkulcsokat (' + (err && err.message ? err.message : err) + '). Ha ez "permission_denied", valószínűleg a database_rules.json Fázis 22-es frissítése nincs publikálva.');
   });
 }
 
@@ -960,7 +1010,7 @@ function showNewQuestionForm() {
 function hideNewQuestionForm() {
   document.getElementById('add-q-form').classList.add('hidden');
 }
-function saveNewQuestion() {
+async function saveNewQuestion() {
   const text=document.getElementById('nq-text').value.trim();
   const opts=['nq-a','nq-b','nq-c','nq-d'].map(id=>document.getElementById(id).value.trim());
   const cat=document.getElementById('nq-cat').value;
@@ -970,9 +1020,15 @@ function saveNewQuestion() {
   if(!text||opts.some(o=>!o)){alert('Töltsd ki az összes mezőt!');return;}
   const maxNum=questions.reduce((max,q)=>Math.max(max,q.num||0),0);
   const num=maxNum+1;
-  const qData={text,options:opts,correct:nqCorrectOptVal,category:cat,type,time,num};
-  if(db){roomRef.child('questions').push(qData);}
-  else{questions.push({...qData,id:'q'+Date.now()});renderAll();}
+  // FONTOS (Fázis 22): a "correct" mostantól SOSEM kerül a publikus questions
+  // ágba — külön, admin-only answerKeys íráshoz kerül (l. database_rules.json).
+  const publicData={text,options:opts,category:cat,type,time,num};
+  if(db){
+    const newRef=roomRef.child('questions').push();
+    await newRef.set(publicData);
+    await roomRef.child('answerKeys').child(newRef.key).set({correct:nqCorrectOptVal});
+  }
+  else{questions.push({...publicData,correct:nqCorrectOptVal,id:'q'+Date.now()});renderAll();}
   document.getElementById('nq-text').value='';
   ['nq-a','nq-b','nq-c','nq-d'].forEach(id=>document.getElementById(id).value='');
   nqSelectCorrect(0);
@@ -1041,7 +1097,7 @@ function ieToggleBiblical() {
       types.map(t=>`<option value="${t}">${TYPE_LABELS[t]}</option>`).join('');
   }
 }
-function saveInlineEdit(id) {
+async function saveInlineEdit(id) {
   const text=document.getElementById('ie-text').value.trim();
   const opts=['ie-a','ie-b','ie-c','ie-d'].map(eid=>document.getElementById(eid).value.trim());
   const cat=document.getElementById('ie-cat').value;
@@ -1050,9 +1106,13 @@ function saveInlineEdit(id) {
   if(!text||opts.some(o=>!o)){alert('Töltsd ki az összes mezőt!');return;}
   const existingQ=questions.find(x=>x.id===id);
   const num=existingQ?(existingQ.num||0):0;
-  const qData={text,options:opts,correct:inlineCorrectOpt,category:cat,type,time,num};
-  if(db){roomRef.child('questions').child(id).set(qData);}
-  else{const idx=questions.findIndex(q=>q.id===id);if(idx>=0)questions[idx]={...qData,id};renderAll();}
+  // Fázis 22: kettéválasztott írás — publikus mezők a questions, "correct" az answerKeys ágba.
+  const publicData={text,options:opts,category:cat,type,time,num};
+  if(db){
+    await roomRef.child('questions').child(id).set(publicData);
+    await roomRef.child('answerKeys').child(id).set({correct:inlineCorrectOpt});
+  }
+  else{const idx=questions.findIndex(q=>q.id===id);if(idx>=0)questions[idx]={...publicData,correct:inlineCorrectOpt,id};renderAll();}
   closeInlineEdit();
 }
 function closeInlineEdit() {
@@ -1069,20 +1129,20 @@ function closeInlineEdit() {
 function deleteQuestion(id) {
   if(!confirm('Törlöd ezt a kérdést?'))return;
   closeInlineEdit();
-  if(db)roomRef.child('questions').child(id).remove();
+  if(db){roomRef.child('questions').child(id).remove();roomRef.child('answerKeys').child(id).remove();}
   else{questions=questions.filter(q=>q.id!==id);renderAll();}
 }
 function deleteAllQuestions() {
   if(!confirm('Biztosan törlöd AZ ÖSSZES kérdést? Ez nem visszavonható!'))return;
   closeInlineEdit();
-  if(db)roomRef.child('questions').remove();
+  if(db){roomRef.child('questions').remove();roomRef.child('answerKeys').remove();}
   else{questions=[];renderAll();}
 }
 function deleteCategoryQuestions(cat) {
   if(!confirm(`Törlöd az összes "${cat}" kategóriájú kérdést?`))return;
   closeInlineEdit();
   const toDelete=questions.filter(q=>q.category===cat);
-  if(db){toDelete.forEach(q=>roomRef.child('questions').child(q.id).remove());}
+  if(db){toDelete.forEach(q=>{roomRef.child('questions').child(q.id).remove();roomRef.child('answerKeys').child(q.id).remove();});}
   else{questions=questions.filter(q=>q.category!==cat);renderAll();}
 }
 function deleteSubtypeQuestions(cat,type) {
@@ -1090,7 +1150,7 @@ function deleteSubtypeQuestions(cat,type) {
   if(!confirm(`Törlöd az összes "${cat} — ${label}" típusú kérdést?`))return;
   closeInlineEdit();
   const toDelete=questions.filter(q=>q.category===cat&&(q.type||'egyéb')===type);
-  if(db){toDelete.forEach(q=>roomRef.child('questions').child(q.id).remove());}
+  if(db){toDelete.forEach(q=>{roomRef.child('questions').child(q.id).remove();roomRef.child('answerKeys').child(q.id).remove();});}
   else{questions=questions.filter(q=>!(q.category===cat&&(q.type||'egyéb')===type));renderAll();}
 }
 function exportSubtype(cat,type) {
@@ -1323,12 +1383,17 @@ function doImport() {
         num=++importMaxNum;
         existingNums.add(num);
       }
-      const qData={
-        text:q.text, options:q.options, correct:correctIdx,
+      // Fázis 22: importáláskor is kettéválasztva írunk — a "correct" az answerKeys ágba kerül.
+      const publicData={
+        text:q.text, options:q.options,
         category:importCat, type:importType, time:q.time||30, num
       };
-      if(db)roomRef.child('questions').push(qData);
-      else questions.push({...qData,id:'q'+Date.now()+'_'+Math.random().toString(36).substr(2,4)});
+      if(db){
+        const newRef=roomRef.child('questions').push();
+        newRef.set(publicData);
+        roomRef.child('answerKeys').child(newRef.key).set({correct:correctIdx});
+      }
+      else questions.push({...publicData,correct:correctIdx,id:'q'+Date.now()+'_'+Math.random().toString(36).substr(2,4)});
       count++;
     });
     if(!db)renderAll();
@@ -1374,12 +1439,71 @@ function renumberAllQuestions() {
   alert(`✅ Sorszámozás kész! ${noNum===0?questions.length+' kérdés újraszámozva':withoutNum.length+' kérdés kapott sorszámot.'}`);
 }
 
+// ============================================================
+// VÁLASZKULCSOK MIGRÁLÁSA (Fázis 22 — l. PROJEKT_ALLAPOT.md 13.3/24. szakasz)
+// ============================================================
+// EGYSZERI, biztonságosan TÖBBSZÖR is lefuttatható művelet: a kvizjatek
+// kérdésbankban még a régi, kombinált sémával (correct beágyazva a
+// questions/{qId} alá) mentett kérdéseknél a helyes választ átmásolja a
+// védett answerKeys/{qId} ágba, majd törli az eredeti, bárki jóváhagyott
+// felhasználó számára olvasható helyről. Azok a kérdések, amiket már a
+// szétválasztott sémával mentettek (vagy amiket ez a gomb korábban már
+// migrált), kimaradnak a feldolgozásból — újra lefuttatva tehát nem csinál
+// kárt, csak a még hátralévő, régi formátumú kérdéseket dolgozza fel.
+//
+// FONTOS SORREND: ez a gomb csak a Fázis 22-es database_rules.json
+// PUBLIKÁLÁSA UTÁN futtatható — az answerKeys ágba való admin-írás csak
+// azzal a szabállyal engedélyezett. A régi Rules mellett ez a művelet
+// PERMISSION_DENIED-del elutasításra kerülne (l. a hibaágban adott üzenetet).
+async function migrateAnswerKeys() {
+  if (!db) { alert('Nincs adatbázis-kapcsolat!'); return; }
+  if (!confirm(
+    'Ez a művelet szétválasztja a kvizjatek kérdésbank válaszkulcsait egy külön, ' +
+    'kizárólag admin által olvasható ágba — ettől kezdve a jóváhagyott játékosok ' +
+    'már nem tölthetik le automatikusan az egész bank helyes válaszait pusztán a ' +
+    '"Új szoba" képernyő böngészésével.\n\nBiztonságosan többször is lefuttatható ' +
+    '(csak a még migrálatlan kérdéseket dolgozza fel). Folytassuk?'
+  )) return;
+
+  const btn = document.getElementById('migrate-answerkeys-btn');
+  try {
+    const qSnap = await roomRef.child('questions').once('value');
+    const qObj = qSnap.val() || {};
+    const toMigrate = Object.entries(qObj).filter(([, q]) => q && typeof q.correct === 'number');
+    const total = toMigrate.length;
+
+    if (total === 0) {
+      alert('✅ Nincs teendő — minden kérdés válaszkulcsa már a védett answerKeys ágban van.');
+      return;
+    }
+
+    if (btn) { btn.disabled = true; }
+    let done = 0;
+    for (const [qId, q] of toMigrate) {
+      await roomRef.child('answerKeys').child(qId).set({ correct: q.correct });
+      await roomRef.child('questions').child(qId).child('correct').remove();
+      done++;
+      if (btn) btn.textContent = `⏳ Migráció... ${done}/${total}`;
+    }
+    alert(`✅ Migráció kész! ${done} kérdés válaszkulcsa át lett helyezve a védett answerKeys ágba.`);
+  } catch (e) {
+    alert(
+      '❌ Hiba a migráció során: ' + (e && e.message ? e.message : e) +
+      '\n\nHa ez "permission_denied" hibát mutat, a Fázis 22-es database_rules.json ' +
+      'valószínűleg még nincs publikálva a Firebase Console-ban.\n\n' +
+      'A művelet biztonságosan újrafuttatható — csak a még migrálatlan kérdéseket dolgozza fel.'
+    );
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔀 Válaszkulcsok migrálása'; }
+  }
+}
+
 // Automatikus kapcsolódás rögzített konfigurációval — nincs többé szerkeszthető
 // beállítási képernyő (l. FIREBASE_CONFIG a fájl elején, Fázis 16).
 initFirebase();
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.13</div>
+<div class="version-badge">Admin panel verzió: 3.14</div>
 
 <script>
 // ============================================================

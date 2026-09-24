@@ -715,7 +715,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.17</div><div><div class="cl-desc">Belső karbantartás: a korábbi verzióelőzmény-bejegyzések szövege 2.0-tól felfelé jelentősen tömörítve, hogy könnyebben átlátható legyen. A játékmenetet ez a frissítés nem érinti.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.18</div><div><div class="cl-desc">Belső biztonsági finomítás a szoba-létrehozás és az új kör indításának folyamatában. A játékmenetet ez a frissítés nem érinti.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.17</div><div><div class="cl-desc">Belső karbantartás: a korábbi verzióelőzmény-bejegyzések szövege 2.0-tól felfelé jelentősen tömörítve, hogy könnyebben átlátható legyen. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.16</div><div><div class="cl-desc">Belső karbantartás: pontosítások és rövidítések a korábbi verzióelőzmény-bejegyzések szövegében, valamint stabilitási finomítások a bejelentkezési folyamatban. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.15</div><div><div class="cl-desc">Regisztrációnál egy "FONTOS" tájékoztató jelenik meg — kétlépéses megerősítés kell hozzá, mielőtt az űrlap láthatóvá válik —, amely elmagyarázza, miért kérjük a neved és a gyülekezeted. A gyülekezet-ikon mindenhol 🏠-ra változott.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.12</div><div><div class="cl-desc">Teljesítmény-javítás: a kérdésbank és az Online Játékosok listája mostantól munkamenetenként csak egyszer töltődik le — friss adatot a "🔄 Frissítés" gombbal kérhetsz. Emellett belső stabilitási finomítások is történtek.</div></div></div>
@@ -1200,16 +1201,50 @@ function clearActiveHost() {
 // kérhet (l. loadTopicOptionsForCreate(true) hívás a create-room-screen-en).
 let cachedQuestionBank = null;
 
-// Visszaadja a teljes "kvizjatek" kérdésbankot. Alapesetben (forceRefresh nélkül) a
-// cache-elt másolatot adja vissza, ha az már létezik — csak akkor tölt le ténylegesen
-// a Firebase-ből, ha még sosem töltöttük be EBBEN a munkamenetben, vagy a hívó fél
-// kifejezetten friss adatot kért (forceRefresh=true).
+// FONTOS (Fázis 22, l. PROJEKT_ALLAPOT.md 13.3) — BIZTONSÁGI VÁLTOZÁS:
+// ez a függvény MOSTANTÓL a "kvizjatek" bank PUBLIKUS mezőit adja vissza — a helyes
+// válasz ("correct") a témakörök böngészésekor TÖBBÉ NEM töltődik le automatikusan a
+// teljes bankra. Minden egyes kérdés objektum megőrzi az eredeti Firebase-kulcsát a
+// "_qid" mezőben (l. Object.entries lent), mert csak EZZEL lehet később, a szoba
+// tényleges létrehozásakor, célzottan lekérni a KIVÁLASZTOTT részhalmaz válaszkulcsait
+// a védett rooms/kvizjatek/answerKeys/{qId} ágból (l. fetchKvizjatekAnswerKeys() lent,
+// és a hívási helyeket: confirmCreateRoom(), hostStartNewRound()).
+//
+// Alapesetben (forceRefresh nélkül) a cache-elt másolatot adja vissza, ha az már
+// létezik — csak akkor tölt le ténylegesen a Firebase-ből, ha még sosem töltöttük be
+// EBBEN a munkamenetben, vagy a hívó fél kifejezetten friss adatot kért (forceRefresh=true).
 async function getQuestionBank(forceRefresh) {
   if (cachedQuestionBank && !forceRefresh) return cachedQuestionBank;
   if (!db) db = firebase.database();
   const snap = await db.ref('rooms/kvizjatek/questions').once('value');
-  cachedQuestionBank = snap.val() ? Object.values(snap.val()) : [];
+  const val = snap.val() || {};
+  cachedQuestionBank = Object.entries(val).map(([qid, q]) => ({ ...q, _qid: qid }));
   return cachedQuestionBank;
+}
+
+// Célzottan, egyenként kéri le a megadott kvizjatek-kulcsokhoz (_qid) tartozó helyes
+// válaszokat a védett rooms/kvizjatek/answerKeys/{qId} ágból — SOSEM a teljes ágat
+// egyben, hanem PONTOSAN a kiválasztott kérdés-részhalmazt, párhuzamosan. Ez az egyetlen
+// hely, ahol egy önkiszolgáló host ténylegesen megismeri egy kvizjatek-kérdés helyes
+// válaszát — és csakis akkor, amikor ténylegesen szobát hoz létre/indít vele, sosem
+// pusztán a témakörök böngészésekor (l. Fázis 22, PROJEKT_ALLAPOT.md 13.3).
+// Visszatérési érték: { [qid]: correctIndex | null }
+async function fetchKvizjatekAnswerKeys(qids) {
+  if (!db) db = firebase.database();
+  const uniqueIds = [...new Set(qids.filter(Boolean))];
+  const pairs = await Promise.all(uniqueIds.map(async qid => {
+    try {
+      const snap = await db.ref('rooms/kvizjatek/answerKeys/' + qid).once('value');
+      const val = snap.val();
+      return [qid, (val && typeof val.correct === 'number') ? val.correct : null];
+    } catch (e) {
+      console.warn('[QuizMaster] answerKey lekérési hiba (' + qid + '):', e);
+      return [qid, null];
+    }
+  }));
+  const map = {};
+  pairs.forEach(([qid, correct]) => { map[qid] = correct; });
+  return map;
 }
 
 // ── SZOBA-MEGHÍVÓ RENDSZER (8. fázis) — globális állapot ──────
@@ -3100,11 +3135,45 @@ async function confirmCreateRoom() {
   const countVal = document.getElementById('cr-count-select').value;
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   const count = countVal === 'all' ? shuffled.length : Math.min(parseInt(countVal), shuffled.length);
-  const selected = shuffled.slice(0, count);
+  const rawSelected = shuffled.slice(0, count);
 
-  errEl.textContent = 'Szoba létrehozása...';
+  errEl.textContent = 'Válaszkulcsok lekérése...';
   const btn = document.querySelector('#create-room-screen .menu-btn-primary');
   if (btn) btn.disabled = true;
+
+  // FONTOS (Fázis 22, l. PROJEKT_ALLAPOT.md 13.3): a helyes válaszokat KIZÁRÓLAG a
+  // ténylegesen kiválasztott kérdés-részhalmazhoz, célzottan kérjük le a védett
+  // rooms/kvizjatek/answerKeys ágból — SOSEM a teljes bankot egyben. Amíg a "🔀
+  // Válaszkulcsok migrálása" admin-művelet le nem futott egy adott kérdésre, annak
+  // helyes válasza még a régi, publikus questions ágban van — erre esünk vissza, ha
+  // az answerKeys-lekérés az adott kérdésre üresen tér vissza, hogy a szoba-létrehozás
+  // a migráció állapotától FÜGGETLENÜL is zavartalanul működjön.
+  let answerMap = {};
+  try {
+    answerMap = await fetchKvizjatekAnswerKeys(rawSelected.map(q => q._qid));
+  } catch (e) {
+    errEl.textContent = 'Hiba a válaszkulcsok lekérésekor: ' + (e && e.message ? e.message : e);
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  let skippedCount = 0;
+  const selected = rawSelected.map(q => {
+    let correct = answerMap[q._qid];
+    if (typeof correct !== 'number' && typeof q.correct === 'number') correct = q.correct; // migráció előtti állapot
+    return { ...q, correct };
+  }).filter(q => {
+    if (typeof q.correct !== 'number') { skippedCount++; return false; }
+    return true;
+  });
+
+  if (selected.length === 0) {
+    errEl.textContent = 'Egyik kiválasztott kérdéshez sem sikerült érvényes választ találni. Próbáld újra, vagy jelezd az adminnak.';
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  errEl.textContent = 'Szoba létrehozása...';
 
   try {
     if (!db) db = firebase.database();
@@ -3127,8 +3196,9 @@ async function confirmCreateRoom() {
     selected.forEach((q, i) => {
       // KRITIKUS BIZTONSÁGI SZÉTVÁLASZTÁS: a 'correct' mező SOHA nem kerül bele a
       // mindenki által szabadon olvasható questions ágba — külön, felfedésig zárolt
-      // answerKeys ágba kerül (lásd database.rules.json).
-      const { correct, ...publicFields } = q;
+      // answerKeys ágba kerül (lásd database.rules.json). A "_qid" pedig a kvizjatek
+      // bank belső azonosítója — ez is csak lokális, sosem kerül a szoba saját adatai közé.
+      const { correct, _qid, ...publicFields } = q;
       questionsObj['q' + i] = publicFields;
       answerKeysObj[i] = { correct: typeof correct === 'number' ? correct : 0 };
     });
@@ -3163,6 +3233,9 @@ async function confirmCreateRoom() {
 
     errEl.textContent = '';
     if (btn) btn.disabled = false;
+    if (skippedCount > 0) {
+      console.warn('[QuizMaster] ' + skippedCount + ' kérdés kimaradt a szobából érvénytelen válaszkulcs miatt.');
+    }
     await connectAsPlayerToRoom(newCode);
 
   } catch(e) {
@@ -3768,7 +3841,20 @@ async function hostStartNewRound() {
     let selected;
     if (pool.length > 0) {
       const shuffled = [...pool].sort(() => Math.random() - 0.5);
-      selected = shuffled.slice(0, Math.min(desiredCount, shuffled.length));
+      const rawSelected = shuffled.slice(0, Math.min(desiredCount, shuffled.length));
+      // Fázis 22: itt is a kiválasztott részhalmazhoz KÜLÖN, célzottan kérjük le a
+      // válaszkulcsokat a védett answerKeys ágból — l. confirmCreateRoom() ugyanerről.
+      let answerMap = {};
+      try {
+        answerMap = await fetchKvizjatekAnswerKeys(rawSelected.map(q => q._qid));
+      } catch (e) {
+        console.warn('[QuizMaster] Válaszkulcsok lekérése sikertelen az új körhöz:', e);
+      }
+      selected = rawSelected.map(q => {
+        let correct = answerMap[q._qid];
+        if (typeof correct !== 'number' && typeof q.correct === 'number') correct = q.correct; // migráció előtti állapot
+        return { ...q, correct };
+      }).filter(q => typeof q.correct === 'number');
     } else if (hostQuestionsPool.length > 0) {
       selected = hostQuestionsPool; // fallback: nem sikerült frissíteni, marad a régi készlet
     } else {
@@ -3794,7 +3880,9 @@ async function hostStartNewRound() {
     const questionsObj = {};
     const answerKeysObj = {};
     selected.forEach((q, i) => {
-      const { correct, ...publicFields } = q;
+      // A "_qid" (l. getQuestionBank()) csak a kvizjatek bank belső azonosítója —
+      // sosem kerül a szoba saját, publikus questions ágába (l. confirmCreateRoom()).
+      const { correct, _qid, ...publicFields } = q;
       questionsObj['q' + i] = publicFields;
       answerKeysObj[i] = { correct: typeof correct === 'number' ? correct : 0 };
     });
@@ -4132,7 +4220,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.17</div>
+<div class="version-badge">Játék verzió: 3.18</div>
 
 </body>
 </html>
