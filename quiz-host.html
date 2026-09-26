@@ -93,14 +93,11 @@
   .q-card-text{font-size:13px;line-height:1.5;margin-bottom:7px;padding-right:58px;}
   .q-card-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
   .q-cat-badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:4px;background:var(--border);color:var(--muted);}
+  /* FÁZIS 23: a kategóriánkénti fix típus-színkódok (type-vers/type-szemely/stb.)
+     megszűntek — szabadon megadható alkategória mellett nincs véges szín-készlet,
+     ezért egyetlen, egységes jelvény-stílus maradt (l. .q-subtype-badge). */
   .q-type-badge{font-size:10px;padding:2px 7px;border-radius:4px;}
-  .type-vers{background:rgba(90,143,224,0.2);color:#5a8fe0;}
-  .type-szemely{background:rgba(240,192,64,0.2);color:#f0c040;}
-  .type-evszam{background:rgba(224,90,43,0.2);color:#e05a2b;}
-  .type-helyseg{background:rgba(62,207,142,0.2);color:#3ecf8e;}
-  .type-esemeny{background:rgba(192,90,224,0.2);color:#c05ae0;}
-  .type-idezet{background:rgba(224,192,90,0.2);color:#e0c05a;}
-  .type-egyeb{background:rgba(107,107,138,0.2);color:#6b6b8a;}
+  .q-subtype-badge{background:rgba(107,107,138,0.2);color:#9b9bc0;}
   .q-actions{position:absolute;top:9px;right:9px;display:flex;gap:5px;}
   .q-btn-sm{width:25px;height:25px;border-radius:6px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all 0.15s;}
   .q-btn-del{background:rgba(224,90,90,0.15);color:var(--red);}
@@ -251,9 +248,9 @@
               <div class="option-input-wrap"><input class="form-input" type="text" id="nq-d" placeholder="D — 4. válasz"><div class="correct-mark" onclick="nqSelectCorrect(3)"></div></div>
             </div>
             <div class="form-row">
-              <select class="form-input" id="nq-cat" onchange="toggleBiblicalType('nq')">
+              <select class="form-input" id="nq-cat">
                 <option value="Általános">Általános</option>
-                <option value="Bibliai">Bibliai</option>
+                <option value="Bibliai" selected>Bibliai</option>
                 <option value="Filmek">Filmek</option>
                 <option value="Természet">Természet</option>
                 <option value="Történelem">Történelem</option>
@@ -269,19 +266,18 @@
                 <option value="60">60 mp</option>
               </select>
             </div>
-            <select class="form-input hidden" id="nq-type">
-              <option value="egyéb">Bibliai típus: (általános)</option>
-              <option value="vers">📖 Vers felismerés</option>
-              <option value="személy">👤 Személy</option>
-              <option value="évszám">📅 Évszám / Időpont</option>
-              <option value="helység">📍 Helység</option>
-              <option value="esemény">⚡ Esemény</option>
-            </select>
+            <input class="form-input" type="text" id="nq-type" list="subtype-datalist" autocomplete="off"
+              placeholder="Alkategória — pl. Vegyes, Bibliaversek, Mózes időszak, Jézus időszak...">
             <div class="form-actions">
               <button class="btn-save" onclick="saveNewQuestion()">✓ Mentés</button>
               <button class="btn-cancel-form" onclick="hideNewQuestionForm()">Mégse</button>
             </div>
           </div>
+
+          <!-- Alkategória-javaslatok (autocomplete) az Új kérdés / Szerkesztés / Import
+               mezőihez — mindig a ténylegesen HASZNÁLT alkategóriákból épül fel újra,
+               l. renderSubtypeDatalist() (FÁZIS 23). -->
+          <datalist id="subtype-datalist"></datalist>
 
           <div class="cat-tree" id="cat-tree"></div>
           <div id="q-list"></div>
@@ -352,18 +348,13 @@
   </div>
 </div>
 
-<!-- IMPORT MODAL -->
+<!-- IMPORT MODAL — FÁZIS 23: az importálás mostantól kizárólag Bibliai kategóriájú
+     kérdéseket vár (a korábbi Bibliai/Filmek/Egyéb választó megszűnt), az alkategória
+     (type) pedig szabadon megadható szöveg — l. IMPORT_GUIDE_TEXT és doImport(). -->
 <div class="modal-overlay hidden" id="import-modal">
   <div class="modal" style="max-width:580px;">
     <h3>⬆ IMPORTÁLÁS</h3>
-    <div class="modal-field" style="margin-bottom:14px;">
-      <label>Milyen típusú kérdéseket importálsz?</label>
-      <div style="display:flex;gap:8px;">
-        <button id="import-tab-Bibliai" class="btn-save" style="flex:1;padding:10px;font-size:13px;" onclick="setImportTab('Bibliai')">📖 Bibliai</button>
-        <button id="import-tab-Filmek" class="btn-cancel-form" style="flex:1;padding:10px;font-size:13px;" onclick="setImportTab('Filmek')">🎬 Filmek</button>
-        <button id="import-tab-egyeb" class="btn-cancel-form" style="flex:1;padding:10px;font-size:13px;" onclick="setImportTab('egyéb')">📋 Egyéb</button>
-      </div>
-    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6;">Az importálás Bibliai kategóriájú kérdéseket vár. Az alkategória (<code>type</code>) bármilyen szöveg lehet — ha korábban nem létezett, automatikusan megjelenik a többi alkategória mellett.</p>
     <div id="import-guide" style="font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px;line-height:1.8;white-space:pre-wrap;font-family:monospace;"></div>
     <div class="modal-field">
       <textarea id="import-textarea" rows="9" style="font-family:monospace;font-size:11px;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);outline:none;resize:vertical;" placeholder="Ide illeszd be a JSON-t..."></textarea>
@@ -379,18 +370,33 @@
 // ============================================================
 // CONSTANTS
 // ============================================================
-const BIBLICAL_TYPES = ['vers','személy','évszám','helység','esemény'];
-const FILM_TYPES     = ['idézet','személy','évszám/időpont','helység','esemény'];
-const CATEGORY_TYPES = { 'Bibliai': BIBLICAL_TYPES, 'Filmek': FILM_TYPES };
-const TYPE_LABELS = {
-  vers:'📖 Vers', személy:'👤 Személy', évszám:'📅 Évszám', 'évszám/időpont':'📅 Évszám/Időpont',
-  helység:'📍 Helység', esemény:'⚡ Esemény', idézet:'💬 Idézet', egyéb:'Általános'
-};
-const TYPE_CLASSES = {
-  vers:'type-vers', személy:'type-szemely', évszám:'type-evszam', 'évszám/időpont':'type-evszam',
-  helység:'type-helyseg', esemény:'type-esemeny',
-  idézet:'type-idezet', egyéb:'type-egyeb'
-};
+// FÁZIS 23: a korábbi, kategóriánként rögzített alkategória-enumok (BIBLICAL_TYPES /
+// FILM_TYPES / CATEGORY_TYPES) megszűntek — az alkategória (q.type) mostantól SZABADON
+// megadható szöveg, amit Dani ír be (kézi hozzáadásnál/szerkesztésnél) vagy amit az
+// importált JSON "type" mezője tartalmaz. Ha egy korábban nem létező alkategória-nevet
+// ad meg, az automatikusan megjelenik a többi alkategória-fül mellett — nincs többé
+// kódmódosítás-igény új alkategória bevezetéséhez. Az összehasonlítás/csoportosítás
+// ÉKEZET- és szóköz-pontos, de kis-/nagybetű-független (l. subtypeKey), a megjelenítés
+// pedig mindig "Nagy kezdőbetű, a többi kisbetű" formában történik (l. subtypeLabel) —
+// így "vegyes" és "Vegyes" nem hoz létre két külön fület, és a régi, kisbetűs adatok
+// (pl. "vers", "esemény") is szépen jelennek meg új migráció nélkül.
+const DEFAULT_SUBTYPE = 'Vegyes';
+function subtypeKey(raw) {
+  const t = (raw == null ? '' : String(raw)).trim();
+  return (t || DEFAULT_SUBTYPE).toLocaleLowerCase('hu');
+}
+function subtypeLabel(key) {
+  const k = String(key || '');
+  return k.charAt(0).toLocaleUpperCase('hu') + k.slice(1);
+}
+// Kis segéd a szabadon gépelt alkategória-szöveg biztonságos HTML-beillesztéséhez
+// (attribútumba és innerHTML-be egyaránt) — korábban ez nem volt szükséges, mert az
+// alkategória egy rögzített, biztonságos literál-halmazból jött; szabad szöveggel ez
+// már számít (l. a korábbi, name-mezős stored XSS-javítás ugyanezen elve, Fázis 11).
+function escHtmlHost(s) {
+  return (s == null ? '' : String(s))
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 const LETTERS = ['A','B','C','D'];
 
 // ============================================================
@@ -921,7 +927,9 @@ function rebuildQuestionsFromCache() {
     if (ak && typeof ak.correct === 'number') correct = ak.correct;
     else if (typeof q.correct === 'number') correct = q.correct; // még migrálatlan, régi helyről
     else correct = 0;
-    return { ...q, id, correct, type: q.type || autoDetectType(q) };
+    // FÁZIS 23: nincs többé tartalom-alapú auto-detektálás — hiányzó alkategória
+    // esetén egyszerűen a DEFAULT_SUBTYPE ("Vegyes") az alapérték.
+    return { ...q, id, correct, type: q.type || DEFAULT_SUBTYPE };
   });
   renderAll();
 }
@@ -962,46 +970,15 @@ function showMain() {
 }
 
 // ============================================================
-// AUTO DETECT TYPE
-// ============================================================
-function autoDetectType(q) {
-  if(!CATEGORY_TYPES[q.category])return 'egyéb';
-  const t=(q.text+' '+(q.options||[]).join(' ')).toLowerCase();
-  if(q.category==='Bibliai'){
-    if(/\d+:\d+/.test(q.text)||/melyik vers|melyik könyv|melyik fejezet|melyik ige/.test(t))return 'vers';
-    if(/ki volt|ki írta|ki mondta|melyik személy|kit|kinek|kivel|próféta|apostol|király/.test(t))return 'személy';
-    if(/\d{3,4}\s*(előtt|után|kr\.|ie\.|i\.e\.|ben|ban|évben)/.test(t)||/melyik évben|mikor|hány éve/.test(t))return 'évszám';
-    if(/hol|melyik városban|melyik helyen|helyszín|hegy|folyó|tenger/.test(t))return 'helység';
-    if(/mi történt|esemény|csata|átkelés|ítélet|büntetés|szabadulás|vándorlás/.test(t))return 'esemény';
-  }
-  if(q.category==='Filmek'){
-    if(/ki mondta|melyik filmben hangzik|melyik szereplő mondja|idézet|mondat/.test(t))return 'idézet';
-    if(/ki játssza|ki alakítja|melyik színész|ki a főszereplő|kit alakít/.test(t))return 'személy';
-    if(/melyik évben|mikor jelent meg|hány-ben|premier/.test(t))return 'évszám/időpont';
-    if(/hol játszódik|melyik városban|melyik országban|helyszín/.test(t))return 'helység';
-    if(/mi történik|mi volt a|esemény|csata|jelenet/.test(t))return 'esemény';
-  }
-  return 'egyéb';
-}
-
-// ============================================================
 // NEW QUESTION FORM
 // ============================================================
 function nqSelectCorrect(idx) {
   nqCorrectOptVal=idx;
   document.querySelectorAll('#add-q-form .correct-mark').forEach((el,i)=>el.classList.toggle('selected',i===idx));
 }
-function toggleBiblicalType(prefix) {
-  const cat=document.getElementById(prefix+'-cat').value;
-  const hasTypes = CATEGORY_TYPES[cat] !== undefined;
-  const typeSelect = document.getElementById(prefix+'-type');
-  typeSelect.classList.toggle('hidden', !hasTypes);
-  if (hasTypes) {
-    const types = CATEGORY_TYPES[cat];
-    typeSelect.innerHTML = `<option value="egyéb">${cat} típus: (általános)</option>` +
-      types.map(t => `<option value="${t}">${TYPE_LABELS[t]}</option>`).join('');
-  }
-}
+// FÁZIS 23: a korábbi toggleBiblicalType()/ieToggleBiblical() függvények megszűntek —
+// az alkategória mező mostantól kategóriától FÜGGETLENÜL mindig egy szabad szöveges
+// mező (l. HTML), nincs többé kategóriaváltáskor átkapcsolandó legördülő.
 function showNewQuestionForm() {
   document.getElementById('add-q-form').classList.remove('hidden');
   nqSelectCorrect(0);
@@ -1015,8 +992,7 @@ async function saveNewQuestion() {
   const opts=['nq-a','nq-b','nq-c','nq-d'].map(id=>document.getElementById(id).value.trim());
   const cat=document.getElementById('nq-cat').value;
   const time=parseInt(document.getElementById('nq-time').value);
-  const typeEl=document.getElementById('nq-type');
-  const type=CATEGORY_TYPES[cat]?typeEl.value:'egyéb';
+  const type=document.getElementById('nq-type').value.trim() || DEFAULT_SUBTYPE;
   if(!text||opts.some(o=>!o)){alert('Töltsd ki az összes mezőt!');return;}
   const maxNum=questions.reduce((max,q)=>Math.max(max,q.num||0),0);
   const num=maxNum+1;
@@ -1044,8 +1020,6 @@ function openInlineEdit(id) {
   const q=questions.find(x=>x.id===id);
   if(!q)return;
   inlineCorrectOpt=q.correct;
-  const isBib=CATEGORY_TYPES[q.category]!==undefined;
-  const catTypeDefs=CATEGORY_TYPES[q.category]||[];
   const catOptions=['Általános','Bibliai','Filmek','Természet','Történelem','Sport','Tudomány','Zene','Földrajz'];
   const timeOptions=[20,30,45,60];
   const form=document.createElement('div');
@@ -1062,17 +1036,15 @@ function openInlineEdit(id) {
       <div class="option-input-wrap"><input class="form-input" type="text" id="ie-d" value="${q.options[3]||''}"><div class="correct-mark${q.correct===3?' selected':''}" onclick="ieSelectCorrect(3)"></div></div>
     </div>
     <div class="form-row">
-      <select class="form-input" id="ie-cat" onchange="ieToggleBiblical()">
+      <select class="form-input" id="ie-cat">
         ${catOptions.map(c=>`<option${q.category===c?' selected':''}>${c}</option>`).join('')}
       </select>
       <select class="form-input" id="ie-time">
         ${timeOptions.map(t=>`<option${q.time===t?' selected':''}>${t}</option>`).join('')}
       </select>
     </div>
-    <select class="form-input${isBib?'':' hidden'}" id="ie-type">
-      <option value="egyéb"${q.type==='egyéb'?' selected':''}>${q.category} típus: (általános)</option>
-      ${catTypeDefs.map(t=>`<option value="${t}"${q.type===t?' selected':''}>${TYPE_LABELS[t]}</option>`).join('')}
-    </select>
+    <input class="form-input" type="text" id="ie-type" list="subtype-datalist" autocomplete="off"
+      value="${escHtmlHost(q.type||'')}" placeholder="Alkategória — pl. Vegyes, Bibliaversek, Mózes időszak...">
     <div class="form-actions">
       <button class="btn-save" onclick="saveInlineEdit('${id}')">✓ Mentés</button>
       <button class="btn-cancel-form" onclick="closeInlineEdit()">Mégse</button>
@@ -1086,23 +1058,12 @@ function ieSelectCorrect(idx) {
   if(!currentInlineEditId)return;
   document.querySelectorAll('#inline-form-'+currentInlineEditId+' .correct-mark').forEach((el,i)=>el.classList.toggle('selected',i===idx));
 }
-function ieToggleBiblical() {
-  const cat=document.getElementById('ie-cat').value;
-  const hasTypes=CATEGORY_TYPES[cat]!==undefined;
-  const typeEl=document.getElementById('ie-type');
-  typeEl.classList.toggle('hidden',!hasTypes);
-  if(hasTypes){
-    const types=CATEGORY_TYPES[cat];
-    typeEl.innerHTML=`<option value="egyéb">${cat} típus: (általános)</option>`+
-      types.map(t=>`<option value="${t}">${TYPE_LABELS[t]}</option>`).join('');
-  }
-}
 async function saveInlineEdit(id) {
   const text=document.getElementById('ie-text').value.trim();
   const opts=['ie-a','ie-b','ie-c','ie-d'].map(eid=>document.getElementById(eid).value.trim());
   const cat=document.getElementById('ie-cat').value;
   const time=parseInt(document.getElementById('ie-time').value);
-  const type=CATEGORY_TYPES[cat]?document.getElementById('ie-type').value:'egyéb';
+  const type=document.getElementById('ie-type').value.trim() || DEFAULT_SUBTYPE;
   if(!text||opts.some(o=>!o)){alert('Töltsd ki az összes mezőt!');return;}
   const existingQ=questions.find(x=>x.id===id);
   const num=existingQ?(existingQ.num||0):0;
@@ -1145,17 +1106,20 @@ function deleteCategoryQuestions(cat) {
   if(db){toDelete.forEach(q=>{roomRef.child('questions').child(q.id).remove();roomRef.child('answerKeys').child(q.id).remove();});}
   else{questions=questions.filter(q=>q.category!==cat);renderAll();}
 }
-function deleteSubtypeQuestions(cat,type) {
-  const label=TYPE_LABELS[type]||type;
-  if(!confirm(`Törlöd az összes "${cat} — ${label}" típusú kérdést?`))return;
+// FÁZIS 23: "type" paraméterként mostantól a NORMALIZÁLT alkategória-kulcsot (l.
+// subtypeKey()) kapják — ez case-insensitive egyezteti pl. "vers"-t és "Vers"-t,
+// hogy ne maradjon ki egyetlen, eltérő írásmóddal mentett kérdés sem.
+function deleteSubtypeQuestions(cat,typeKey) {
+  const label=subtypeLabel(typeKey);
+  if(!confirm(`Törlöd az összes "${cat} — ${label}" alkategóriájú kérdést?`))return;
   closeInlineEdit();
-  const toDelete=questions.filter(q=>q.category===cat&&(q.type||'egyéb')===type);
+  const toDelete=questions.filter(q=>q.category===cat&&subtypeKey(q.type)===typeKey);
   if(db){toDelete.forEach(q=>{roomRef.child('questions').child(q.id).remove();roomRef.child('answerKeys').child(q.id).remove();});}
-  else{questions=questions.filter(q=>!(q.category===cat&&(q.type||'egyéb')===type));renderAll();}
+  else{questions=questions.filter(q=>!(q.category===cat&&subtypeKey(q.type)===typeKey));renderAll();}
 }
-function exportSubtype(cat,type) {
-  const filtered=questions.filter(q=>q.category===cat&&(q.type||'egyéb')===type);
-  const label=(TYPE_LABELS[type]||type).replace(/[^\w\u00C0-\u024F]/g,'').toLowerCase();
+function exportSubtype(cat,typeKey) {
+  const filtered=questions.filter(q=>q.category===cat&&subtypeKey(q.type)===typeKey);
+  const label=typeKey.trim().replace(/\s+/g,'-').replace(/[^\w\u00C0-\u024F-]/g,'');
   downloadJson(filtered,cat.toLowerCase()+'-'+label);
 }
 
@@ -1168,7 +1132,19 @@ function filterSubtype(sub) {selectedSubtype=sub;renderAll();}
 function renderAll() {
   renderCatTree();
   renderQuestions();
+  renderSubtypeDatalist();
   document.getElementById('q-count').textContent=questions.length+' db';
+}
+
+// FÁZIS 23: a datalist mindig a ténylegesen HASZNÁLT alkategóriákból épül fel (az
+// egész bankból, kategóriától függetlenül) — ez adja az autocomplete-javaslatokat
+// az Új kérdés / Szerkesztés mezőihez, hogy Dani egy már létező alkategóriát
+// egyszerű elgépeléssel se duplikáljon véletlenül (pl. "Vegyes" / "vegyes").
+function renderSubtypeDatalist() {
+  const dl=document.getElementById('subtype-datalist');
+  if(!dl)return;
+  const keys=[...new Set(questions.map(q=>subtypeKey(q.type)))].sort((a,b)=>a.localeCompare(b,'hu'));
+  dl.innerHTML=keys.map(k=>`<option value="${escHtmlHost(subtypeLabel(k))}">`).join('');
 }
 
 function renderCatTree() {
@@ -1181,7 +1157,6 @@ function renderCatTree() {
   </div>`;
   cats.forEach(cat=>{
     const catQs=questions.filter(q=>q.category===cat);
-    const hasSubtypes = CATEGORY_TYPES[cat] !== undefined;
     const isOpen=selectedCat===cat;
     html+=`<div class="cat-tree-item">
       <div class="cat-tree-header${isOpen?' active':''}" onclick="filterCat('${cat}')">
@@ -1193,21 +1168,25 @@ function renderCatTree() {
           <button class="cat-mini-btn cat-del-btn" onclick="event.stopPropagation();deleteCategoryQuestions('${cat}')" title="Mind törlése">🗑</button>
         </div>
       </div>`;
-    if(hasSubtypes&&isOpen){
-      const catTypeDefs = CATEGORY_TYPES[cat];
-      const usedTypes=[...new Set(catQs.map(q=>q.type||'egyéb'))];
-      if(usedTypes.length>0){
+    // FÁZIS 23: az alkategória-fülek mostantól MINDEN kategóriánál a ténylegesen
+    // előforduló (szabadon megadott) alkategóriákból épülnek fel, nem egy fix
+    // enumból — case-insensitive csoportosítva (l. subtypeKey/subtypeLabel), és
+    // csak akkor jelennek meg, ha érdemi választék van (>1 különböző alkategória),
+    // hogy egyetlen "Vegyes"-tömb ne duplikálja feleslegesen a "Mind" fület.
+    if(isOpen){
+      const usedKeys=[...new Set(catQs.map(q=>subtypeKey(q.type)))].sort((a,b)=>a.localeCompare(b,'hu'));
+      if(usedKeys.length>1){
         html+=`<div class="subtype-tabs">
           <div class="subtype-tab${selectedSubtype==='all'?' active':''}" onclick="filterSubtype('all')">Mind (${catQs.length})</div>
-          ${catTypeDefs.filter(t=>usedTypes.includes(t)).map(t=>{
-            const cnt=catQs.filter(q=>(q.type||'egyéb')===t).length;
-            const tEsc=t.replace(/'/g,"\\'");
+          ${usedKeys.map(k=>{
+            const cnt=catQs.filter(q=>subtypeKey(q.type)===k).length;
+            const kEsc=k.replace(/'/g,"\\'");
             const catEsc=cat.replace(/'/g,"\\'");
             return `<div class="subtype-tab-row">
-              <div class="subtype-tab${selectedSubtype===t?' active':''}" onclick="filterSubtype('${tEsc}')">${TYPE_LABELS[t]} (${cnt})</div>
+              <div class="subtype-tab${selectedSubtype===k?' active':''}" onclick="filterSubtype('${kEsc}')">${escHtmlHost(subtypeLabel(k))} (${cnt})</div>
               <div class="subtype-tab-actions">
-                <button class="sub-mini-btn sub-exp-btn" onclick="event.stopPropagation();exportSubtype('${catEsc}','${tEsc}')" title="Letöltés">⬇</button>
-                <button class="sub-mini-btn sub-del-btn" onclick="event.stopPropagation();deleteSubtypeQuestions('${catEsc}','${tEsc}')" title="Mind törlése">🗑</button>
+                <button class="sub-mini-btn sub-exp-btn" onclick="event.stopPropagation();exportSubtype('${catEsc}','${kEsc}')" title="Letöltés">⬇</button>
+                <button class="sub-mini-btn sub-del-btn" onclick="event.stopPropagation();deleteSubtypeQuestions('${catEsc}','${kEsc}')" title="Mind törlése">🗑</button>
               </div>
             </div>`;
           }).join('')}
@@ -1221,14 +1200,14 @@ function renderCatTree() {
 
 function renderQuestions() {
   let filtered=selectedCat==='all'?questions:questions.filter(q=>q.category===selectedCat);
-  if(selectedSubtype!=='all')filtered=filtered.filter(q=>(q.type||'egyéb')===selectedSubtype);
+  if(selectedSubtype!=='all')filtered=filtered.filter(q=>subtypeKey(q.type)===selectedSubtype);
   const list=document.getElementById('q-list');
   if(filtered.length===0){
     list.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">Nincs kérdés.<br><br><span style="color:var(--accent);cursor:pointer;" onclick="showNewQuestionForm()">+ Adj hozzá egyet</span></div>';
     return;
   }
   list.innerHTML=filtered.map(q=>{
-    const typeBadge=CATEGORY_TYPES[q.category]?`<span class="q-type-badge ${TYPE_CLASSES[q.type||'egyéb']||'type-egyeb'}">${TYPE_LABELS[q.type||'egyéb']||'?'}</span>`:'';
+    const typeBadge=`<span class="q-type-badge q-subtype-badge">${escHtmlHost(subtypeLabel(subtypeKey(q.type)))}</span>`;
     const numBadge=q.num?`<span class="q-num-badge">#${q.num}</span>`:'<span class="q-num-badge" style="opacity:0.4">—</span>';
     return `<div class="q-card" id="qcard-${q.id}">
       <div class="q-actions">
@@ -1278,10 +1257,15 @@ function downloadJson(qs,filename) {
   a.download=filename+'.json';a.click();
 }
 
-const IMPORT_GUIDES = {
-  'Bibliai': `num: egyedi sorszám (pl. 1, 42, 1500 — elhagyható, ekkor auto-generált)
+// FÁZIS 23: egyetlen, mindig Bibliai kategóriát feltételező útmutató maradt (a
+// korábbi Bibliai/Filmek/Egyéb választó megszűnt). A "type" mező mostantól SZABAD
+// szöveg — bármilyen alkategória-nevet elfogad, üresen hagyva "Vegyes" lesz.
+const IMPORT_GUIDE_TEXT = `num: egyedi sorszám (pl. 1, 42, 1500 — elhagyható, ekkor auto-generált)
 correct: 0=A(1.válasz)  1=B(2.válasz)  2=C(3.válasz)  3=D(4.válasz)
-type értékek: vers | személy | évszám | helység | esemény
+type: az alkategória neve — BÁRMILYEN szöveg lehet (pl. "Vegyes", "Bibliaversek",
+      "Mózes időszak", "Jézus időszak"...). Ha korábban nem létezett, egyszerűen
+      megjelenik a többi alkategória mellett. Elhagyható — ekkor "Vegyes" lesz.
+category: elhagyható, ekkor "Bibliai" (csak akkor add meg, ha kivételesen mást szeretnél)
 
 [
   {
@@ -1289,68 +1273,16 @@ type értékek: vers | személy | évszám | helység | esemény
     "text": "Mennyi ideig volt Nóé és családja a bárkában?",
     "options": ["30 nap", "40 nap", "1 év", "7 év"],
     "correct": 2,
-    "category": "Bibliai",
-    "type": "esemény",
+    "type": "Mózes időszak",
     "time": 30
   }
 ]
-→ correct:2 = C = "1 év" ✓`,
-
-  'Filmek': `num: egyedi sorszám (pl. 1, 42, 1500 — elhagyható, ekkor auto-generált)
-correct: 0=A(1.válasz)  1=B(2.válasz)  2=C(3.válasz)  3=D(4.válasz)
-type értékek: idézet | személy | évszám/időpont | helység | esemény
-
-[
-  {
-    "num": 101,
-    "text": "Melyik filmben hangzott el: \\"Én vagyok az apád\\"?",
-    "options": ["Apádra ütök", "Star Wars", "Bosszúállók", "Batman"],
-    "correct": 1,
-    "category": "Filmek",
-    "type": "idézet",
-    "time": 30
-  }
-]
-→ correct:1 = B = "Star Wars" ✓`,
-
-  'egyéb': `num: egyedi sorszám (pl. 1, 42, 1500 — elhagyható, ekkor auto-generált)
-correct: 0=A(1.válasz)  1=B(2.válasz)  2=C(3.válasz)  3=D(4.válasz)
-category: bármilyen szöveg (pl. "Általános", "Sport", "Zene", "Természet"...)
-
-[
-  {
-    "num": 7,
-    "text": "Mi a kérdés szövege?",
-    "options": ["1. válasz", "2. válasz", "3. válasz", "4. válasz"],
-    "correct": 0,
-    "category": "Általános",
-    "type": "egyéb",
-    "time": 30
-  }
-]`
-};
-
-let currentImportTab = 'Bibliai';
+→ correct:2 = C = "1 év" ✓`;
 
 function openImportModal() {
   document.getElementById('import-textarea').value='';
+  document.getElementById('import-guide').textContent = IMPORT_GUIDE_TEXT;
   document.getElementById('import-modal').classList.remove('hidden');
-  setImportTab('Bibliai');
-}
-function setImportTab(tab) {
-  currentImportTab = tab;
-  ['Bibliai','Filmek','egyéb'].forEach(t => {
-    const btn = document.getElementById('import-tab-' + (t==='egyéb'?'egyeb':t));
-    if(!btn) return;
-    if(t===tab) {
-      btn.className='btn-save';
-      btn.style.cssText='flex:1;padding:10px;font-size:13px;';
-    } else {
-      btn.className='btn-cancel-form';
-      btn.style.cssText='flex:1;padding:10px;font-size:13px;';
-    }
-  });
-  document.getElementById('import-guide').textContent = IMPORT_GUIDES[tab] || IMPORT_GUIDES['egyéb'];
 }
 function doImport() {
   try{
@@ -1365,10 +1297,11 @@ function doImport() {
     parsed.forEach(q=>{
       if(!q.text||!q.options||q.options.length!==4)return;
       const correctIdx=typeof q.correct==='number'?Math.max(0,Math.min(3,q.correct)):0;
-      const importCat = q.category || (currentImportTab!=='egyéb' ? currentImportTab : 'Általános');
-      let importType = (q.type||'').toLowerCase().trim();
-      const allowedTypes = CATEGORY_TYPES[importCat] || [];
-      if(!allowedTypes.includes(importType)) importType = 'egyéb';
+      // FÁZIS 23: az importálás mostantól kizárólag Bibliai kategóriát feltételez —
+      // "category" a JSON-ban csak kivételes esetre marad felülírható. A "type"
+      // szabad szöveg, nincs többé enum-korlátozás/kényszerített kisbetűsítés.
+      const importCat = q.category || 'Bibliai';
+      const importType = (q.type==null?'':String(q.type)).trim() || DEFAULT_SUBTYPE;
       let num;
       if(typeof q.num==='number' && q.num>0){
         if(existingNums.has(q.num)){
@@ -1503,7 +1436,7 @@ async function migrateAnswerKeys() {
 initFirebase();
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.14</div>
+<div class="version-badge">Admin panel verzió: 3.15</div>
 
 <script>
 // ============================================================
