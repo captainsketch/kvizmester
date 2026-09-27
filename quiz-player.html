@@ -667,6 +667,15 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     </div>
     <div id="cr-topic-list" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
+  <!-- ALKATEGÓRIA (Fázis 24) — csak akkor látszik, ha a kiválasztott témakörön belül
+       ténylegesen több, egymástól eltérő alkategória is előfordul a kérdésbankban
+       (pl. "Bibliai" alatt: Vegyes, Mózes időszak, Jézus időszak...) — l.
+       renderCrSubtypeOptions(). Mindig a Firebase-ben ténylegesen jelen lévő
+       alkategóriákból épül fel, sosem egy kódba írt fix listából. -->
+  <div class="menu-name-wrap hidden" id="cr-subtype-wrap">
+    <label class="menu-name-label">Alkategória</label>
+    <div id="cr-subtype-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
   <div class="menu-name-wrap">
     <label class="menu-name-label">Kérdések száma</label>
     <select class="menu-name-input" id="cr-count-select" style="text-align:center;">
@@ -715,7 +724,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.18</div><div><div class="cl-desc">Belső biztonsági finomítás a szoba-létrehozás és az új kör indításának folyamatában. A játékmenetet ez a frissítés nem érinti.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.19</div><div><div class="cl-desc">Az Új szoba képernyőn egy témakör kiválasztása után — ha annak van több alkategóriája is (pl. Bibliai alatt egy adott korszak) — megjelenik egy alkategória-választó is, hogy szűkebb kérdéskörből is játszhass.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.18</div><div><div class="cl-desc">Belső biztonsági finomítás a szoba-létrehozás és az új kör indításának folyamatában. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.17</div><div><div class="cl-desc">Belső karbantartás: a korábbi verzióelőzmény-bejegyzések szövege 2.0-tól felfelé jelentősen tömörítve, hogy könnyebben átlátható legyen. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.16</div><div><div class="cl-desc">Belső karbantartás: pontosítások és rövidítések a korábbi verzióelőzmény-bejegyzések szövegében, valamint stabilitási finomítások a bejelentkezési folyamatban. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.15</div><div><div class="cl-desc">Regisztrációnál egy "FONTOS" tájékoztató jelenik meg — kétlépéses megerősítés kell hozzá, mielőtt az űrlap láthatóvá válik —, amely elmagyarázza, miért kérjük a neved és a gyülekezeted. A gyülekezet-ikon mindenhol 🏠-ra változott.</div></div></div>
@@ -1143,14 +1153,51 @@ const AVATAR_DEFS = {
 };
 
 
-// ── SZOBA-LÉTREHOZÁS ÉS -CSATLAKOZÁS (2. fázis) ──────────────
+// ── SZOBA-LÉTREHOZÁS ÉS -CSATLAKOZÁS (2. fázis) — állapot ──────────
 let amIRoomHost = false;          // igaz, ha ÉN hoztam létre az aktuális szobát
-let crSelectedTopic = 'all';      // szoba-létrehozáskor kiválasztott témakör
+let crSelectedTopic = 'all';      // szoba-létrehozáskor kiválasztott témakör (kategória)
+let crSelectedSubtype = 'all';    // szoba-létrehozáskor kiválasztott ALKATEGÓRIA (Fázis 24) — csak akkor számít, ha crSelectedTopic !== 'all'
 let crSelectedMode = 'normal';    // szoba-létrehozáskor kiválasztott játékmód ('normal' | 'teams')
 let crAvailableQuestions = [];    // a "kvizjatek" tartalom-szobából betöltött teljes kérdéslista
 let roomListListenerRef = null;   // a szobalista élő figyelője
 let onlinePlayersListenerRef = null;   // az Online Játékosok lista élő figyelője (presence)
-let hostRoomTopicLabel = 'Vegyes';
+// FÁZIS 24: a szoba témakör-szűrését mostantól KÉT KÜLÖN, egyértelmű változó tárolja
+// (kategória + alkategória) — ezekből épül fel a hostRoomTopicLabel, ami KIZÁRÓLAG
+// megjelenítési célra szolgál, sosem szűrési kritériumként (l. hostStartNewRound()).
+// A korábbi megoldás a topicLabel SZÖVEGÉT (pl. "Vegyes") használta szűrési
+// sentinelként is — ez a quiz-host.html-ben Fázis 23-ban bevezetett, ténylegesen
+// "Vegyes" nevű alkategóriával összefutva egyértelmű, valós ütközési kockázatot
+// jelentett volna (l. PROJEKT_ALLAPOT.md, Fázis 24).
+let hostRoomCategoryFilter = 'all'; // 'all', vagy egy konkrét kategória-string (pl. "Bibliai")
+let hostRoomSubtypeFilter = 'all';  // 'all', vagy egy normalizált alkategória-kulcs (l. subtypeKey())
+let hostRoomTopicLabel = 'Vegyes';  // TISZTÁN megjelenítési címke — sosem szűrési forrás
+
+// Alkategória-kezelés — ugyanaz a case-insensitive normalizálás/megjelenítés, mint
+// amit a quiz-host.html Fázis 23-ban bevezetett, hogy a két oldal MINDIG ugyanúgy
+// csoportosítsa/mutassa a szabadon megadott alkategóriákat (pl. "Vegyes"/"vegyes"
+// egy fülbe essen itt is, ne csak az admin panelen).
+const DEFAULT_SUBTYPE = 'Vegyes';
+function subtypeKey(raw) {
+  const t = (raw == null ? '' : String(raw)).trim();
+  return (t || DEFAULT_SUBTYPE).toLocaleLowerCase('hu');
+}
+function subtypeLabel(key) {
+  const k = String(key || '');
+  return k.charAt(0).toLocaleUpperCase('hu') + k.slice(1);
+}
+// A szoba nyilvános címkéje (roomIndex/gameState topicLabel — Rules-ben 40 karakteres
+// felső korláttal): ha van kiválasztott alkategória, MAGA az alkategória neve a
+// legtömörebb és legtájékoztatóbb címke (a kategória-előtag elhagyásával elkerüljük,
+// hogy egy hosszú kategória+alkategória páros túllépje a 40 karaktert — l. pl. a
+// "Sámuel - Saul - Dávid - Salamon" alkategória, ami önmagában is 32 karakter). A
+// .slice(0,40) végső biztosíték egy jövőbeli, extrém hosszú alkategória-névre is.
+function buildTopicDisplayLabel(catFilter, subtypeFilter) {
+  let label;
+  if (catFilter === 'all') label = 'Vegyes';
+  else if (subtypeFilter && subtypeFilter !== 'all') label = subtypeLabel(subtypeFilter);
+  else label = catFilter;
+  return label.slice(0, 40);
+}
 
 // ── AKTÍV HOST BEJEGYZÉS — "activeHosts" fordított index (13. fázis, l.
 //    TESZTELESI_JELENTES.md 5.2. pont, teljes megoldás) ──────────────────
@@ -3034,6 +3081,8 @@ function backToMenu() {
   hostAnsweredPlayers = new Set(); hostAnswerOrder = 0; hostCorrectAnswerOrder = 0;
   hostGamePhase = 'waiting'; hostAutoAdvanceRunning = false; hostScoringListenerAttached = false;
   hostGameMode = 'normal'; crSelectedMode = 'normal'; tsEditingTeamId = null;
+  hostRoomCategoryFilter = 'all'; hostRoomSubtypeFilter = 'all'; hostRoomTopicLabel = 'Vegyes';
+  crSelectedTopic = 'all'; crSelectedSubtype = 'all';
   if (roomListListenerRef) { roomListListenerRef.off(); roomListListenerRef = null; }
   document.getElementById('my-score').textContent = '0';
   document.getElementById('my-rank').textContent = '#—';
@@ -3088,6 +3137,7 @@ async function loadTopicOptionsForCreate(forceRefresh) {
     catNames.forEach(cat => list.appendChild(buildCrTopicOption(cat, cat, cats[cat])));
     crSelectedTopic = 'all';
     updateCrTopicSelection();
+    renderCrSubtypeOptions();
   } catch(e) {
     list.innerHTML = '';
     const errEl = document.createElement('div');
@@ -3113,10 +3163,59 @@ function buildCrTopicOption(catKey, label, count) {
   div.onclick = () => selectCrTopic(catKey);
   return div;
 }
-function selectCrTopic(cat) { crSelectedTopic = cat; updateCrTopicSelection(); }
+function selectCrTopic(cat) {
+  crSelectedTopic = cat;
+  updateCrTopicSelection();
+  renderCrSubtypeOptions();
+}
 function updateCrTopicSelection() {
   document.querySelectorAll('.cr-topic-opt').forEach(el => {
     el.classList.toggle('selected', el.dataset.cat === crSelectedTopic);
+  });
+}
+
+// ── ALKATEGÓRIA-VÁLASZTÓ (Fázis 24) ───────────────────────────
+// A kiválasztott témakörön (kategórián) BELÜL ténylegesen előforduló
+// alkategóriákból épül fel élőben, a már betöltött crAvailableQuestions
+// adatból — nincs Firebase-újralekérés, és nincs kódba írt lista, tehát egy
+// admin-oldalon frissen felvitt, korábban nem létező alkategória (pl. egy
+// új Excel-munkalap neve) kódmódosítás nélkül azonnal választható itt is.
+function renderCrSubtypeOptions() {
+  const wrap = document.getElementById('cr-subtype-wrap');
+  const list = document.getElementById('cr-subtype-list');
+  if (!wrap || !list) return;
+  crSelectedSubtype = 'all';
+  list.innerHTML = '';
+  if (crSelectedTopic === 'all') { wrap.classList.add('hidden'); return; }
+  const catQs = crAvailableQuestions.filter(q => q && q.category === crSelectedTopic);
+  const keys = [...new Set(catQs.map(q => subtypeKey(q.type)))].sort((a,b)=>a.localeCompare(b,'hu'));
+  if (keys.length <= 1) { wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
+  list.appendChild(buildCrSubtypeOption('all', '🎲 Bármelyik alkategória', catQs.length));
+  keys.forEach(k => {
+    const cnt = catQs.filter(q => subtypeKey(q.type) === k).length;
+    list.appendChild(buildCrSubtypeOption(k, subtypeLabel(k), cnt));
+  });
+  updateCrSubtypeSelection();
+}
+function buildCrSubtypeOption(subKey, label, count) {
+  const div = document.createElement('div');
+  div.className = 'cr-topic-opt';
+  div.dataset.subtype = subKey;
+  const labelSpan = document.createElement('span');
+  labelSpan.textContent = label;
+  const countSpan = document.createElement('span');
+  countSpan.style.cssText = 'color:var(--muted);font-size:12px;font-weight:500;';
+  countSpan.textContent = count + ' kérdés';
+  div.appendChild(labelSpan);
+  div.appendChild(countSpan);
+  div.onclick = () => selectCrSubtype(subKey);
+  return div;
+}
+function selectCrSubtype(subKey) { crSelectedSubtype = subKey; updateCrSubtypeSelection(); }
+function updateCrSubtypeSelection() {
+  document.querySelectorAll('#cr-subtype-list .cr-topic-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.subtype === crSelectedSubtype);
   });
 }
 
@@ -3130,6 +3229,13 @@ async function confirmCreateRoom() {
   let pool = crSelectedTopic === 'all'
     ? crAvailableQuestions
     : crAvailableQuestions.filter(q => q && q.category === crSelectedTopic);
+  // FÁZIS 24: alkategória szerinti szűkítés is — csak akkor számít, ha a témakör
+  // NEM "Bármelyik", és az alkategória-választó ténylegesen egy konkrét értéket mutat
+  // (a "Bármelyik alkategória" választás, ill. az az eset, hogy ennél a témakörnél
+  // eleve nem is jelenik meg alkategória-választó, egyaránt crSelectedSubtype==='all'-t ad).
+  if (crSelectedTopic !== 'all' && crSelectedSubtype !== 'all') {
+    pool = pool.filter(q => subtypeKey(q.type) === crSelectedSubtype);
+  }
   if (pool.length === 0) { errEl.textContent = 'Nincs kérdés ebben a témakörben!'; return; }
 
   const countVal = document.getElementById('cr-count-select').value;
@@ -3202,7 +3308,9 @@ async function confirmCreateRoom() {
       questionsObj['q' + i] = publicFields;
       answerKeysObj[i] = { correct: typeof correct === 'number' ? correct : 0 };
     });
-    hostRoomTopicLabel = crSelectedTopic === 'all' ? 'Vegyes' : crSelectedTopic;
+    hostRoomCategoryFilter = crSelectedTopic;
+    hostRoomSubtypeFilter = (crSelectedTopic !== 'all') ? crSelectedSubtype : 'all';
+    hostRoomTopicLabel = buildTopicDisplayLabel(hostRoomCategoryFilter, hostRoomSubtypeFilter);
     hostGameMode = crSelectedMode;
 
     await newRoomRef.child('questions').set(questionsObj);
@@ -3831,9 +3939,17 @@ async function hostStartNewRound() {
       // TESZTELESI_JELENTES.md 6.1. pont — korábban ez a bank duplán, cache nélkül
       // töltődött le: egyszer szoba-létrehozáskor, majd újra itt is).
       const allBank = await getQuestionBank();
-      pool = (!hostRoomTopicLabel || hostRoomTopicLabel === 'Vegyes')
+      // FÁZIS 24: a szűrés mostantól a KÜLÖN tárolt kategória-/alkategória-szűrőből
+      // épül fel (hostRoomCategoryFilter/hostRoomSubtypeFilter) — NEM a megjelenítési
+      // hostRoomTopicLabel szövegéből. A korábbi, topicLabel==='Vegyes'-t "nincs szűrés"
+      // jelentésű sentinelként kezelő logika egyértelműen ütközött volna a Fázis
+      // 23-ban bevezetett, ténylegesen "Vegyes" nevű alkategóriával.
+      pool = (hostRoomCategoryFilter === 'all')
         ? allBank
-        : allBank.filter(q => q && q.category === hostRoomTopicLabel);
+        : allBank.filter(q => q && q.category === hostRoomCategoryFilter);
+      if (hostRoomSubtypeFilter && hostRoomSubtypeFilter !== 'all') {
+        pool = pool.filter(q => subtypeKey(q.type) === hostRoomSubtypeFilter);
+      }
     } catch (e) {
       console.warn('[QuizMaster] Friss kérdés-készlet lekérése sikertelen, a korábbi marad:', e);
     }
@@ -4220,7 +4336,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.18</div>
+<div class="version-badge">Játék verzió: 3.19</div>
 
 </body>
 </html>
