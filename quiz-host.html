@@ -1283,61 +1283,141 @@ function openImportModal() {
   document.getElementById('import-textarea').value='';
   document.getElementById('import-guide').textContent = IMPORT_GUIDE_TEXT;
   document.getElementById('import-modal').classList.remove('hidden');
+  // Ha egy korábbi import valamiért gomb-letiltva állapotban ragadt volna
+  // (pl. az oldal nem frissült két import között), itt biztosra megyünk.
+  const btn = document.querySelector('#import-modal .btn-save');
+  const cancelBtn = document.querySelector('#import-modal .btn-cancel-form');
+  if (btn) { btn.disabled = false; btn.textContent = '⬆ Importálás'; }
+  if (cancelBtn) { cancelBtn.disabled = false; }
 }
-function doImport() {
+
+// FÁZIS 23-KIEGÉSZÍTÉS: nagy (több száz/ezer elemes) import KÖTEGELVE, valós
+// haladás-visszajelzéssel. A korábbi verzió minden egyes kérdéshez KÉT külön,
+// BE NEM VÁRT (`await` nélküli) Firebase-írást indított (`questions` + `answerKeys`)
+// egy szinkron ciklusban — 1000+ kérdésnél ez percek alatt akár pár ezer
+// egyidejű, kezeletlen írási kérést jelentett, ami a böngészőt/Firebase SDK-t
+// láthatóan "lefagyasztotta", ÉS a sikeres importálást jelző alert szinte
+// azonnal, a tényleges írások lezárulása ELŐTT megjelent — Dani pontosan ezt a
+// két tünetet jelezte ("olyan sok a kérdés, hogy befagy, és nem tudom hol
+// tart"). A megoldás: (1) a validáció/sorszám-ütközés feloldása MOST is a
+// teljes listán, MIELŐTT bármi Firebase-be kerülne (ugyanaz a logika, mint
+// eddig, csak a tényleges írástól szétválasztva); (2) a tényleges írás
+// KÖTEGENKÉNT (40 kérdés/köteg), kötegenként EGY atomi, többhelyes `update()`-
+// hívással (questions+answerKeys mindkét ága egyszerre) — ez drasztikusan
+// kevesebb hálózati kérést jelent, mint kérdésenként két külön `set()`; (3) a
+// kötegek között `await`-tel MEGVÁRJUK az előzőt, és a gomb szövegén élő
+// "X/Y" haladást mutatunk — pontosan ugyanaz az elv, mint a már bevált "🔀
+// Válaszkulcsok migrálása" gomb `⏳ Migráció... X/Y` visszajelzése. Egy adott
+// köteg hálózati hibája nem szakítja meg a többit — a végén pontosan jelezve
+// van, mely tartomány nem került be, hogy azt külön, kisebb kötegben újra
+// lehessen próbálni.
+async function doImport() {
+  const raw=document.getElementById('import-textarea').value.trim();
+  if(!raw){alert('Kérlek illeszd be a JSON-t!');return;}
+  let parsed;
   try{
-    const raw=document.getElementById('import-textarea').value.trim();
-    if(!raw){alert('Kérlek illeszd be a JSON-t!');return;}
-    const parsed=JSON.parse(raw);
+    parsed=JSON.parse(raw);
     if(!Array.isArray(parsed))throw new Error('Tömbnek kell lennie [ ... ]');
-    let importMaxNum=questions.reduce((max,q)=>Math.max(max,q.num||0),0);
-    const existingNums=new Set(questions.map(q=>q.num||0).filter(n=>n>0));
-    const duplicates=[];
-    let count=0;
-    parsed.forEach(q=>{
-      if(!q.text||!q.options||q.options.length!==4)return;
-      const correctIdx=typeof q.correct==='number'?Math.max(0,Math.min(3,q.correct)):0;
-      // FÁZIS 23: az importálás mostantól kizárólag Bibliai kategóriát feltételez —
-      // "category" a JSON-ban csak kivételes esetre marad felülírható. A "type"
-      // szabad szöveg, nincs többé enum-korlátozás/kényszerített kisbetűsítés.
-      const importCat = q.category || 'Bibliai';
-      const importType = (q.type==null?'':String(q.type)).trim() || DEFAULT_SUBTYPE;
-      let num;
-      if(typeof q.num==='number' && q.num>0){
-        if(existingNums.has(q.num)){
-          duplicates.push({num:q.num, text:q.text});
-          num=++importMaxNum;
-        } else {
-          num=q.num;
-          existingNums.add(num);
-          if(num>importMaxNum)importMaxNum=num;
-        }
-      } else {
+  }catch(e){
+    alert('❌ Import hiba: '+e.message);
+    return;
+  }
+
+  // 1) Validáció + sorszám-ütközés feloldása a TELJES listán, írás nélkül.
+  let importMaxNum=questions.reduce((max,q)=>Math.max(max,q.num||0),0);
+  const existingNums=new Set(questions.map(q=>q.num||0).filter(n=>n>0));
+  const duplicates=[];
+  let skippedCount=0;
+  const prepared=[];
+  parsed.forEach(q=>{
+    if(!q||!q.text||!q.options||q.options.length!==4){ skippedCount++; return; }
+    const correctIdx=typeof q.correct==='number'?Math.max(0,Math.min(3,q.correct)):0;
+    // FÁZIS 23: az importálás mostantól kizárólag Bibliai kategóriát feltételez —
+    // "category" a JSON-ban csak kivételes esetre marad felülírható. A "type"
+    // szabad szöveg, nincs többé enum-korlátozás/kényszerített kisbetűsítés.
+    const importCat = q.category || 'Bibliai';
+    const importType = (q.type==null?'':String(q.type)).trim() || DEFAULT_SUBTYPE;
+    let num;
+    if(typeof q.num==='number' && q.num>0){
+      if(existingNums.has(q.num)){
+        duplicates.push({num:q.num, text:q.text});
         num=++importMaxNum;
+      } else {
+        num=q.num;
         existingNums.add(num);
+        if(num>importMaxNum)importMaxNum=num;
       }
-      // Fázis 22: importáláskor is kettéválasztva írunk — a "correct" az answerKeys ágba kerül.
-      const publicData={
-        text:q.text, options:q.options,
-        category:importCat, type:importType, time:q.time||30, num
-      };
-      if(db){
-        const newRef=roomRef.child('questions').push();
-        newRef.set(publicData);
-        roomRef.child('answerKeys').child(newRef.key).set({correct:correctIdx});
-      }
-      else questions.push({...publicData,correct:correctIdx,id:'q'+Date.now()+'_'+Math.random().toString(36).substr(2,4)});
-      count++;
-    });
-    if(!db)renderAll();
-    document.getElementById('import-modal').classList.add('hidden');
-    if(duplicates.length>0){
-      const dupList=duplicates.map(d=>`  #${d.num} — "${d.text.substring(0,40)}${d.text.length>40?'…':''}"`).join('\n');
-      alert(`✅ ${count} kérdés importálva.\n\n⚠️ ${duplicates.length} duplikált sorszám volt — ezek új sorszámot kaptak automatikusan:\n${dupList}`);
     } else {
-      alert(`✅ ${count} kérdés sikeresen importálva!\n\nEmlékeztető:\ncorrect: 0=A, 1=B, 2=C, 3=D\nnum: sorszám (ha hiányzott, auto-generálva)`);
+      num=++importMaxNum;
+      existingNums.add(num);
     }
-  }catch(e){alert('❌ Import hiba: '+e.message);}
+    // Fázis 22: importáláskor is kettéválasztva írunk — a "correct" az answerKeys ágba kerül.
+    const publicData={ text:q.text, options:q.options, category:importCat, type:importType, time:q.time||30, num };
+    prepared.push({ publicData, correctIdx });
+  });
+
+  if(prepared.length===0){
+    alert('❌ Egyik elem sem importálható (mindegyiknél hiányzik a szöveg, vagy nem pontosan 4 opció van).');
+    return;
+  }
+
+  if(!db){
+    prepared.forEach(p=>questions.push({...p.publicData, correct:p.correctIdx, id:'q'+Date.now()+'_'+Math.random().toString(36).substr(2,4)}));
+    renderAll();
+    finishImportUI(prepared.length, duplicates, skippedCount, []);
+    return;
+  }
+
+  // 2) Tényleges írás — kötegelve, kötegenként egy atomi update(), élő X/Y jelzéssel.
+  const CHUNK_SIZE = 40;
+  const btn = document.querySelector('#import-modal .btn-save');
+  const cancelBtn = document.querySelector('#import-modal .btn-cancel-form');
+  if(btn) btn.disabled=true;
+  if(cancelBtn) cancelBtn.disabled=true;
+  let done=0;
+  const failedRanges=[];
+  for(let i=0;i<prepared.length;i+=CHUNK_SIZE){
+    const chunk=prepared.slice(i, i+CHUNK_SIZE);
+    const updates={};
+    chunk.forEach(p=>{
+      const newKey=roomRef.child('questions').push().key;
+      updates['questions/'+newKey]=p.publicData;
+      updates['answerKeys/'+newKey]={correct:p.correctIdx};
+    });
+    try{
+      await roomRef.update(updates);
+      done+=chunk.length;
+    }catch(e){
+      failedRanges.push({from:i+1, to:i+chunk.length, error:(e&&e.message)?e.message:String(e)});
+    }
+    if(btn) btn.textContent = `⏳ Importálás... ${done}/${prepared.length}`;
+  }
+  if(btn){ btn.disabled=false; btn.textContent='⬆ Importálás'; }
+  if(cancelBtn) cancelBtn.disabled=false;
+
+  finishImportUI(done, duplicates, skippedCount, failedRanges);
+}
+
+function finishImportUI(count, duplicates, skippedCount, failedRanges) {
+  document.getElementById('import-modal').classList.add('hidden');
+  let msg = `✅ ${count} kérdés importálva.`;
+  if(duplicates.length>0){
+    const shown=duplicates.slice(0,15);
+    const dupList=shown.map(d=>`  #${d.num} — "${d.text.substring(0,40)}${d.text.length>40?'…':''}"`).join('\n');
+    msg += `\n\n⚠️ ${duplicates.length} duplikált sorszám volt — ezek új sorszámot kaptak automatikusan:\n${dupList}`;
+    if(duplicates.length>shown.length) msg += `\n  ...és még ${duplicates.length-shown.length} további.`;
+  }
+  if(skippedCount>0){
+    msg += `\n\n⚠️ ${skippedCount} elem kimaradt (hiányzó szöveg, vagy nem pontosan 4 válaszlehetőség).`;
+  }
+  if(failedRanges && failedRanges.length>0){
+    msg += `\n\n❌ ${failedRanges.length} köteg írása sikertelen (pl. hálózati hiba) — ezek NEM kerültek be:\n` +
+      failedRanges.map(f=>`  ${f.from}–${f.to}. elem: ${f.error}`).join('\n') +
+      `\n\nÉrdemes ezt a köteget külön, kisebb JSON-nal újra importálni.`;
+  } else {
+    msg += `\n\nEmlékeztető:\ncorrect: 0=A, 1=B, 2=C, 3=D\nnum: sorszám (ha hiányzott, auto-generálva)`;
+  }
+  alert(msg);
 }
 
 // ============================================================
@@ -1436,7 +1516,7 @@ async function migrateAnswerKeys() {
 initFirebase();
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.15</div>
+<div class="version-badge">Admin panel verzió: 3.16</div>
 
 <script>
 // ============================================================
