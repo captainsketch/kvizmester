@@ -1028,12 +1028,12 @@ function openInlineEdit(id) {
   form.innerHTML=`
     <h4>✎ Kérdés szerkesztése</h4>
     <div class="correct-note">💡 A zöld körre kattintva jelöld meg a <span>helyes választ</span> — A=1., B=2., C=3., D=4.</div>
-    <textarea class="form-input" id="ie-text" rows="2">${q.text}</textarea>
+    <textarea class="form-input" id="ie-text" rows="2">${escHtmlHost(q.text)}</textarea>
     <div class="options-grid">
-      <div class="option-input-wrap"><input class="form-input" type="text" id="ie-a" value="${q.options[0]||''}"><div class="correct-mark${q.correct===0?' selected':''}" onclick="ieSelectCorrect(0)"></div></div>
-      <div class="option-input-wrap"><input class="form-input" type="text" id="ie-b" value="${q.options[1]||''}"><div class="correct-mark${q.correct===1?' selected':''}" onclick="ieSelectCorrect(1)"></div></div>
-      <div class="option-input-wrap"><input class="form-input" type="text" id="ie-c" value="${q.options[2]||''}"><div class="correct-mark${q.correct===2?' selected':''}" onclick="ieSelectCorrect(2)"></div></div>
-      <div class="option-input-wrap"><input class="form-input" type="text" id="ie-d" value="${q.options[3]||''}"><div class="correct-mark${q.correct===3?' selected':''}" onclick="ieSelectCorrect(3)"></div></div>
+      <div class="option-input-wrap"><input class="form-input" type="text" id="ie-a" value="${escHtmlHost(q.options[0]||'')}"><div class="correct-mark${q.correct===0?' selected':''}" onclick="ieSelectCorrect(0)"></div></div>
+      <div class="option-input-wrap"><input class="form-input" type="text" id="ie-b" value="${escHtmlHost(q.options[1]||'')}"><div class="correct-mark${q.correct===1?' selected':''}" onclick="ieSelectCorrect(1)"></div></div>
+      <div class="option-input-wrap"><input class="form-input" type="text" id="ie-c" value="${escHtmlHost(q.options[2]||'')}"><div class="correct-mark${q.correct===2?' selected':''}" onclick="ieSelectCorrect(2)"></div></div>
+      <div class="option-input-wrap"><input class="form-input" type="text" id="ie-d" value="${escHtmlHost(q.options[3]||'')}"><div class="correct-mark${q.correct===3?' selected':''}" onclick="ieSelectCorrect(3)"></div></div>
     </div>
     <div class="form-row">
       <select class="form-input" id="ie-cat">
@@ -1147,27 +1147,86 @@ function renderSubtypeDatalist() {
   dl.innerHTML=keys.map(k=>`<option value="${escHtmlHost(subtypeLabel(k))}">`).join('');
 }
 
+// FÁZIS 25 — BIZTONSÁGI JAVÍTÁS (K2): korábban ez a függvény egy string-
+// összefűzött innerHTML sablonnal épült fel, amibe a kategória (és kisebb
+// részben az alkategória) neve escapelés NÉLKÜL, sőt helyenként egy
+// onclick="...('…')" JS-string-kontextusba ágyazva került be — ez utóbbit
+// pusztán HTML-escapeléssel nem lehet biztonságosan lezárni (a beágyazott
+// idézőjelet a böngésző a HTML-attribútum feldolgozásakor MÁR visszafejti,
+// mielőtt az onclick tartalmát JS-ként értelmezné, tehát egy escapelt
+// idézőjel is kitörhet a JS-string-ből). A megoldás: a fa mostantól valódi
+// DOM-elemekből épül fel (createElement + textContent + tényleges JS
+// függvény-referenciás onclick), pontosan úgy, ahogy a Szoba létrehozása
+// képernyő témakör-/alkategória-gombjai (buildCrTopicOption/
+// buildCrSubtypeOption, quiz-player.html) is teszik. A viselkedés, a
+// CSS-osztályok és a kattintható elemek nem változtak.
 function renderCatTree() {
   const cats=[...new Set(questions.map(q=>q.category))];
-  let html=`<div class="cat-tree-item">
-    <div class="cat-tree-header${selectedCat==='all'?' active':''}" onclick="filterCat('all')">
-      <span class="cat-tree-label">📋 Összes kérdés</span>
-      <span class="cat-tree-count">${questions.length}</span>
-    </div>
-  </div>`;
+  const treeEl = document.getElementById('cat-tree');
+  treeEl.innerHTML = '';
+
+  const allItem = document.createElement('div');
+  allItem.className = 'cat-tree-item';
+  const allHeader = document.createElement('div');
+  allHeader.className = 'cat-tree-header' + (selectedCat==='all' ? ' active' : '');
+  allHeader.onclick = () => filterCat('all');
+  const allLabel = document.createElement('span');
+  allLabel.className = 'cat-tree-label';
+  allLabel.textContent = '📋 Összes kérdés';
+  const allCount = document.createElement('span');
+  allCount.className = 'cat-tree-count';
+  allCount.textContent = String(questions.length);
+  allHeader.appendChild(allLabel);
+  allHeader.appendChild(allCount);
+  allItem.appendChild(allHeader);
+  treeEl.appendChild(allItem);
+
   cats.forEach(cat=>{
     const catQs=questions.filter(q=>q.category===cat);
     const isOpen=selectedCat===cat;
-    html+=`<div class="cat-tree-item">
-      <div class="cat-tree-header${isOpen?' active':''}" onclick="filterCat('${cat}')">
-        <span class="cat-chevron${isOpen?' open':''}">▶</span>
-        <span class="cat-tree-label">${cat}</span>
-        <span class="cat-tree-count">${catQs.length}</span>
-        <div class="cat-tree-actions">
-          <button class="cat-mini-btn cat-exp-btn" onclick="event.stopPropagation();exportCategory('${cat}')" title="Export">⬇</button>
-          <button class="cat-mini-btn cat-del-btn" onclick="event.stopPropagation();deleteCategoryQuestions('${cat}')" title="Mind törlése">🗑</button>
-        </div>
-      </div>`;
+
+    const item = document.createElement('div');
+    item.className = 'cat-tree-item';
+
+    const header = document.createElement('div');
+    header.className = 'cat-tree-header' + (isOpen ? ' active' : '');
+    header.onclick = () => filterCat(cat);
+
+    const chevron = document.createElement('span');
+    chevron.className = 'cat-chevron' + (isOpen ? ' open' : '');
+    chevron.textContent = '▶';
+
+    const label = document.createElement('span');
+    label.className = 'cat-tree-label';
+    label.textContent = cat;
+
+    const count = document.createElement('span');
+    count.className = 'cat-tree-count';
+    count.textContent = String(catQs.length);
+
+    const actions = document.createElement('div');
+    actions.className = 'cat-tree-actions';
+
+    const expBtn = document.createElement('button');
+    expBtn.className = 'cat-mini-btn cat-exp-btn';
+    expBtn.title = 'Export';
+    expBtn.textContent = '⬇';
+    expBtn.onclick = (e) => { e.stopPropagation(); exportCategory(cat); };
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'cat-mini-btn cat-del-btn';
+    delBtn.title = 'Mind törlése';
+    delBtn.textContent = '🗑';
+    delBtn.onclick = (e) => { e.stopPropagation(); deleteCategoryQuestions(cat); };
+
+    actions.appendChild(expBtn);
+    actions.appendChild(delBtn);
+    header.appendChild(chevron);
+    header.appendChild(label);
+    header.appendChild(count);
+    header.appendChild(actions);
+    item.appendChild(header);
+
     // FÁZIS 23: az alkategória-fülek mostantól MINDEN kategóriánál a ténylegesen
     // előforduló (szabadon megadott) alkategóriákból épülnek fel, nem egy fix
     // enumból — case-insensitive csoportosítva (l. subtypeKey/subtypeLabel), és
@@ -1176,26 +1235,52 @@ function renderCatTree() {
     if(isOpen){
       const usedKeys=[...new Set(catQs.map(q=>subtypeKey(q.type)))].sort((a,b)=>a.localeCompare(b,'hu'));
       if(usedKeys.length>1){
-        html+=`<div class="subtype-tabs">
-          <div class="subtype-tab${selectedSubtype==='all'?' active':''}" onclick="filterSubtype('all')">Mind (${catQs.length})</div>
-          ${usedKeys.map(k=>{
-            const cnt=catQs.filter(q=>subtypeKey(q.type)===k).length;
-            const kEsc=k.replace(/'/g,"\\'");
-            const catEsc=cat.replace(/'/g,"\\'");
-            return `<div class="subtype-tab-row">
-              <div class="subtype-tab${selectedSubtype===k?' active':''}" onclick="filterSubtype('${kEsc}')">${escHtmlHost(subtypeLabel(k))} (${cnt})</div>
-              <div class="subtype-tab-actions">
-                <button class="sub-mini-btn sub-exp-btn" onclick="event.stopPropagation();exportSubtype('${catEsc}','${kEsc}')" title="Letöltés">⬇</button>
-                <button class="sub-mini-btn sub-del-btn" onclick="event.stopPropagation();deleteSubtypeQuestions('${catEsc}','${kEsc}')" title="Mind törlése">🗑</button>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>`;
+        const tabsWrap = document.createElement('div');
+        tabsWrap.className = 'subtype-tabs';
+
+        const allTab = document.createElement('div');
+        allTab.className = 'subtype-tab' + (selectedSubtype==='all' ? ' active' : '');
+        allTab.textContent = `Mind (${catQs.length})`;
+        allTab.onclick = () => filterSubtype('all');
+        tabsWrap.appendChild(allTab);
+
+        usedKeys.forEach(k=>{
+          const cnt=catQs.filter(q=>subtypeKey(q.type)===k).length;
+          const row = document.createElement('div');
+          row.className = 'subtype-tab-row';
+
+          const tab = document.createElement('div');
+          tab.className = 'subtype-tab' + (selectedSubtype===k ? ' active' : '');
+          tab.textContent = `${subtypeLabel(k)} (${cnt})`;
+          tab.onclick = () => filterSubtype(k);
+
+          const tActions = document.createElement('div');
+          tActions.className = 'subtype-tab-actions';
+
+          const tExp = document.createElement('button');
+          tExp.className = 'sub-mini-btn sub-exp-btn';
+          tExp.title = 'Letöltés';
+          tExp.textContent = '⬇';
+          tExp.onclick = (e) => { e.stopPropagation(); exportSubtype(cat, k); };
+
+          const tDel = document.createElement('button');
+          tDel.className = 'sub-mini-btn sub-del-btn';
+          tDel.title = 'Mind törlése';
+          tDel.textContent = '🗑';
+          tDel.onclick = (e) => { e.stopPropagation(); deleteSubtypeQuestions(cat, k); };
+
+          tActions.appendChild(tExp);
+          tActions.appendChild(tDel);
+          row.appendChild(tab);
+          row.appendChild(tActions);
+          tabsWrap.appendChild(row);
+        });
+
+        item.appendChild(tabsWrap);
       }
     }
-    html+=`</div>`;
+    treeEl.appendChild(item);
   });
-  document.getElementById('cat-tree').innerHTML=html;
 }
 
 function renderQuestions() {
@@ -1214,12 +1299,12 @@ function renderQuestions() {
         <button class="q-btn-sm q-btn-edit" onclick="openInlineEdit('${q.id}')">✎</button>
         <button class="q-btn-sm q-btn-del" onclick="deleteQuestion('${q.id}')">✕</button>
       </div>
-      <div class="q-card-text" style="display:flex;align-items:flex-start;gap:0;">${numBadge}<span>${q.text}</span></div>
+      <div class="q-card-text" style="display:flex;align-items:flex-start;gap:0;">${numBadge}<span>${escHtmlHost(q.text)}</span></div>
       <div class="q-card-meta">
-        <span class="q-cat-badge">${q.category}</span>
+        <span class="q-cat-badge">${escHtmlHost(q.category)}</span>
         ${typeBadge}
         <span style="font-size:11px;color:var(--muted);">${q.time}mp</span>
-        <span style="font-size:11px;color:var(--green);">✓ ${LETTERS[q.correct]}: ${q.options[q.correct]}</span>
+        <span style="font-size:11px;color:var(--green);">✓ ${LETTERS[q.correct]}: ${escHtmlHost(q.options[q.correct])}</span>
       </div>
     </div>`;
   }).join('');
@@ -1231,7 +1316,7 @@ function renderQuestions() {
 function openExportModal() {
   const cats=['all',...new Set(questions.map(q=>q.category))];
   const sel=document.getElementById('export-cat-select');
-  sel.innerHTML=cats.map(c=>`<option value="${c}">${c==='all'?'Összes kérdés':c}</option>`).join('');
+  sel.innerHTML=cats.map(c=>`<option value="${escHtmlHost(c)}">${c==='all'?'Összes kérdés':escHtmlHost(c)}</option>`).join('');
   updateExportInfo();
   document.getElementById('export-modal').classList.remove('hidden');
 }
@@ -1516,7 +1601,7 @@ async function migrateAnswerKeys() {
 initFirebase();
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.16</div>
+<div class="version-badge">Admin panel verzió: 3.17</div>
 
 <script>
 // ============================================================

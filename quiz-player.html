@@ -724,7 +724,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.19</div><div><div class="cl-desc">Az Új szoba képernyőn egy témakör kiválasztása után — ha annak van több alkategóriája is (pl. Bibliai alatt egy adott korszak) — megjelenik egy alkategória-választó is, hogy szűkebb kérdéskörből is játszhass.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.20</div><div><div class="cl-desc">Belső biztonsági finomítás a kérdés- és válaszmegjelenítésben. A játékmenetet ez a frissítés nem érinti.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.19</div><div><div class="cl-desc">Az Új szoba képernyőn egy témakör kiválasztása után — ha annak van több alkategóriája is (pl. Bibliai alatt egy adott korszak) — megjelenik egy alkategória-választó is, hogy szűkebb kérdéskörből is játszhass.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.18</div><div><div class="cl-desc">Belső biztonsági finomítás a szoba-létrehozás és az új kör indításának folyamatában. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.17</div><div><div class="cl-desc">Belső karbantartás: a korábbi verzióelőzmény-bejegyzések szövege 2.0-tól felfelé jelentősen tömörítve, hogy könnyebben átlátható legyen. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.16</div><div><div class="cl-desc">Belső karbantartás: pontosítások és rövidítések a korábbi verzióelőzmény-bejegyzések szövegében, valamint stabilitási finomítások a bejelentkezési folyamatban. A játékmenetet ez a frissítés nem érinti.</div></div></div>
@@ -2676,12 +2677,31 @@ function showQuestion(q, idx) {
     qIndex: idx
   };
 
+  // FÁZIS 25 — BIZTONSÁGI JAVÍTÁS (K1): a válaszgombok korábban egy escapelés
+  // nélküli innerHTML sablonnal épültek fel, így a gameState.question.options
+  // bármely szabadon írható (l. self-service host modell) tartalma HTML/JS-ként
+  // futott le minden csatlakozó képernyőjén. Innentől biztonságos DOM-építés
+  // (createElement + textContent) — ugyanaz a minta, mint amit a Szoba
+  // létrehozása képernyő témakör-/alkategória-gombjai (buildCrTopicOption/
+  // buildCrSubtypeOption) is használnak. Az osztályok/ID-k/onclick viselkedés
+  // változatlanok.
   const container = document.getElementById('answers-player');
-  container.innerHTML = q.options.map((opt, i) => `
-    <button class="ans-btn" id="abtn-${i}" onclick="submitAnswer(${i})">
-      <div class="ans-letter">${LETTERS[i]}</div>
-      <div class="ans-text">${opt}</div>
-    </button>`).join('');
+  container.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'ans-btn';
+    btn.id = 'abtn-' + i;
+    btn.onclick = () => submitAnswer(i);
+    const letterEl = document.createElement('div');
+    letterEl.className = 'ans-letter';
+    letterEl.textContent = LETTERS[i];
+    const textEl = document.createElement('div');
+    textEl.className = 'ans-text';
+    textEl.textContent = opt;
+    btn.appendChild(letterEl);
+    btn.appendChild(textEl);
+    container.appendChild(btn);
+  });
 
   document.getElementById('q-area').style.display = 'flex';
   document.getElementById('q-area').style.flexDirection = 'column';
@@ -2901,7 +2921,7 @@ function showHistory() {
         const icon = isCorrectAns ? '✓' : (isMyAns && !isCorrectAns) ? '✗' : '';
         return `<div class="${cls}">
           <div class="hist-ans-letter" style="${!isCorrectAns && !isMyAns ? 'opacity:0.4' : ''}">${icon || LETTERS[j]}</div>
-          <span style="font-size:12px;line-height:1.3;">${opt}</span>
+          <span style="font-size:12px;line-height:1.3;">${escHtml(opt)}</span>
         </div>`;
       }).join('');
 
@@ -2915,7 +2935,7 @@ function showHistory() {
             <div class="hist-q-num">${i + 1}. kérdés${h.qNum ? ' &nbsp;·&nbsp; <span style="color:var(--accent);font-family:var(--font-display);font-size:13px;letter-spacing:1px;">#' + h.qNum + '</span>' : ''}</div>
             <div class="hist-status-badge ${badgeClass}">${statusText}</div>
           </div>
-          <div class="hist-q-text">${h.qText}</div>
+          <div class="hist-q-text">${escHtml(h.qText)}</div>
           <div class="hist-answers">${answersHTML}</div>
           <div class="hist-footer">
             <div class="hist-pts-label">${ptsLabel}</div>
@@ -4336,7 +4356,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.19</div>
+<div class="version-badge">Játék verzió: 3.20</div>
 
 </body>
 </html>
