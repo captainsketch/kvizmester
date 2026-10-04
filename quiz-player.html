@@ -724,7 +724,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.20</div><div><div class="cl-desc">Belső biztonsági finomítás a kérdés- és válaszmegjelenítésben. A játékmenetet ez a frissítés nem érinti.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.21</div><div><div class="cl-desc">Belső biztonsági finomítás a pontozás és a válaszküldés folyamatában. A játékmenetet ez a frissítés nem érinti.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.20</div><div><div class="cl-desc">Belső biztonsági finomítás a kérdés- és válaszmegjelenítésben. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.19</div><div><div class="cl-desc">Az Új szoba képernyőn egy témakör kiválasztása után — ha annak van több alkategóriája is (pl. Bibliai alatt egy adott korszak) — megjelenik egy alkategória-választó is, hogy szűkebb kérdéskörből is játszhass.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.18</div><div><div class="cl-desc">Belső biztonsági finomítás a szoba-létrehozás és az új kör indításának folyamatában. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.17</div><div><div class="cl-desc">Belső karbantartás: a korábbi verzióelőzmény-bejegyzések szövege 2.0-tól felfelé jelentősen tömörítve, hogy könnyebben átlátható legyen. A játékmenetet ez a frissítés nem érinti.</div></div></div>
@@ -2595,7 +2596,10 @@ function setupListeners() {
     if (amIRoomHost) tsRefreshIfVisible();
   });
 
-  roomRef.child('answers').on('child_added', snap => {
+  // FÁZIS 26 (K5): a "ki válaszolt már" jelzés mostantól a KÜLÖN, publikus `answered` ágból
+  // jön (csak qIndex + név, a tényleges válasz-index nélkül). A `answers` ág — benne a
+  // választott opcióval — kizárólag a szoba hostja/admin számára olvasható.
+  roomRef.child('answered').on('child_added', snap => {
     const ans = snap.val();
     if (ans && ans.playerName) {
       // Elavult válasz kizárása a chip megjelenítéstől is
@@ -2604,7 +2608,7 @@ function setupListeners() {
       updatePlayersChips(answeredNamesThisRound);
     }
   });
-  roomRef.child('answers').on('value', snap => {
+  roomRef.child('answered').on('value', snap => {
     if (!snap.val()) {
       answeredNamesThisRound = new Set();
       updatePlayersChips(answeredNamesThisRound);
@@ -2723,12 +2727,23 @@ function submitAnswer(idx) {
     if (i === idx) btn.classList.add('selected');
   });
   if (db && roomRef) {
+    // FÁZIS 26 (K5): a válasz KÉT, egymástól független írással kerül fel — szándékosan nem
+    // egyetlen multi-path update-tel: a `answers` írás a kritikus (ez pontozódik), az
+    // `answered` csak a többiek chip-jelzéséhez kell. Ha az utóbbi bármiért elbukik, a
+    // válasz attól még érvényes marad. A Rules szerver-oldalon csak a szoba tagjától,
+    // 'question' fázisban, az aktuális qIndex-szel fogadja el mindkettőt — ha a kérdés
+    // közben lezárult (késői küldés), az írás elutasításra kerül: ez nem hiba, csak naplózzuk.
+    const qIdxForWrite = currentQIndex;
     roomRef.child('answers').child(playerId).set({
       answer: idx,
-      qIndex: currentQIndex,   // Kérdés-azonosító: elavult válaszok kiszűréséhez a host oldalon
+      qIndex: qIdxForWrite,    // Kérdés-azonosító: elavult válaszok kiszűréséhez (host oldalon ÉS a Rules-ban)
       time: firebase.database.ServerValue.TIMESTAMP,
       playerName: playerName
-    });
+    }).catch(err => console.warn('[QuizMaster] válasz nem került rögzítésre (a kérdés már lezárult?):', err && err.message ? err.message : err));
+    roomRef.child('answered').child(playerId).set({
+      qIndex: qIdxForWrite,
+      playerName: playerName
+    }).catch(() => {});
   }
   stopTimer();
   const remaining = document.createElement('div');
@@ -3070,7 +3085,7 @@ function backToMenu() {
   if (roomRef) {
     roomRef.child('gameState').off();
     roomRef.child('players').off();
-    roomRef.child('answers').off();
+    roomRef.child('answered').off();
     roomRef.child('teams').off();
     if (playerId) {
       roomRef.child('players').child(playerId).child('status').off();
@@ -3461,7 +3476,7 @@ async function connectAsPlayerToRoom(code) {
   if (roomRef) {
     roomRef.child('gameState').off();
     roomRef.child('players').off();
-    roomRef.child('answers').off();
+    roomRef.child('answered').off();
   }
   roomCode = code;
   if (!db) db = firebase.database();
@@ -3838,19 +3853,38 @@ function hostNextQuestion() {
     startTime: firebase.database.ServerValue.TIMESTAMP
   };
 
-  roomRef.child('answers').remove()
-    .catch(err => console.warn('[QuizMaster] host answers.remove hiba:', err))
-    .finally(() => roomRef.child('gameState').set(gsData));
+  // FÁZIS 26 (K5): a privát `answers` mellett a publikus `answered` jelzőágat is ürítjük.
+  // Egymástól függetlenül: bármelyik törlés hibája (pl. még nem publikált Rules) se akadályozza a kérdés indítását.
+  Promise.all([
+    roomRef.child('answers').remove().catch(err => console.warn('[QuizMaster] host answers.remove hiba:', err)),
+    roomRef.child('answered').remove().catch(err => console.warn('[QuizMaster] host answered.remove hiba:', err))
+  ]).then(() => roomRef.child('gameState').set(gsData));
 
   hostStartTimer(q.time || 30);
 }
 
+// FÁZIS 26 (K5): a Rules mostantól csak 'question' fázisban fogad el játékos-választ. A host
+// időzítője a kérdés kiírása ELŐTT indul (answers/answered törlés + gameState írás + terjedés a
+// játékosokig), a játékosok saját számlálója viszont csak ezután — tehát az utolsó
+// ~fél másodpercben leadott, jogos válasz máskülönben a felfedés UTÁN érkezne a szerverre, és
+// elutasításra kerülne. Ezt a rövid kegyelmi idő ellensúlyozza (kizárólag az időzítő-lejárat
+// ágon; ha mindenki válaszolt, a felfedés a megszokott módon azonnal megtörténik).
+const HOST_REVEAL_GRACE_MS = 1500;
+
 function hostStartTimer(seconds) {
   clearInterval(hostTimerInterval);
+  const timerQIndex = hostCurrentQIndex;
   let remaining = seconds;
   hostTimerInterval = setInterval(() => {
     remaining--;
-    if (remaining <= 0) { clearInterval(hostTimerInterval); hostRevealAnswer(true); }
+    if (remaining <= 0) {
+      clearInterval(hostTimerInterval);
+      setTimeout(() => {
+        // Csak akkor fedünk fel, ha közben nem történt meg (mindenki válaszolt), nem léptünk tovább,
+        // és még mi vagyunk a szoba irányítói.
+        if (amIRoomHost && hostGamePhase === 'question' && hostCurrentQIndex === timerQIndex) hostRevealAnswer(true);
+      }, HOST_REVEAL_GRACE_MS);
+    }
   }, 1000);
 }
 
@@ -3861,6 +3895,12 @@ function hostSetupScoringListener() {
     const ans = snap.val(); if (!ans) return;
     const pid = snap.key;
     if (typeof ans.qIndex === 'number' && ans.qIndex !== hostCurrentQIndex) return;
+    // FÁZIS 26 (K5): csak a szobában ténylegesen jelen lévő, AKTÍV játékos válasza számít. A Rules
+    // szerver-oldalon is kikényszeríti a tagságot, ez a második, kliens-oldali védvonal: egy
+    // 'lobby' státuszra visszaállított résztvevő vagy egy kívülálló válasza se kapjon pontot, se
+    // a sorrendet (hostAnswerOrder) ne tolja el, se a "mindenki válaszolt" számlálót ne növelje.
+    const answerer = players[pid];
+    if (!answerer || answerer.status !== 'active') return;
     if (hostAnsweredPlayers.has(pid)) return;
     hostAnsweredPlayers.add(pid);
     hostAnswerOrder++;
@@ -3884,8 +3924,20 @@ function hostSetupScoringListener() {
       // a tényleges válaszadásokat számolja, időtúllépést sosem. Ugyanaz a bármely-
       // approved-felhasználó-írhat elv érvényesül itt, mint a room-szintű pontozásnál —
       // a szobát irányító host mindig más játékos fiókjába ír, nem a sajátjába.
-      db.ref('users/' + pid + '/stats/answered').transaction(cur => (cur||0) + 1);
-      db.ref('users/' + pid + '/stats/' + (isCorrect ? 'correct' : 'wrong')).transaction(cur => (cur||0) + 1);
+      //
+      // FÁZIS 26 (K4): a három számláló EGYETLEN, atomi szerver-oldali növeléssel frissül
+      // (ServerValue.increment), a `lastAt` időbélyeggel együtt — a Rules ezt a `lastAt`-ot
+      // használja sebességkorlátra (két írás között legalább 3 mp), így a statisztika nem
+      // növelhető korlátlanul. Az increment ráadásul NEM igényel olvasást a másik játékos
+      // users/{uid} csomópontjáról (a korábbi transaction() jellemzően olvasási jogot is kér a
+      // célhelyen — a host viszont nem olvashatja más felhasználó rekordját).
+      const statsUpdate = {
+        answered: firebase.database.ServerValue.increment(1),
+        lastAt: firebase.database.ServerValue.TIMESTAMP
+      };
+      statsUpdate[isCorrect ? 'correct' : 'wrong'] = firebase.database.ServerValue.increment(1);
+      db.ref('users/' + pid + '/stats').update(statsUpdate)
+        .catch(err => console.warn('[QuizMaster] statisztika-írás hiba (' + pid + '):', err && err.message ? err.message : err));
     }
 
     roomRef.child('players').once('value', psnap => {
@@ -4038,6 +4090,7 @@ async function hostStartNewRound() {
     await roomRef.child('answerKeys').set(answerKeysObj);
     await roomRef.child('revealedQuestions').remove();
     await roomRef.child('answers').remove();
+    await roomRef.child('answered').remove().catch(() => {});
     await roomRef.child('players').remove();
     await roomRef.child('gameState').set({
       phase: 'waiting',
@@ -4356,7 +4409,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.20</div>
+<div class="version-badge">Játék verzió: 3.21</div>
 
 </body>
 </html>
