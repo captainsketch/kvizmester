@@ -322,6 +322,10 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   .btn-lobby:disabled { opacity:0.38; cursor:not-allowed; color:var(--muted); border-color:var(--border); background:transparent; }
   .btn-lobby:disabled:active { background:transparent; color:var(--muted); }
 
+  /* ── Értesítők: megszűnt szoba (F1) — főmenü + eredmény képernyő ── */
+  .menu-notice { width:100%; margin:0 0 22px; padding:12px 14px; background:rgba(224,90,43,0.10); border:1px solid rgba(224,90,43,0.40); border-radius:12px; color:var(--text); font-size:13px; line-height:1.6; text-align:center; }
+  .result-host-lost-note { margin:0 0 20px; padding:12px 14px; background:rgba(224,90,43,0.10); border:1px solid rgba(224,90,43,0.40); border-radius:12px; color:var(--text); font-size:13px; line-height:1.6; text-align:center; }
+
   /* ── EREDMÉNYEIM képernyő ────────────────── */
   #history-screen { display:none; width:100%; max-width:420px; padding:24px 0 48px; margin:0 auto; }
   .hist-back { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; margin-bottom:20px; background:none; border:none; padding:4px 0; }
@@ -348,6 +352,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   .hist-ans.hist-ans-correct .hist-ans-letter { background:var(--green); color:#000; }
   .hist-ans.hist-ans-mine-wrong { border-color:var(--red); background:rgba(224,90,90,0.1); opacity:0.8; }
   .hist-ans.hist-ans-mine-wrong .hist-ans-letter { background:var(--red); color:#fff; }
+  .hist-ans.hist-ans-mine-unknown { border-color:var(--accent); background:rgba(240,192,64,0.08); }
   .hist-footer { display:flex; align-items:center; justify-content:space-between; padding-top:6px; border-top:1px solid var(--border); }
   .hist-pts-label { font-size:12px; color:var(--muted); }
   .hist-pts-val { font-family:var(--font-display); font-size:22px; }
@@ -640,6 +645,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     <input type="text" class="menu-name-input" id="menu-name-input"
       readonly tabindex="-1" style="cursor:default;opacity:0.85;">
   </div>
+  <div class="menu-notice" id="menu-notice" style="display:none;"></div>
   <div class="menu-buttons">
     <button class="menu-btn-primary" onclick="showCreateRoom()">➕ ÚJ SZOBA</button>
     <button class="menu-btn-secondary" onclick="showRoomList()">🚪 CSATLAKOZÁS SZOBÁHOZ</button>
@@ -724,7 +730,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.21</div><div><div class="cl-desc">Belső biztonsági finomítás a pontozás és a válaszküldés folyamatában. A játékmenetet ez a frissítés nem érinti.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.22</div><div><div class="cl-desc">Ha a szoba irányítója kilépett vagy megszakadt a kapcsolata, a játék többé nem ragad be: érthető üzenetet kapsz, a félbemaradt játék eredménye pedig megmarad az Eredményeim képernyőn. Emellett javítva egy ritka hiba, amely miatt egy helyes válasz hibásként jelenhetett meg a felfedéskor.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.21</div><div><div class="cl-desc">Belső biztonsági finomítás a pontozás és a válaszküldés folyamatában. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.20</div><div><div class="cl-desc">Belső biztonsági finomítás a kérdés- és válaszmegjelenítésben. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.19</div><div><div class="cl-desc">Az Új szoba képernyőn egy témakör kiválasztása után — ha annak van több alkategóriája is (pl. Bibliai alatt egy adott korszak) — megjelenik egy alkategória-választó is, hogy szűkebb kérdéskörből is játszhass.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.18</div><div><div class="cl-desc">Belső biztonsági finomítás a szoba-létrehozás és az új kör indításának folyamatában. A játékmenetet ez a frissítés nem érinti.</div></div></div>
@@ -1043,6 +1050,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
 
 <!-- EREDMÉNY -->
 <div id="result-screen">
+  <div class="result-host-lost-note hidden" id="result-host-lost-note"></div>
   <div class="result-trophy" id="result-emoji">🏆</div>
   <div class="result-title">VÉGE!</div>
   <div class="result-score" id="final-score">0</div>
@@ -1352,6 +1360,21 @@ let myPlayerStatus = 'lobby';
 // "Vissza a játékba" gomb: csak akkor aktív ha a host már visszalépett (phase:'waiting')
 let hostReadyForRejoin = false;
 
+// ── A SZOBA IRÁNYÍTÓJÁNAK ELVESZTÉSE (F1, v3.22) ─────────────────────────────
+// A játékmotor az irányító böngészőjében fut. Ha az irányító kilép vagy megszakad a kapcsolata, a
+// szerver a players/{uid} csomópontját (onDisconnect) törli — ez az EGYETLEN, Rules-változtatás nélkül
+// is olvasható jel, hogy a szobának nincs többé motorja. Minden kliens (az irányító maga is) ezt
+// figyeli; a "szoba megszűnt" döntés csak egy türelmi idő után születik, mert az irányító "új kör"
+// átmenete (players törlése → saját csomópont visszaírása) és egy lassú csatlakozás átmenetileg
+// szintén a csomópont hiányát mutatja.
+let currentRoomHostUid = null;   // az aktuális szoba irányítójának uid-ja (rooms/{code}/hostUid)
+let hostLossTimer = null;        // a türelmi idő számlálója (az irányító csomópontja hiányzik, de még nem döntöttünk)
+let roomHostLost = false;        // megerősítve: az irányító eltűnt (nem-irányítónál: "puha" állapot az eredmény képernyőn)
+let lastRoomPhase = null;        // a gameState utoljára látott fázisa (az üzenet szövegéhez)
+const HOST_LOSS_GRACE_MS = 10000;
+const MSG_ROOM_GONE = 'A szoba irányítója kilépett vagy megszakadt a kapcsolata, ezért a szoba megszűnt. Nyiss egy újat, vagy csatlakozz egy másikhoz!';
+const MSG_HOST_SELF_LOST = 'A kapcsolatod megszakadt, ezért a szobád megszűnt. Hozz létre egy újat!';
+
 // ── KÉPERNYŐ VÁLTÁS ──────────────────────────────────────────
 function hideAll() {
   ['auth-screen','pending-screen','rejected-screen','gyulekezet-gate-screen',
@@ -1368,6 +1391,15 @@ function showMenu() {
   hideAll();
   document.getElementById('menu-screen').style.display = 'flex';
   document.getElementById('menu-error').textContent = '';
+  showMenuNotice('');
+}
+// Tájékoztató doboz a főmenün (nem hiba — ezért nem a piros menu-error). A showMenu() törli,
+// tehát csak a kilépést kiváltó hívás UTÁN állítjuk be (l. handleHostLoss()).
+function showMenuNotice(text) {
+  const el = document.getElementById('menu-notice');
+  if (!el) return;
+  el.textContent = text || '';
+  el.style.display = text ? 'block' : 'none';
 }
 function showAuthScreen() {
   hideAll();
@@ -2493,8 +2525,12 @@ function setupListeners() {
     // Játékmód beállítása minden state változáskor
     gameMode = state.mode === 'teams' ? 'teams' : 'normal';
     updateGameModeUI();
+    lastRoomPhase = state.phase;
 
-    if (state.phase === 'question' && state.questionIndex !== currentQIndex) {
+    // F1: ha az irányító már eltűnt (a "szoba megszűnt" állapot), egy későn érkező új kérdés
+    // (pl. az irányító újracsatlakozás után kiürülő, sorban álló írásai) nem rántja vissza a
+    // játékost a játékképernyőre — az eredmény-képernyő marad.
+    if (state.phase === 'question' && state.questionIndex !== currentQIndex && !roomHostLost) {
       // Team módban: csak akkor mutatjuk a kérdést ha van teamId
       if (gameMode === 'teams' && !myTeamId) {
         // Keressük meg a saját csapatot a teams node-ból
@@ -2521,7 +2557,13 @@ function setupListeners() {
       }
     } else if (state.phase === 'revealed') {
       const revealIdx = typeof state.revealedForIndex === 'number' ? state.revealedForIndex : state.questionIndex;
-      fetchAnswerKey(revealIdx).then(correctIdx => revealAnswers(correctIdx, revealIdx));
+      // F6: újrapróbálkozó lekérés — ha a válaszkulcs-jelző épp nem látszik (régi irányító-kliens két
+      // külön írása, átmeneti hálózati hiba), nem jelölünk "rossz"-nak egy esetleg helyes választ.
+      const codeAtReveal = roomCode;
+      fetchAnswerKeyWithRetry(revealIdx).then(correctIdx => {
+        if (codeAtReveal !== roomCode) return;   // közben szobát váltottunk
+        revealAnswers(correctIdx, revealIdx);
+      });
     } else if (state.phase === 'ended') {
       hostReadyForRejoin = false;
       const gameVisible = document.getElementById('game-screen').style.display !== 'none';
@@ -2563,6 +2605,7 @@ function setupListeners() {
       updateLobbyJoinedCount();
       tsRefreshIfVisible();
     }
+    checkHostPresence();
   });
 
   // Csapatok figyelése (team módban)
@@ -2638,6 +2681,37 @@ async function fetchAnswerKey(qIndex) {
     console.warn('[QuizMaster] answerKeys olvasási hiba:', e);
     return -1;
   }
+}
+
+// F6 (v3.22): a felfedéskor a válaszkulcs olvashatóvá válása és a "felfedve" fázis megjelenése
+// két külön esemény lehet (régi irányító-kliens két külön írása; átmeneti hálózati hiba) — egy
+// azonnali, elutasított olvasás ilyenkor NEM jelent "rossz választ". Néhány rövid újrapróbálás
+// áthidalja ezt; ha végül sem sikerül, a hívó "ismeretlen" állapotot kezel (nem "helytelent").
+const ANSWER_KEY_RETRY_DELAYS_MS = [350, 800, 1600];
+async function fetchAnswerKeyWithRetry(qIndex) {
+  const codeAtStart = roomCode;
+  let key = await fetchAnswerKey(qIndex);
+  for (const delay of ANSWER_KEY_RETRY_DELAYS_MS) {
+    if (key >= 0) return key;
+    await new Promise(r => setTimeout(r, delay));
+    if (codeAtStart !== roomCode) return -1;
+    key = await fetchAnswerKey(qIndex);
+  }
+  return key;
+}
+
+// F6: az "Eredményeim" képernyő önjavító pótlása — a játék végére minden kérdés fel van fedve,
+// tehát egy korábban nem olvasható válaszkulcs ilyenkor már lekérhető.
+async function repairUnknownHistoryKeys() {
+  const missing = myQuestionHistory.filter(h => !(h.correctAnswer >= 0) && typeof h.qIndex === 'number');
+  if (missing.length === 0) return false;
+  const codeAtStart = roomCode;
+  let changed = false;
+  await Promise.all(missing.map(async h => {
+    const key = await fetchAnswerKey(h.qIndex);
+    if (key >= 0) { h.correctAnswer = key; changed = true; }
+  }));
+  return changed && codeAtStart === roomCode;
 }
 
 function showQuestion(q, idx) {
@@ -2769,17 +2843,30 @@ function revealAnswers(correctIdx, forQuestionIndex) {
     }
   }
 
-  // DOM frissítés csak ha a játék képernyő látható
+  // DOM frissítés csak ha a játék képernyő látható ÉS a felfedés az éppen kijelzett kérdéshez tartozik
+  // (az újrapróbálkozó lekérés miatt egy késve érkező felfedés már egy újabb kérdés gombjait is
+  // találhatná — azt nem színezzük át).
   const gameVisible = document.getElementById('game-screen').style.display !== 'none';
   if (!gameVisible) return;
+  if (typeof forQuestionIndex === 'number' && forQuestionIndex !== currentQIndex) return;
 
+  // F6: ha a helyes válasz nem ismert (correctIdx < 0), NEM jelölünk semmit "rossznak" —
+  // csak lezárjuk a gombokat, és jelezzük, hogy a megoldás most nem érhető el.
+  const keyKnown = correctIdx >= 0;
   document.querySelectorAll('.ans-btn').forEach((btn, i) => {
     btn.classList.add('disabled');
+    if (!keyKnown) return;
     if (i === correctIdx) btn.classList.add('correct-highlight');
     else if (btn.classList.contains('selected')) btn.classList.add('wrong');
   });
   // Összes wait-reveal elem törlése (megakadályozza a halmozódást)
   document.querySelectorAll('.wait-reveal').forEach(el => el.remove());
+  if (!keyKnown) {
+    const note = document.createElement('div');
+    note.className = 'wait-reveal';
+    note.textContent = 'A helyes válasz most nem érhető el — az Eredményeim képernyőn később megjelenik.';
+    document.getElementById('q-area').appendChild(note);
+  }
 }
 
 function showResults() {
@@ -2897,15 +2984,24 @@ function showHistory() {
   hideAll();
   document.getElementById('history-screen').style.display = 'block';
   window.scrollTo({top:0, behavior:'smooth'});
+  renderHistory();
+  // F6: a még ismeretlen megoldású kérdések pótlása (ha sikerül, újrarajzoljuk — a rajzolás nem görget)
+  repairUnknownHistoryKeys().then(changed => {
+    if (changed && document.getElementById('history-screen').style.display !== 'none') renderHistory();
+  });
+}
 
+function renderHistory() {
   // Defenzív rendezés: a helyes válaszok aszinkron (answerKeys) lekérdezésből
   // kerülnek az előzménybe, ezért qIndex szerint rendezünk, hogy a megjelenítési
   // sorrend mindig helyes legyen, függetlenül a lekérdezések befejeződési sorrendjétől.
   myQuestionHistory.sort((a, b) => (a.qIndex ?? 0) - (b.qIndex ?? 0));
 
   const total = myQuestionHistory.length;
-  const correct = myQuestionHistory.filter(h => h.myAnswer !== -1 && h.myAnswer === h.correctAnswer).length;
-  const wrong = myQuestionHistory.filter(h => h.myAnswer !== -1 && h.myAnswer !== h.correctAnswer).length;
+  const keyKnown = h => h.correctAnswer >= 0;
+  const correct = myQuestionHistory.filter(h => h.myAnswer !== -1 && keyKnown(h) && h.myAnswer === h.correctAnswer).length;
+  const wrong = myQuestionHistory.filter(h => h.myAnswer !== -1 && keyKnown(h) && h.myAnswer !== h.correctAnswer).length;
+  const unknown = myQuestionHistory.filter(h => h.myAnswer !== -1 && !keyKnown(h)).length;
   const timeout = myQuestionHistory.filter(h => h.myAnswer === -1).length;
   const totalPts = myQuestionHistory.reduce((s, h) => s + (h.pts || 0), 0);
 
@@ -2913,6 +3009,7 @@ function showHistory() {
     `<span>${total} kérdés</span> · ` +
     `<span style="color:var(--green)">${correct} helyes</span> · ` +
     `<span style="color:var(--red)">${wrong} helytelen</span>` +
+    (unknown > 0 ? ` · <span style="color:var(--muted)">${unknown} nem ellenőrizhető</span>` : '') +
     (timeout > 0 ? ` · <span style="color:var(--muted)">${timeout} időtúllépés</span>` : '') +
     ` · <span style="color:var(--accent)">${totalPts} pont összesen</span>`;
 
@@ -2922,18 +3019,20 @@ function showHistory() {
   } else {
     myQuestionHistory.forEach((h, i) => {
       const isTimeout = h.myAnswer === -1;
-      const isCorrect = !isTimeout && h.myAnswer === h.correctAnswer;
-      const cardClass = isTimeout ? 'hist-timeout' : isCorrect ? 'hist-correct' : 'hist-wrong';
-      const badgeClass = isTimeout ? 'badge-timeout' : isCorrect ? 'badge-correct' : 'badge-wrong';
-      const statusText = isTimeout ? '⏰ Lejárt az idő' : isCorrect ? '✓ Helyes' : '✗ Helytelen';
+      const isUnknown = !isTimeout && !(h.correctAnswer >= 0);   // F6: a helyes válasz nem ismert — nem állíthatjuk, hogy rossz
+      const isCorrect = !isTimeout && !isUnknown && h.myAnswer === h.correctAnswer;
+      const cardClass = (isTimeout || isUnknown) ? 'hist-timeout' : isCorrect ? 'hist-correct' : 'hist-wrong';
+      const badgeClass = (isTimeout || isUnknown) ? 'badge-timeout' : isCorrect ? 'badge-correct' : 'badge-wrong';
+      const statusText = isTimeout ? '⏰ Lejárt az idő' : isUnknown ? '❔ Nem ellenőrizhető' : isCorrect ? '✓ Helyes' : '✗ Helytelen';
 
       const answersHTML = (h.options || []).map((opt, j) => {
         let cls = 'hist-ans';
         const isCorrectAns = j === h.correctAnswer;
         const isMyAns = j === h.myAnswer;
         if (isCorrectAns) cls += ' hist-ans-correct';
+        else if (isMyAns && isUnknown) cls += ' hist-ans-mine-unknown';
         else if (isMyAns && !isCorrectAns) cls += ' hist-ans-mine-wrong';
-        const icon = isCorrectAns ? '✓' : (isMyAns && !isCorrectAns) ? '✗' : '';
+        const icon = isCorrectAns ? '✓' : (isMyAns && !isCorrectAns && !isUnknown) ? '✗' : '';
         return `<div class="${cls}">
           <div class="hist-ans-letter" style="${!isCorrectAns && !isMyAns ? 'opacity:0.4' : ''}">${icon || LETTERS[j]}</div>
           <span style="font-size:12px;line-height:1.3;">${escHtml(opt)}</span>
@@ -2941,8 +3040,8 @@ function showHistory() {
       }).join('');
 
       const pts = h.pts || 0;
-      const ptsClass = isTimeout ? 'pts-zero' : pts >= 2 ? 'pts-positive' : pts === 1 ? 'pts-wrong' : 'pts-zero';
-      const ptsLabel = isTimeout ? 'Nem válaszoltál' : isCorrect ? 'Megszerzett pont' : '1 vigaszpont';
+      const ptsClass = isTimeout ? 'pts-zero' : pts >= 2 ? 'pts-positive' : pts === 1 ? (isUnknown ? 'pts-zero' : 'pts-wrong') : 'pts-zero';
+      const ptsLabel = isTimeout ? 'Nem válaszoltál' : isUnknown ? 'Megszerzett pont' : isCorrect ? 'Megszerzett pont' : '1 vigaszpont';
 
       html += `
         <div class="hist-card ${cardClass}">
@@ -2969,6 +3068,9 @@ function backToResults() {
   hideAll();
   document.getElementById('result-screen').style.display = 'block';
   window.scrollTo({top:0, behavior:'smooth'});
+  // F1: míg az Eredményeim képernyőn voltunk, a "Vissza a játékba" gomb állapota (pl. "A SZOBA
+  // MEGSZŰNT") megváltozhatott — az eredmény képernyő csak látható állapotban frissíti magát.
+  updateReturnToGameBtn();
 }
 
 // ── VISSZA A JÁTÉKBA — gomb állapot kezelő ───────────────────
@@ -2980,6 +3082,14 @@ function updateReturnToGameBtn() {
   // Csak az eredmény képernyőn van hatása
   const resultVisible = document.getElementById('result-screen').style.display !== 'none';
   if (!resultVisible) return;
+
+  // F1: az irányító eltűnt — nincs kire várni, a szoba nem indít új kört
+  if (roomHostLost && !amIRoomHost) {
+    btn.disabled = true;
+    btn.textContent = 'A SZOBA MEGSZŰNT';
+    btn.style.cssText = '';
+    return;
+  }
 
   if (hostReadyForRejoin) {
     btn.disabled = false;
@@ -2996,7 +3106,7 @@ function updateReturnToGameBtn() {
 // Csak akkor fut le ha hostReadyForRejoin === true, azaz a host már
 // visszalépett és törölte a játékosokat → safe regisztráció
 async function returnToGame() {
-  if (!hostReadyForRejoin) return;           // extra guard
+  if (!hostReadyForRejoin || roomHostLost) return;   // extra guard
   if (!db || !roomRef || !playerId) { backToMenu(); return; }
 
   // Gomb azonnal letiltva — dupla kattintás ellen (mindkét gomb)
@@ -3080,8 +3190,100 @@ function showWaitingForTeam() {
   }
 }
 
+// ── F1: irányító-jelenlét figyelése ──────────────────────────────────────────
+function clearHostLossTimer() {
+  if (hostLossTimer) { clearTimeout(hostLossTimer); hostLossTimer = null; }
+}
+// Teljes alaphelyzet (szobaváltáskor és kilépéskor): a figyelés, a "megszűnt" állapot és a sáv is törlődik.
+function resetHostLossMonitor() {
+  clearHostLossTimer();
+  currentRoomHostUid = null;
+  roomHostLost = false;
+  lastRoomPhase = null;
+  refreshHostLostUI();
+}
+// A players-figyelő minden eseményénél lefut. Csak egy türelmi időt indít/állít le — a döntés
+// a confirmHostLoss()-ban születik, ott is csak megerősítés után.
+function checkHostPresence() {
+  if (!roomRef || !currentRoomHostUid) { clearHostLossTimer(); return; }
+  if (!amIRoomHost && currentRoomHostUid === playerId) return;   // nem várt eset (saját magunk az irányító, de nem motor) — nem figyelünk
+  const present = !!(players && players[currentRoomHostUid]);
+  if (present) {
+    clearHostLossTimer();
+    if (roomHostLost) { roomHostLost = false; refreshHostLostUI(); }   // visszatért (pl. egy lassú új kör) — a "puha" állapot visszafordítható
+    return;
+  }
+  if (roomHostLost || hostLossTimer) return;
+  const codeAtStart = roomCode;
+  hostLossTimer = setTimeout(() => confirmHostLoss(codeAtStart), HOST_LOSS_GRACE_MS);
+}
+async function confirmHostLoss(code) {
+  hostLossTimer = null;
+  if (code !== roomCode || !roomRef || !currentRoomHostUid) return;
+  const hostUidAtStart = currentRoomHostUid;
+  let exists;
+  try {
+    // Második, a helyi `players` változótól független ellenőrzés (a figyelt ág miatt a Firebase
+    // SDK gyorsítótárából is kiszolgálható, de legalább nem a mi saját, esetleg elmaradt másolatunkból).
+    exists = (await roomRef.child('players').child(hostUidAtStart).once('value')).exists();
+  } catch (e) {
+    console.warn('[QuizMaster] irányító-jelenlét ellenőrzése sikertelen:', e);
+    checkHostPresence();   // nem döntünk bizonytalanul — újra türelmi idő
+    return;
+  }
+  if (code !== roomCode || hostUidAtStart !== currentRoomHostUid) return;   // közben szobát váltottunk
+  if (exists) return;                                                         // téves riasztás: közben visszatért
+  handleHostLoss();
+}
+// A megerősített eltűnés kezelése — a játékos aktuális helyzetétől függően:
+//  • játékban lévő játékos   → az eredmény képernyőre kerül (a félbemaradt játék állása és az "Eredményeim" megmarad)
+//  • eredmény képernyőn      → marad; csak a "Vissza a játékba" gomb áll át ("A SZOBA MEGSZŰNT")
+//  • váróteremben / várakozik → nincs mit menteni: főmenü + érthető üzenet
+//  • maga az irányító        → játékban/váróteremben főmenü + üzenet; az eredmény képernyőn NEM lépünk ki
+//                              (ott az "Új kör indítása" újraépíti a szobát és a saját csomópontját is —
+//                              ezért az új kör alatti átmeneti hiány sem okoz kilépést)
+function handleHostLoss() {
+  const vis = id => { const el = document.getElementById(id); return !!el && el.style.display !== 'none'; };
+  const inGame = vis('game-screen');
+  const onResults = vis('result-screen') || vis('history-screen');
+  if (amIRoomHost) {
+    if (onResults) return;
+    backToMenu();
+    showMenuNotice(MSG_HOST_SELF_LOST);
+    return;
+  }
+  if (inGame || onResults) {
+    roomHostLost = true;
+    if (inGame) {
+      pendingQuestion = null;   // a félbemaradt kérdés nem zárult le — nem kerül az előzménybe
+      showResults();
+    }
+    refreshHostLostUI();
+  } else {
+    backToMenu();
+    showMenuNotice(MSG_ROOM_GONE);
+  }
+}
+// Az eredmény képernyő sávja és a "Vissza a játékba" gomb állapota a roomHostLost-ból.
+function refreshHostLostUI() {
+  const note = document.getElementById('result-host-lost-note');
+  if (note) {
+    if (roomHostLost && !amIRoomHost) {
+      note.textContent = (lastRoomPhase === 'question' || lastRoomPhase === 'revealed')
+        ? '⚠️ A játék idő előtt véget ért: a szoba irányítója kilépett vagy megszakadt a kapcsolata.'
+        : '⚠️ A szoba irányítója kilépett vagy megszakadt a kapcsolata, ezért a szoba megszűnt.';
+      note.classList.remove('hidden');
+    } else {
+      note.textContent = '';
+      note.classList.add('hidden');
+    }
+  }
+  updateReturnToGameBtn();
+}
+
 function backToMenu() {
   stopTimer();
+  resetHostLossMonitor();
   if (roomRef) {
     roomRef.child('gameState').off();
     roomRef.child('players').off();
@@ -3478,6 +3680,7 @@ async function connectAsPlayerToRoom(code) {
     roomRef.child('players').off();
     roomRef.child('answered').off();
   }
+  resetHostLossMonitor();
   roomCode = code;
   if (!db) db = firebase.database();
   roomRef = db.ref('rooms/' + roomCode);
@@ -3496,6 +3699,19 @@ async function connectAsPlayerToRoom(code) {
     joinedAt: firebase.database.ServerValue.TIMESTAMP
   });
   roomRef.child('players').child(playerId).onDisconnect().remove();
+
+  // F1: a szoba irányítójának azonosítója — ebből tudjuk figyelni, hogy él-e még a szoba. Ha nem
+  // sikerül lekérni, a figyelés egyszerűen kimarad (soha nem lépünk ki bizonytalan alapon).
+  if (amIRoomHost) {
+    currentRoomHostUid = playerId;
+  } else {
+    try {
+      currentRoomHostUid = (await roomRef.child('hostUid').once('value')).val() || null;
+    } catch (e) {
+      console.warn('[QuizMaster] hostUid lekérése sikertelen:', e);
+      currentRoomHostUid = null;
+    }
+  }
 
   setupListeners();
 
@@ -3953,14 +4169,21 @@ function hostSetupScoringListener() {
 
 function hostRevealAnswer(fromTimer) {
   if (!amIRoomHost || !roomRef) return;
+  // F6: egy kérdés felfedése csak EGYSZER futhat le — a "mindenki válaszolt" (+500 ms) és az
+  // időzítő-lejárati ág egymást is megelőzheti, a második hívás pedig (pl. már lezárult játékban)
+  // feleslegesen, sőt hibásan írna újra a gameState-be.
+  if (hostGamePhase !== 'question') return;
   clearInterval(hostTimerInterval);
   hostGamePhase = 'revealed';
-  roomRef.child('gameState').update({
-    phase: 'revealed', revealedForIndex: hostCurrentQIndex
-  });
-  // Ez a jelző nyitja meg az answerKeys/{index} olvasását mindenki más (nem host) számára —
-  // a host maga eddig is olvashatta, hiszen ő futtatja ezt a szobát.
-  roomRef.child('revealedQuestions').child(hostCurrentQIndex).set(true);
+  const revealIdx = hostCurrentQIndex;
+  // F6: a "felfedve" fázis és a válaszkulcs-jelző (revealedQuestions) EGYETLEN, atomi írásban kerül
+  // fel. Korábban két külön írás volt; ha a második lassabban ért a szerverre, a játékosok már látták a
+  // "revealed" fázist, de az answerKeys olvasása még elutasításra került, és egy HELYES választ
+  // "rossznak" jelöltek. Atomi írással a két állapot sosem látszik külön. (A revealedQuestions/{index}
+  // jelző nyitja meg az answerKeys/{index} olvasását mindenki más számára; a host maga mindig olvashatja.)
+  const revealUpdate = { 'gameState/phase': 'revealed', 'gameState/revealedForIndex': revealIdx };
+  revealUpdate['revealedQuestions/' + revealIdx] = true;
+  roomRef.update(revealUpdate).catch(err => console.warn('[QuizMaster] felfedés írása sikertelen:', err && err.message ? err.message : err));
   roomRef.child('players').once('value', psnap => {
     const allPlayers = psnap.val() || {};
     const activeCount = Object.values(allPlayers).filter(p => p.status === 'active').length;
@@ -4409,7 +4632,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.21</div>
+<div class="version-badge">Játék verzió: 3.22</div>
 
 </body>
 </html>
