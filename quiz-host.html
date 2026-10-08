@@ -987,6 +987,18 @@ function showNewQuestionForm() {
 function hideNewQuestionForm() {
   document.getElementById('add-q-form').classList.add('hidden');
 }
+// FÁZIS 28 (F4): a kérdés-mezők hosszkorlátja — SZÓ SZERINT egyezik a database_rules.json korlátaival (questions/$qId/...,
+// a gameState/question korlátaival azonosan: ami ennél hosszabb, az játék közben sem jeleníthető meg). Enélkül a Rules némán,
+// érthetetlen "permission_denied"-del utasítaná el a mentést vagy az egész import-köteget.
+const Q_LIMITS = { text: 2000, option: 300, label: 60 };
+function questionLimitProblem(text, opts, cat, type) {
+  if (String(text).length > Q_LIMITS.text) return `a kérdés szövege túl hosszú (${String(text).length} karakter, legfeljebb ${Q_LIMITS.text})`;
+  const bad = opts.findIndex(o => String(o).length > Q_LIMITS.option);
+  if (bad >= 0) return `a(z) ${LETTERS[bad]} válasz túl hosszú (${String(opts[bad]).length} karakter, legfeljebb ${Q_LIMITS.option})`;
+  if (String(cat).length > Q_LIMITS.label) return `a kategória neve túl hosszú (legfeljebb ${Q_LIMITS.label} karakter)`;
+  if (String(type).length > Q_LIMITS.label) return `az alkategória neve túl hosszú (${String(type).length} karakter, legfeljebb ${Q_LIMITS.label})`;
+  return null;
+}
 async function saveNewQuestion() {
   const text=document.getElementById('nq-text').value.trim();
   const opts=['nq-a','nq-b','nq-c','nq-d'].map(id=>document.getElementById(id).value.trim());
@@ -994,6 +1006,8 @@ async function saveNewQuestion() {
   const time=parseInt(document.getElementById('nq-time').value);
   const type=document.getElementById('nq-type').value.trim() || DEFAULT_SUBTYPE;
   if(!text||opts.some(o=>!o)){alert('Töltsd ki az összes mezőt!');return;}
+  const limitProblem=questionLimitProblem(text,opts,cat,type);
+  if(limitProblem){alert('❌ A kérdés nem menthető: '+limitProblem+'.');return;}
   const maxNum=questions.reduce((max,q)=>Math.max(max,q.num||0),0);
   const num=maxNum+1;
   // FONTOS (Fázis 22): a "correct" mostantól SOSEM kerül a publikus questions
@@ -1001,8 +1015,15 @@ async function saveNewQuestion() {
   const publicData={text,options:opts,category:cat,type,time,num};
   if(db){
     const newRef=roomRef.child('questions').push();
-    await newRef.set(publicData);
-    await roomRef.child('answerKeys').child(newRef.key).set({correct:nqCorrectOptVal});
+    try{
+      await newRef.set(publicData);
+      await roomRef.child('answerKeys').child(newRef.key).set({correct:nqCorrectOptVal});
+    }catch(e){
+      // Ha a kérdés beírva, de a válaszkulcs nem sikerült, ne maradjon kulcs nélküli kérdés az adatbázisban.
+      await newRef.remove().catch(()=>{});
+      alert('❌ A mentés nem sikerült: '+(e&&e.message?e.message:e)+'\n\nAz űrlap tartalma megmaradt, javítsd és próbáld újra.');
+      return;
+    }
   }
   else{questions.push({...publicData,correct:nqCorrectOptVal,id:'q'+Date.now()});renderAll();}
   document.getElementById('nq-text').value='';
@@ -1065,13 +1086,20 @@ async function saveInlineEdit(id) {
   const time=parseInt(document.getElementById('ie-time').value);
   const type=document.getElementById('ie-type').value.trim() || DEFAULT_SUBTYPE;
   if(!text||opts.some(o=>!o)){alert('Töltsd ki az összes mezőt!');return;}
+  const limitProblem=questionLimitProblem(text,opts,cat,type);
+  if(limitProblem){alert('❌ A kérdés nem menthető: '+limitProblem+'.');return;}
   const existingQ=questions.find(x=>x.id===id);
   const num=existingQ?(existingQ.num||0):0;
   // Fázis 22: kettéválasztott írás — publikus mezők a questions, "correct" az answerKeys ágba.
   const publicData={text,options:opts,category:cat,type,time,num};
   if(db){
-    await roomRef.child('questions').child(id).set(publicData);
-    await roomRef.child('answerKeys').child(id).set({correct:inlineCorrectOpt});
+    try{
+      await roomRef.child('questions').child(id).set(publicData);
+      await roomRef.child('answerKeys').child(id).set({correct:inlineCorrectOpt});
+    }catch(e){
+      alert('❌ A mentés nem sikerült: '+(e&&e.message?e.message:e)+'\n\nA szerkesztő nyitva maradt, javítsd és próbáld újra.');
+      return;
+    }
   }
   else{const idx=questions.findIndex(q=>q.id===id);if(idx>=0)questions[idx]={...publicData,correct:inlineCorrectOpt,id};renderAll();}
   closeInlineEdit();
@@ -1413,15 +1441,22 @@ async function doImport() {
   const existingNums=new Set(questions.map(q=>q.num||0).filter(n=>n>0));
   const duplicates=[];
   let skippedCount=0;
+  const tooLong=[];
   const prepared=[];
   parsed.forEach(q=>{
     if(!q||!q.text||!q.options||q.options.length!==4){ skippedCount++; return; }
+    // FÁZIS 28 (F4): a szám típusú válaszlehetőség szöveggé alakul ("70" → "70"); minden más nem-szöveges elem kimarad,
+    // mert a Rules szöveget vár (és a játék közbeni megjelenítés is).
+    const optsNorm=Array.from(q.options,o=>typeof o==='number'?String(o):o);
+    if(typeof q.text!=='string'||optsNorm.some(o=>typeof o!=='string')){ skippedCount++; return; }
     const correctIdx=typeof q.correct==='number'?Math.max(0,Math.min(3,q.correct)):0;
     // FÁZIS 23: az importálás mostantól kizárólag Bibliai kategóriát feltételez —
     // "category" a JSON-ban csak kivételes esetre marad felülírható. A "type"
     // szabad szöveg, nincs többé enum-korlátozás/kényszerített kisbetűsítés.
-    const importCat = q.category || 'Bibliai';
+    const importCat = String(q.category || 'Bibliai').trim();
     const importType = (q.type==null?'':String(q.type)).trim() || DEFAULT_SUBTYPE;
+    const limitProblem = questionLimitProblem(q.text, optsNorm, importCat, importType);
+    if(limitProblem){ tooLong.push({text:q.text, why:limitProblem}); return; }
     let num;
     if(typeof q.num==='number' && q.num>0){
       if(existingNums.has(q.num)){
@@ -1437,19 +1472,19 @@ async function doImport() {
       existingNums.add(num);
     }
     // Fázis 22: importáláskor is kettéválasztva írunk — a "correct" az answerKeys ágba kerül.
-    const publicData={ text:q.text, options:q.options, category:importCat, type:importType, time:q.time||30, num };
+    const publicData={ text:q.text, options:optsNorm, category:importCat, type:importType, time:q.time||30, num };
     prepared.push({ publicData, correctIdx });
   });
 
   if(prepared.length===0){
-    alert('❌ Egyik elem sem importálható (mindegyiknél hiányzik a szöveg, vagy nem pontosan 4 opció van).');
+    alert('❌ Egyik elem sem importálható (hiányzik a szöveg, nem pontosan 4 szöveges opció van'+(tooLong.length?', vagy túllépi a hosszkorlátot — '+tooLong.length+' elem':'')+').');
     return;
   }
 
   if(!db){
     prepared.forEach(p=>questions.push({...p.publicData, correct:p.correctIdx, id:'q'+Date.now()+'_'+Math.random().toString(36).substr(2,4)}));
     renderAll();
-    finishImportUI(prepared.length, duplicates, skippedCount, []);
+    finishImportUI(prepared.length, duplicates, skippedCount, [], tooLong);
     return;
   }
 
@@ -1480,10 +1515,10 @@ async function doImport() {
   if(btn){ btn.disabled=false; btn.textContent='⬆ Importálás'; }
   if(cancelBtn) cancelBtn.disabled=false;
 
-  finishImportUI(done, duplicates, skippedCount, failedRanges);
+  finishImportUI(done, duplicates, skippedCount, failedRanges, tooLong);
 }
 
-function finishImportUI(count, duplicates, skippedCount, failedRanges) {
+function finishImportUI(count, duplicates, skippedCount, failedRanges, tooLong) {
   document.getElementById('import-modal').classList.add('hidden');
   let msg = `✅ ${count} kérdés importálva.`;
   if(duplicates.length>0){
@@ -1493,7 +1528,12 @@ function finishImportUI(count, duplicates, skippedCount, failedRanges) {
     if(duplicates.length>shown.length) msg += `\n  ...és még ${duplicates.length-shown.length} további.`;
   }
   if(skippedCount>0){
-    msg += `\n\n⚠️ ${skippedCount} elem kimaradt (hiányzó szöveg, vagy nem pontosan 4 válaszlehetőség).`;
+    msg += `\n\n⚠️ ${skippedCount} elem kimaradt (hiányzó szöveg, nem pontosan 4 válaszlehetőség, vagy nem szöveges tartalom).`;
+  }
+  if(tooLong && tooLong.length>0){
+    const shownTL=tooLong.slice(0,5).map(x=>`  "${x.text.substring(0,40)}${x.text.length>40?'…':''}" — ${x.why}`).join('\n');
+    msg += `\n\n⚠️ ${tooLong.length} elem kimaradt, mert túllépi a hosszkorlátot:\n${shownTL}`;
+    if(tooLong.length>5) msg += `\n  ...és még ${tooLong.length-5} további.`;
   }
   if(failedRanges && failedRanges.length>0){
     msg += `\n\n❌ ${failedRanges.length} köteg írása sikertelen (pl. hálózati hiba) — ezek NEM kerültek be:\n` +
@@ -1601,7 +1641,7 @@ async function migrateAnswerKeys() {
 initFirebase();
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.17</div>
+<div class="version-badge">Admin panel verzió: 3.18</div>
 
 <script>
 // ============================================================

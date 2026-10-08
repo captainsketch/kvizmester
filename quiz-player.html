@@ -730,7 +730,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.22</div><div><div class="cl-desc">Ha a szoba irányítója kilépett vagy megszakadt a kapcsolata, a játék többé nem ragad be: érthető üzenetet kapsz, a félbemaradt játék eredménye pedig megmarad az Eredményeim képernyőn. Emellett javítva egy ritka hiba, amely miatt egy helyes válasz hibásként jelenhetett meg a felfedéskor.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.23</div><div><div class="cl-desc">Gyorsabb szobához csatlakozás: a játék már nem tölti le feleslegesen a szoba összes kérdését. Javítva egy hiba, amely miatt a fiók törlése félúton elakadhatott, és törléskor a fiókhoz kötött naplóbejegyzések is eltűnnek. Emellett több belső finomítás készült.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.22</div><div><div class="cl-desc">Ha a szoba irányítója kilépett vagy megszakadt a kapcsolata, a játék többé nem ragad be: érthető üzenetet kapsz, a félbemaradt játék eredménye pedig megmarad az Eredményeim képernyőn. Emellett javítva egy ritka hiba, amely miatt egy helyes válasz hibásként jelenhetett meg a felfedéskor.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.21</div><div><div class="cl-desc">Belső biztonsági finomítás a pontozás és a válaszküldés folyamatában. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.20</div><div><div class="cl-desc">Belső biztonsági finomítás a kérdés- és válaszmegjelenítésben. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.19</div><div><div class="cl-desc">Az Új szoba képernyőn egy témakör kiválasztása után — ha annak van több alkategóriája is (pl. Bibliai alatt egy adott korszak) — megjelenik egy alkategória-választó is, hogy szűkebb kérdéskörből is játszhass.</div></div></div>
@@ -1126,7 +1127,9 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
 let db = null, roomRef = null, roomCode = '', playerId = '', playerName = '';
 let myScore = 0, myColor = '', currentQIndex = -1, hasAnswered = false;
 let timerInterval = null, timerValue = 30, totalTime = 30;
-let questions = [], players = {};
+// FÁZIS 28 (F3): a kérdések listáját a játékos többé nem tölti le (a Rules csak a szoba irányítójának engedi) —
+// a kérdések számát a gameState.questionCount hordozza (a progress-pontokhoz).
+let totalQuestions = 0, players = {};
 let answeredNamesThisRound = new Set();
 const LETTERS = ['A','B','C','D'];
 const COLORS = ['#f0c040','#e05a2b','#3ecf8e','#5a8fe0','#c05ae0','#e05a8f','#5ae0d4','#e0c05a'];
@@ -1916,11 +1919,18 @@ async function confirmDeleteAccount() {
   try {
     const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, pw);
     await currentUser.reauthenticateWithCredential(cred);
-    // Adatbázis-rekord törlése ELŐBB, amíg még hitelesítve vagyunk ezzel a fiókkal -
-    // utána töröljük magát az Auth-fiókot is (utána már nem tudnánk írni a DB-be).
-    await firebase.database().ref('users/' + currentUser.uid).remove();
-    await firebase.database().ref('publicProfiles/' + currentUser.uid).remove();
-    removeMyPresence();
+    const uid = currentUser.uid;
+    // FÁZIS 28 (N8/Ké3): a NEM kritikus takarítás előbb fut, amíg a fiók még jóváhagyott (a Rules ehhez köti az írásokat),
+    // és egyik lépés hibája sem akaszthatja meg a törlést. Korábban a publicProfiles törlése a users rekord ELTÁVOLÍTÁSA
+    // UTÁN bukott el (permission_denied), és a fiók félúton ragadt: regisztrációs adat nélkül, de működő Auth-fiókkal.
+    const bestEffort = async (label, fn) => {
+      try { await fn(); } catch (e) { console.warn('[QuizMaster] fióktörlés — nem kritikus lépés sikertelen (' + label + '):', e && e.message ? e.message : e); }
+    };
+    await bestEffort('jelenlét', () => presenceRef ? presenceRef.remove() : null);
+    await bestEffort('belépési napló', () => firebase.database().ref('adminLoginLog/rejected/' + uid).remove());
+    await bestEffort('nyilvános profil', () => firebase.database().ref('publicProfiles/' + uid).remove());
+    // Kritikus lépések: a regisztrációs rekord, majd maga az Auth-fiók (utána már nem tudnánk írni a DB-be).
+    await firebase.database().ref('users/' + uid).remove();
     stopPresenceConnectedListener();
     presenceRef = null;
     cleanupInviteState();
@@ -2524,6 +2534,7 @@ function setupListeners() {
 
     // Játékmód beállítása minden state változáskor
     gameMode = state.mode === 'teams' ? 'teams' : 'normal';
+    if (typeof state.questionCount === 'number') totalQuestions = state.questionCount;
     updateGameModeUI();
     lastRoomPhase = state.phase;
 
@@ -2658,10 +2669,6 @@ function setupListeners() {
     }
   });
 
-  roomRef.child('questions').once('value', snap => {
-    questions = Object.values(snap.val() || {});
-    updateProgress();
-  });
 }
 
 // ── UI FÜGGVÉNYEK ─────────────────────────────────────────────
@@ -3306,7 +3313,7 @@ function backToMenu() {
   // database_rules.json) tovább élne egy már elhagyott szobára hivatkozva.
   clearActiveHost();
   hasAnswered = false; myScore = 0; currentQIndex = -1;
-  players = {}; questions = []; answeredNamesThisRound = new Set();
+  players = {}; totalQuestions = 0; answeredNamesThisRound = new Set();
   myQuestionHistory = []; pendingQuestion = null;
   myPlayerStatus = 'lobby';
   hostReadyForRejoin = false;
@@ -3556,7 +3563,8 @@ async function confirmCreateRoom() {
       phase: 'waiting',
       mode: hostGameMode,
       topicLabel: hostRoomTopicLabel,
-      hostName: playerName
+      hostName: playerName,
+      questionCount: selected.length
     });
 
     // Nyilvános szoba-index bejegyzés — csak nem-titkos mezőket tartalmaz, hogy a
@@ -3681,6 +3689,7 @@ async function connectAsPlayerToRoom(code) {
     roomRef.child('answered').off();
   }
   resetHostLossMonitor();
+  totalQuestions = 0;
   roomCode = code;
   if (!db) db = firebase.database();
   roomRef = db.ref('rooms/' + roomCode);
@@ -4066,6 +4075,7 @@ function hostNextQuestion() {
     question: { text: q.text, options: q.options, category: q.category, type: q.type || 'egyéb', time: q.time || 30, num: q.num || 0 },
     topicLabel: hostRoomTopicLabel,
     hostName: playerName,
+    questionCount: hostQuestionsPool.length,
     startTime: firebase.database.ServerValue.TIMESTAMP
   };
 
@@ -4224,7 +4234,7 @@ async function hostStartNewRound() {
     // Friss kérdés-minta húzása ugyanabból a témakörből és ugyanannyi
     // kérdéssel, amivel a szoba eredetileg indult — hogy ne pontosan
     // ugyanazokat a kérdéseket kapják vissza a játékosok, mint az előző körben.
-    const desiredCount = hostQuestionsPool.length || questions.length || 10;
+    const desiredCount = hostQuestionsPool.length || totalQuestions || 10;
     let pool = [];
     try {
       // A teljes bankot a getQuestionBank() cache-elt helperen keresztül kérjük —
@@ -4319,7 +4329,8 @@ async function hostStartNewRound() {
       phase: 'waiting',
       mode: hostGameMode,
       topicLabel: hostRoomTopicLabel,
-      hostName: playerName
+      hostName: playerName,
+      questionCount: selected.length
     });
 
     // A szoba ismét bekerül a "Csatlakozás szobához" listába — enélkül a
@@ -4419,7 +4430,7 @@ function updateRank() {
 }
 
 function updateProgress(currentIdx) {
-  const total = questions.length || 10;
+  const total = totalQuestions || 10;
   document.getElementById('progress-dots').innerHTML = Array.from({length: total}, (_,i) => {
     let cls = 'prog-dot';
     if (currentIdx !== undefined) {
@@ -4632,7 +4643,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.22</div>
+<div class="version-badge">Játék verzió: 3.23</div>
 
 </body>
 </html>
