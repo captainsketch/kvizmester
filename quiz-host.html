@@ -9,7 +9,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root {
     --bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c28;--border:#2a2a3d;
@@ -150,6 +149,10 @@
     opacity:0.6;
   }
 
+
+  /* ── TÖMEGES MŰVELET HALADÁSA (Fázis 29, F2) ───────────── */
+  .bulk-bar{height:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:6px 0 12px;}
+  .bulk-bar-fill{height:100%;width:0%;background:var(--accent);transition:width 0.15s linear;}
 
   /* ── PANEL TABS ─────────────────────────────────────────── */
   .panel-tabs { display:flex; border-bottom:1px solid var(--border); flex-shrink:0; background:var(--surface); }
@@ -330,6 +333,15 @@
   </div>
 </div>
 
+<!-- TÖMEGES MŰVELET HALADÁSA (Fázis 29, F2) — szándékosan nincs bezáró gomb: a művelet alatt a lista nem szerkeszthető -->
+<div class="modal-overlay hidden" id="bulk-progress-overlay">
+  <div class="modal" style="max-width:420px;text-align:center;">
+    <h3 id="bulk-progress-title">—</h3>
+    <div class="bulk-bar"><div class="bulk-bar-fill" id="bulk-progress-fill"></div></div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;" id="bulk-progress-text">—</p>
+  </div>
+</div>
+
 <!-- EXPORT MODAL -->
 <div class="modal-overlay hidden" id="export-modal">
   <div class="modal">
@@ -407,6 +419,11 @@ let questions=[];
 let selectedCat='all',selectedSubtype='all';
 let nqCorrectOptVal=0;
 let currentInlineEditId=null,inlineCorrectOpt=0;
+// FÁZIS 29 (F2): tömeges írás + összevont újrarajzolás (l. a "TÖMEGES ÍRÁS" szakaszt)
+const BULK_CHUNK=100;              // elem / köteg (egy elem = kérdés + válaszkulcs, kb. 2 útvonal)
+const RENDER_THROTTLE_MS=60;       // a figyelők által kért újrarajzolások legfeljebb ennyi időnként egyszer futnak
+let BULK_TIMEOUT_MS=20000;         // egy köteg visszaigazolására várt idő (offline-ban a Firebase update() ígérete nem teljesül)
+let bulkBusy=false,renderTimer=null,renderWanted=false;
 
 // ============================================================
 // FIREBASE
@@ -931,7 +948,7 @@ function rebuildQuestionsFromCache() {
     // esetén egyszerűen a DEFAULT_SUBTYPE ("Vegyes") az alapérték.
     return { ...q, id, correct, type: q.type || DEFAULT_SUBTYPE };
   });
-  renderAll();
+  scheduleRender();
 }
 
 function setQuestionsLoadError(msg) {
@@ -1115,35 +1132,122 @@ function closeInlineEdit() {
 // ============================================================
 // DELETE
 // ============================================================
+// ── TÖMEGES ÍRÁS (FÁZIS 29, F2) ───────────────────────────────
+// GYÖKÉROK (a valódi Firebase JS SDK-n mérve): minden HELYI írás azonnal egy 'value' eseményt küld a két élő figyelőnek
+// (questions, answerKeys), és mindkettő teljes újrarajzolást (renderAll) indít — 800 kérdés törlése korábban 1600 eseményt, vagyis
+// 1600 teljes újrarajzolást jelentett (négyzetes költség), ettől fagyott le a felület. Javítás:
+//  1) a tömeges műveletek KÖTEGELT, atomi multi-path update()-tel futnak (BULK_CHUNK elem / köteg; a kérdés és a válaszkulcsa együtt íródik),
+//  2) közben a lista újrarajzolása szünetel, a végén egyszer fut (bulkBusy),
+//  3) a figyelők újrarajzolás-kérései összevontak (scheduleRender: legfeljebb RENDER_THROTTLE_MS-onként egy),
+//  4) élő haladás-jelzés + időkorlát (offline-ban az update() ígérete nem teljesül, a felület nem ragadhat be), és egyszerre csak egy tömeges művelet futhat.
+function scheduleRender() {
+  renderWanted=true;
+  if(bulkBusy||renderTimer)return;
+  renderTimer=setTimeout(()=>{
+    renderTimer=null;
+    if(renderWanted&&!bulkBusy){renderWanted=false;renderAll();}
+  },RENDER_THROTTLE_MS);
+}
+function bulkGuard() {
+  if(!bulkBusy)return true;
+  alert('Már fut egy tömeges művelet — várd meg, amíg befejeződik.');
+  return false;
+}
+function showBulkProgress(title,total) {
+  document.getElementById('bulk-progress-title').textContent=title;
+  document.getElementById('bulk-progress-fill').style.width='0%';
+  document.getElementById('bulk-progress-text').textContent='0 / '+total;
+  document.getElementById('bulk-progress-overlay').classList.remove('hidden');
+}
+function updateBulkProgress(done,processed,total) {
+  document.getElementById('bulk-progress-fill').style.width=(total?Math.round(processed/total*100):100)+'%';
+  document.getElementById('bulk-progress-text').textContent=done+' / '+total;
+}
+function hideBulkProgress() {
+  document.getElementById('bulk-progress-overlay').classList.add('hidden');
+}
+function withTimeout(promise,ms) {
+  let t;
+  const timeout=new Promise((_,reject)=>{t=setTimeout(()=>reject(Object.assign(new Error('nem érkezett visszaigazolás '+Math.round(ms/1000)+' mp-en belül'),{code:'bulk/timeout'})),ms);});
+  return Promise.race([promise,timeout]).finally(()=>clearTimeout(t));
+}
+// items: az érintett elemek; fillUpdate(elem, upd): kitölti a multi-path update útvonalait. Visszatérés: {total,done,failed[],aborted}, vagy null ha már fut egy másik művelet.
+async function runBulkUpdates(title,items,fillUpdate) {
+  if(!bulkGuard())return null;
+  bulkBusy=true;
+  closeInlineEdit();
+  const total=items.length;
+  const res={total,done:0,failed:[],aborted:null};
+  let processed=0;
+  showBulkProgress(title,total);
+  try{
+    for(let i=0;i<total;i+=BULK_CHUNK){
+      const chunk=items.slice(i,i+BULK_CHUNK);
+      const upd={};
+      chunk.forEach(it=>fillUpdate(it,upd));
+      try{
+        await withTimeout(roomRef.update(upd),BULK_TIMEOUT_MS);
+        res.done+=chunk.length;
+      }catch(e){
+        const timedOut=!!(e&&e.code==='bulk/timeout');
+        const denied=!!(e&&/permission_denied/i.test((e.code||'')+' '+(e.message||'')));
+        res.failed.push({from:i+1,to:i+chunk.length,error:(e&&e.message)?e.message:String(e)});
+        // időtúllépésnél (megszakadt kapcsolat) és jogosultsági hibánál a többi köteg sem járna sikerrel — nem folytatjuk
+        if(timedOut||denied){res.aborted=timedOut?'timeout':'denied';break;}
+      }
+      processed+=chunk.length;
+      updateBulkProgress(res.done,processed,total);
+    }
+  }finally{
+    bulkBusy=false;
+    hideBulkProgress();
+    renderWanted=false;
+    renderAll();   // egyetlen, végső újrarajzolás
+  }
+  return res;
+}
+function reportBulkResult(what,res) {
+  if(!res||res.failed.length===0)return;
+  let msg=`⚠️ A ${what} nem futott le teljesen: ${res.done} / ${res.total} elem sikerült.`;
+  if(res.aborted==='timeout')msg+=`\n\nA szerver ${Math.round(BULK_TIMEOUT_MS/1000)} mp-en belül nem igazolt vissza — valószínűleg megszakadt a kapcsolat. A többi elemmel nem folytattam; a már elküldött kötegek a kapcsolat visszatértekor még érvényesülhetnek.`;
+  else if(res.aborted==='denied')msg+='\n\nA szerver jogosultsági hibát jelzett (nincs admin-jogosultság, vagy a Rules nincs publikálva) — a művelet leállt.';
+  else msg+='\n\n'+res.failed.slice(0,5).map(f=>`  ${f.from}–${f.to}. elem: ${f.error}`).join('\n')+(res.failed.length>5?`\n  ...és még ${res.failed.length-5} köteg.`:'');
+  msg+='\n\nA művelet biztonságosan megismételhető — a már elkészült részt nem érinti.';
+  alert(msg);
+}
+async function bulkDeleteQuestions(title,what,toDelete) {
+  if(toDelete.length===0)return;
+  const res=await runBulkUpdates(title,toDelete.map(q=>q.id),(id,upd)=>{upd['questions/'+id]=null;upd['answerKeys/'+id]=null;});
+  reportBulkResult(what,res);
+}
+
 function deleteQuestion(id) {
   if(!confirm('Törlöd ezt a kérdést?'))return;
   closeInlineEdit();
-  if(db){roomRef.child('questions').child(id).remove();roomRef.child('answerKeys').child(id).remove();}
-  else{questions=questions.filter(q=>q.id!==id);renderAll();}
+  // A kérdés és a válaszkulcsa EGYETLEN, atomi írással törlődik (korábban két külön írás: a másodiknak a hibája árva kulcsot hagyhatott).
+  const upd={};upd['questions/'+id]=null;upd['answerKeys/'+id]=null;
+  roomRef.update(upd).catch(e=>alert('❌ A törlés nem sikerült: '+(e&&e.message?e.message:e)));
 }
 function deleteAllQuestions() {
+  if(!bulkGuard())return;
   if(!confirm('Biztosan törlöd AZ ÖSSZES kérdést? Ez nem visszavonható!'))return;
   closeInlineEdit();
-  if(db){roomRef.child('questions').remove();roomRef.child('answerKeys').remove();}
-  else{questions=[];renderAll();}
+  // Egyetlen, atomi írás (korábban kettő) — mérettől függetlenül egyetlen esemény a figyelőkön.
+  roomRef.update({questions:null,answerKeys:null}).catch(e=>alert('❌ A törlés nem sikerült: '+(e&&e.message?e.message:e)));
 }
-function deleteCategoryQuestions(cat) {
+async function deleteCategoryQuestions(cat) {
+  if(!bulkGuard())return;
   if(!confirm(`Törlöd az összes "${cat}" kategóriájú kérdést?`))return;
-  closeInlineEdit();
-  const toDelete=questions.filter(q=>q.category===cat);
-  if(db){toDelete.forEach(q=>{roomRef.child('questions').child(q.id).remove();roomRef.child('answerKeys').child(q.id).remove();});}
-  else{questions=questions.filter(q=>q.category!==cat);renderAll();}
+  await bulkDeleteQuestions(`„${cat}” kategória törlése`,'törlés',questions.filter(q=>q.category===cat));
 }
 // FÁZIS 23: "type" paraméterként mostantól a NORMALIZÁLT alkategória-kulcsot (l.
 // subtypeKey()) kapják — ez case-insensitive egyezteti pl. "vers"-t és "Vers"-t,
 // hogy ne maradjon ki egyetlen, eltérő írásmóddal mentett kérdés sem.
-function deleteSubtypeQuestions(cat,typeKey) {
+async function deleteSubtypeQuestions(cat,typeKey) {
+  if(!bulkGuard())return;
   const label=subtypeLabel(typeKey);
   if(!confirm(`Törlöd az összes "${cat} — ${label}" alkategóriájú kérdést?`))return;
-  closeInlineEdit();
-  const toDelete=questions.filter(q=>q.category===cat&&subtypeKey(q.type)===typeKey);
-  if(db){toDelete.forEach(q=>{roomRef.child('questions').child(q.id).remove();roomRef.child('answerKeys').child(q.id).remove();});}
-  else{questions=questions.filter(q=>!(q.category===cat&&subtypeKey(q.type)===typeKey));renderAll();}
+  await bulkDeleteQuestions(`„${cat} — ${label}” alkategória törlése`,'törlés',questions.filter(q=>q.category===cat&&subtypeKey(q.type)===typeKey));
 }
 function exportSubtype(cat,typeKey) {
   const filtered=questions.filter(q=>q.category===cat&&subtypeKey(q.type)===typeKey);
@@ -1157,7 +1261,12 @@ function exportSubtype(cat,typeKey) {
 function filterCat(cat) {selectedCat=cat;selectedSubtype='all';renderAll();}
 function filterSubtype(sub) {selectedSubtype=sub;renderAll();}
 
+function normalizeSelection() {
+  if(selectedCat!=='all'&&!questions.some(q=>q.category===selectedCat)){selectedCat='all';selectedSubtype='all';}
+  if(selectedSubtype!=='all'&&!questions.some(q=>(selectedCat==='all'||q.category===selectedCat)&&subtypeKey(q.type)===selectedSubtype))selectedSubtype='all';
+}
 function renderAll() {
+  normalizeSelection();
   renderCatTree();
   renderQuestions();
   renderSubtypeDatalist();
@@ -1548,33 +1657,32 @@ function finishImportUI(count, duplicates, skippedCount, failedRanges, tooLong) 
 // ============================================================
 // SORSZÁMOZÁS
 // ============================================================
-function renumberAllQuestions() {
+async function renumberAllQuestions() {
   if(questions.length===0){alert('Nincs kérdés a rendszerben!');return;}
+  if(!bulkGuard())return;
   const noNum=questions.filter(q=>!q.num||q.num===0).length;
   const msg=noNum>0
     ?`${noNum} kérdésnek nincs sorszáma.\nSorszámozás: az összes sorszám nélküli kérdés sorszámot kap (a meglévő sorszámok megmaradnak).\n\nFolytassuk?`
     :'Minden kérdésnek van már sorszáma.\nÚjraszámozást végzel? (az összes sorszám felülíródik 1-től)\n\nFolytassuk?';
   if(!confirm(msg))return;
-  // Rendezés: meglévő num szerint, utána num nélküliek
+  // A célsorszámok EGYSZER, írás nélkül számolódnak ki (a megjelenített lista közben nem módosul); csak a ténylegesen változók íródnak.
   const withNum=questions.filter(q=>q.num&&q.num>0).sort((a,b)=>a.num-b.num);
   const withoutNum=questions.filter(q=>!q.num||q.num===0);
-  let counter=withNum.length>0?withNum[withNum.length-1].num+1:1;
+  let targets;
   if(noNum===0){
     // Teljes újraszámozás
-    counter=1;
-    questions.sort((a,b)=>(a.num||0)-(b.num||0)).forEach(q=>{
-      q.num=counter++;
-      if(db)roomRef.child('questions').child(q.id).child('num').set(q.num);
-    });
+    targets=questions.slice().sort((a,b)=>(a.num||0)-(b.num||0)).map((q,i)=>({id:q.id,num:i+1,cur:q.num}));
   } else {
     // Csak a hiányzókat töltjük ki
-    withoutNum.forEach(q=>{
-      q.num=counter++;
-      if(db)roomRef.child('questions').child(q.id).child('num').set(q.num);
-    });
+    let counter=withNum.length>0?withNum[withNum.length-1].num+1:1;
+    targets=withoutNum.map(q=>({id:q.id,num:counter++,cur:q.num}));
   }
-  if(!db)renderAll();
-  alert(`✅ Sorszámozás kész! ${noNum===0?questions.length+' kérdés újraszámozva':withoutNum.length+' kérdés kapott sorszámot.'}`);
+  targets=targets.filter(t=>t.num!==t.cur);
+  if(targets.length===0){alert('✅ A sorszámozás már rendben van — nincs mit módosítani.');return;}
+  const res=await runBulkUpdates('Sorszámozás',targets,(t,upd)=>{upd['questions/'+t.id+'/num']=t.num;});
+  if(!res)return;
+  if(res.failed.length>0)reportBulkResult('sorszámozás',res);
+  else alert(`✅ Sorszámozás kész! ${res.done} kérdés kapott új sorszámot.`);
 }
 
 // ============================================================
@@ -1641,7 +1749,7 @@ async function migrateAnswerKeys() {
 initFirebase();
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.18</div>
+<div class="version-badge">Admin panel verzió: 3.19</div>
 
 <script>
 // ============================================================
