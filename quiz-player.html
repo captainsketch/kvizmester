@@ -730,7 +730,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.23</div><div><div class="cl-desc">Gyorsabb szobához csatlakozás: a játék már nem tölti le feleslegesen a szoba összes kérdését. Javítva egy hiba, amely miatt a fiók törlése félúton elakadhatott, és törléskor a fiókhoz kötött naplóbejegyzések is eltűnnek. Emellett több belső finomítás készült.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.24</div><div><div class="cl-desc">Ha a kapcsolatod megszakad, majd visszatér, a váróteremben automatikusan visszakerülsz a szobába; játék közben érthető üzenetet kapsz, és az eddigi eredményed megmarad az Eredményeim képernyőn. Emellett pontosabb lett az Online játékosok listán a „Játékban” jelzés.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.23</div><div><div class="cl-desc">Gyorsabb szobához csatlakozás: a játék már nem tölti le feleslegesen a szoba összes kérdését. Javítva egy hiba, amely miatt a fiók törlése félúton elakadhatott, és törléskor a fiókhoz kötött naplóbejegyzések is eltűnnek. Emellett több belső finomítás készült.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.22</div><div><div class="cl-desc">Ha a szoba irányítója kilépett vagy megszakadt a kapcsolata, a játék többé nem ragad be: érthető üzenetet kapsz, a félbemaradt játék eredménye pedig megmarad az Eredményeim képernyőn. Emellett javítva egy ritka hiba, amely miatt egy helyes válasz hibásként jelenhetett meg a felfedéskor.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.21</div><div><div class="cl-desc">Belső biztonsági finomítás a pontozás és a válaszküldés folyamatában. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.20</div><div><div class="cl-desc">Belső biztonsági finomítás a kérdés- és válaszmegjelenítésben. A játékmenetet ez a frissítés nem érinti.</div></div></div>
@@ -1378,6 +1379,22 @@ const HOST_LOSS_GRACE_MS = 10000;
 const MSG_ROOM_GONE = 'A szoba irányítója kilépett vagy megszakadt a kapcsolata, ezért a szoba megszűnt. Nyiss egy újat, vagy csatlakozz egy másikhoz!';
 const MSG_HOST_SELF_LOST = 'A kapcsolatod megszakadt, ezért a szobád megszűnt. Hozz létre egy újat!';
 
+// ── A SAJÁT CSOMÓPONT ELVESZTÉSE ÉS A JELENLÉT (F7-A + F8, v3.24) ────────────────────────────────────────────
+// Háttér: a szerver a kapcsolat megszakadásakor lefuttatja a játékos players/{uid}-jára regisztrált onDisconnect().remove()-ot — és az SDK az
+// onDisconnect-ek helyi gyorsítótárát is kiüríti, a szerver-oldali regisztráció pedig a kapcsolattal együtt megszűnik. Újracsatlakozáskor
+// ezért MINDEN kapcsolathoz kötött állapotot újra kell fegyverezni (a Firebase hivatalos presence-mintája is így tesz), különben (1) a csomópont
+// hiányzik a szobából ("szellem"), (2) a későbbi, valódi kilépés már nem törli (az F1 alapfeltevése csendben megszűnik).
+// A "döntés" (öngyógyítás / puha kiesés) szándékosan csak: online állapotban, a türelmi idő lejárta után, és csak akkor, ha a játékos már látta magát a listában.
+const SELF_LOSS_GRACE_MS = 3000;
+let inRoom = false;                  // igaz, amíg a saját players/{uid} csomópontunkat a szobában tudjuk (connectAsPlayerToRoom után, backToMenu-ig)
+let isConnected = false;             // a '.info/connected' utolsó értéke
+let lastKnownPlayerStatus = 'lobby'; // a saját csomópont utolsó NEM üres státusza (a myPlayerStatus a törléskor 'lobby'-ra billen)
+let selfSeenInPlayers = false;       // láttuk-e már magunkat a players listában (csatlakozás közben a hiány még nem veszteség)
+let selfLossTimer = null;            // a türelmi idő számlálója (a csomópontunk hiányzik, de még nem döntöttünk)
+let selfDropped = false;             // megerősített, "puha" kiesés: játék közben a csomópont nem hozható vissza (a Rules csak waiting fázisban engedi)
+let selfHealInFlight = false;        // a váróteremi visszaírás úton van
+let desiredPresence = 'menu';        // F8: az óhajtott jelenlét ('menu' | 'playing') — az újracsatlakozás ezt írja vissza, nem egy rögzített értéket
+
 // ── KÉPERNYŐ VÁLTÁS ──────────────────────────────────────────
 function hideAll() {
   ['auth-screen','pending-screen','rejected-screen','gyulekezet-gate-screen',
@@ -1566,29 +1583,23 @@ function initPresenceSystem(uid) {
   presenceRef = firebase.database().ref('presence/' + uid);
   connectedRef = firebase.database().ref('.info/connected');
   connectedCallback = snap => {
-    if (snap.val() === true) {
-      presenceRef.onDisconnect().remove().then(() => {
-        updateMyPresence('menu');
-      });
-      // 13. fázis: ha ÉPP AKTÍVAN hosztolunk egy szobát, az activeHosts
-      // bejegyzést (és annak onDisconnect-jét) is újra kell regisztrálni
-      // MINDEN (újra)csatlakozáskor — pontosan ugyanazon okból, mint a fenti
-      // presence-onDisconnect-nél: egy kapcsolat-megszakadás ezt is törli.
-      // Az amIRoomHost/roomCode itt mindig a HÍVÁS PILLANATÁBAN aktuális
-      // értéket tükrözi (záró változók, nem a regisztráláskori pillanatképet).
-      if (amIRoomHost && roomCode) {
-        registerActiveHost(roomCode);
-      }
-    }
+    isConnected = snap.val() === true;
+    if (isConnected) rearmConnectionBoundState();
   };
   connectedRef.on('value', connectedCallback);
 }
 
 // Könnyű súlyú állapot-frissítés — az onDisconnect-et NEM regisztrálja újra,
 // csak az aktuális "state" mezőt írja át (belépés főmenübe / szobába).
-function updateMyPresence(state) {
+// F8 (v3.24): az óhajtott állapotot a desiredPresence őrzi, így egy újracsatlakozás (.info/connected) nem
+// billenti 'menu'-re a szobában lévő játékost — korábban egy hálózati kimaradás után a játékban lévő is "Elérhető"-nek látszott.
+function writeMyPresence(state) {
   if (!presenceRef) return;
   presenceRef.set({ state, lastChanged: firebase.database.ServerValue.TIMESTAMP }).catch(() => {});
+}
+function updateMyPresence(state) {
+  desiredPresence = state;
+  writeMyPresence(state);
 }
 
 // Explicit eltávolítás kijelentkezéskor / fiók törlésekor — nem várjuk meg
@@ -1610,12 +1621,14 @@ function stopPresenceConnectedListener() {
   }
   connectedRef = null;
   connectedCallback = null;
+  isConnected = false;
 }
 
 function doLogout() {
   removeMyPresence();
   stopPresenceConnectedListener();
   presenceRef = null;
+  desiredPresence = 'menu';
   cleanupInviteState();
   publicProfileCache = {};
   clearActiveHost();
@@ -1933,6 +1946,7 @@ async function confirmDeleteAccount() {
     await firebase.database().ref('users/' + uid).remove();
     stopPresenceConnectedListener();
     presenceRef = null;
+    desiredPresence = 'menu';
     cleanupInviteState();
     publicProfileCache = {};
     clearActiveHost();
@@ -2514,6 +2528,7 @@ function setupListeners() {
   roomRef.child('players').child(playerId).child('status').on('value', snap => {
     const status = snap.val();
     myPlayerStatus = status || 'lobby';
+    if (status) lastKnownPlayerStatus = status;   // F7: a törléskor ('lobby'-ra billenő myPlayerStatus helyett) ebből írjuk vissza a státuszt
     if (status === 'active') {
       const lobbyVisible = document.getElementById('lobby-screen').style.display !== 'none';
       if (lobbyVisible) {
@@ -2590,7 +2605,10 @@ function setupListeners() {
 
   // Pontszám figyelése
   roomRef.child('players').child(playerId).child('score').on('value', snap => {
-    const newScore = snap.val() || 0;
+    // F7: a csomópont eltűnése (kapcsolat-szakadás, új kör) NEM nullázza a pontszámot — a kiesett játékos az eredmény képernyőn
+    // az utolsó ismert pontszámát látja. Az új körnél a returnToGame()/hostStartNewRound() explicit nulláz.
+    if (snap.val() === null) return;
+    const newScore = snap.val();
     if (newScore > myScore) {
       const diff = newScore - myScore;
       if (pendingQuestion) {
@@ -2617,6 +2635,7 @@ function setupListeners() {
       tsRefreshIfVisible();
     }
     checkHostPresence();
+    checkSelfPresence();
   });
 
   // Csapatok figyelése (team módban)
@@ -2922,9 +2941,10 @@ function showNormalResults() {
   document.getElementById('final-score').textContent = myScore;
   const sorted = Object.values(players).sort((a,b) => (b.score||0)-(a.score||0));
   const rank = sorted.findIndex(p => p.name === playerName) + 1;
-  document.getElementById('final-rank').innerHTML = 'Végső helyezés: <strong>#' + rank + '</strong>';
+  // F7: ha a saját csomópontunk hiányzik (kiesett játékos), nincs helyezés — "—" jelenik meg, nem "#0"
+  document.getElementById('final-rank').innerHTML = 'Végső helyezés: <strong>' + (rank > 0 ? '#' + rank : '—') + '</strong>';
   const emojis = ['🏆','🥈','🥉','🎖️','⭐'];
-  document.getElementById('result-emoji').textContent = emojis[Math.min(rank-1, emojis.length-1)];
+  document.getElementById('result-emoji').textContent = rank > 0 ? emojis[Math.min(rank-1, emojis.length-1)] : '🎮';
   const medals = ['🥇','🥈','🥉'];
   let sbHTML = '<h4>RANGLISTA</h4>';
   sbHTML += Object.values(players).sort((a,b)=>(b.score||0)-(a.score||0)).map((p, i) => `
@@ -3143,6 +3163,11 @@ async function returnToGame() {
       rejoinData.teamId = myTeamId;
     }
     await roomRef.child('players').child(playerId).set(rejoinData);
+    // F7: a visszatérés új kezdet — a kiesett állapot megszűnik, a csomópont onDisconnect-je újra fegyverezve (korábban hiányzott)
+    clearSelfLossTimer();
+    selfDropped = false; selfSeenInPlayers = false;
+    armPlayerNodeOnDisconnect();
+    refreshHostLostUI();
 
     // Teljes state reset az új körre
     hasAnswered = false;
@@ -3280,6 +3305,10 @@ function refreshHostLostUI() {
         ? '⚠️ A játék idő előtt véget ért: a szoba irányítója kilépett vagy megszakadt a kapcsolata.'
         : '⚠️ A szoba irányítója kilépett vagy megszakadt a kapcsolata, ezért a szoba megszűnt.';
       note.classList.remove('hidden');
+    } else if (selfDropped && !amIRoomHost) {
+      // F7: a saját kiesés sávja (az irányító-vesztés felülírja, ha mindkettő igaz)
+      note.textContent = '⚠️ A kapcsolatod megszakadt, ezért kiestél a játékból.' + (myQuestionHistory.length > 0 ? ' Az eddigi eredményed az Eredményeim képernyőn látható.' : '');
+      note.classList.remove('hidden');
     } else {
       note.textContent = '';
       note.classList.add('hidden');
@@ -3288,8 +3317,95 @@ function refreshHostLostUI() {
   updateReturnToGameBtn();
 }
 
+// ── F7-A: a saját csomópont elvesztése ───────────────────────────────────────
+// A játékos players/{uid} csomópontjának onDisconnect().remove()-ja — EGY helyen, hogy minden belépési út (belépés, új kör, visszatérés, újracsatlakozás) ugyanazt tegye.
+function armPlayerNodeOnDisconnect() {
+  if (!roomRef || !playerId) return;
+  roomRef.child('players').child(playerId).onDisconnect().remove().catch(() => {});
+}
+// Minden (újra)csatlakozáskor lefut: a kapcsolattal együtt megszűnő szerver-oldali állapot újra-fegyverzése.
+function rearmConnectionBoundState() {
+  if (!presenceRef) return;
+  presenceRef.onDisconnect().remove().then(() => writeMyPresence(desiredPresence));
+  // 13. fázis: ha ÉPP AKTÍVAN hosztolunk egy szobát, az activeHosts bejegyzést (és annak onDisconnect-jét) is újra kell regisztrálni —
+  // egy kapcsolat-megszakadás ezt is törli. Az amIRoomHost/roomCode itt mindig a HÍVÁS PILLANATÁBAN aktuális érték (záró változók).
+  if (amIRoomHost && roomCode) registerActiveHost(roomCode);
+  if (inRoom && roomRef && playerId) {
+    armPlayerNodeOnDisconnect();
+    // az irányító nyilvános szobalista-bejegyzése is: a valódi kilépés ne hagyjon "szellem" szobát a listán (a nem létező útvonal törlése nem tesz kárt, ezért fázistól független)
+    if (amIRoomHost && db && roomCode) db.ref('roomIndex/' + roomCode).onDisconnect().remove().catch(() => {});
+  }
+  // az újracsatlakozás pillanatában a gyorsítótár még a helyben lefuttatott onDisconnect-et mutathatja: a türelmi idő ÚJRAindul, a szerver adata addig megérkezik
+  checkSelfPresence(true);
+}
+function screenVisible(id) { const el = document.getElementById(id); return !!el && el.style.display !== 'none'; }
+function clearSelfLossTimer() {
+  if (selfLossTimer) { clearTimeout(selfLossTimer); selfLossTimer = null; }
+}
+function resetSelfPresenceMonitor() {
+  clearSelfLossTimer();
+  selfSeenInPlayers = false; selfDropped = false; selfHealInFlight = false;
+  lastKnownPlayerStatus = 'lobby';
+}
+// A players-figyelőből és az újracsatlakozásból hívva. Csak egy türelmi időt indít/állít le — a döntés a confirmSelfLoss()-ban születik.
+// NEM cselekszik (a hiány ilyenkor nem bizonyítja a veszteséget):
+//  • nem vagyunk szobában / mi vagyunk az irányító (az F1 dolga) • még nem láttuk magunkat a listában (csatlakozás közben)
+//  • már megerősített kiesés • OFFLINE (a gyorsítótár helyben lefuttatta az onDisconnect-et, a szerver adata nem biztos)
+//  • eredmény / előzmények képernyő (az új kör törli a players-t — ott a hiány normális)
+function checkSelfPresence(restart) {
+  if (!inRoom || amIRoomHost || !playerId) { clearSelfLossTimer(); return; }
+  if (players && players[playerId]) { selfSeenInPlayers = true; clearSelfLossTimer(); return; }
+  if (!selfSeenInPlayers || selfDropped || !isConnected || screenVisible('result-screen') || screenVisible('history-screen')) { clearSelfLossTimer(); return; }
+  if (restart) clearSelfLossTimer();
+  if (selfLossTimer) return;
+  const codeAtStart = roomCode;
+  selfLossTimer = setTimeout(() => confirmSelfLoss(codeAtStart), SELF_LOSS_GRACE_MS);
+}
+async function confirmSelfLoss(code) {
+  selfLossTimer = null;
+  // a helyzet a türelmi idő alatt megváltozhatott: minden kaput újra ellenőrzünk (a megerősítés a figyelt ág gyorsítótárából szolgál ki — "még mindig csatlakozott és még mindig hiányzik")
+  if (code !== roomCode || !inRoom || amIRoomHost || selfDropped || !isConnected || !selfSeenInPlayers) return;
+  if (players && players[playerId]) return;
+  if (screenVisible('result-screen') || screenVisible('history-screen')) return;
+  // váróterem / várakozó képernyő + nyitott (waiting) szoba: csendes visszaírás; minden más: puha kiesés (a Rules játék közben nem engedi a csomópont létrehozását)
+  if (lastRoomPhase === 'waiting' && (screenVisible('lobby-screen') || screenVisible('waiting-screen'))) { await healSelfNode(code); return; }
+  handleSelfDrop();
+}
+async function healSelfNode(code) {
+  if (selfHealInFlight) return;
+  selfHealInFlight = true;
+  const data = { name: playerName, score: 0, color: myColor, status: lastKnownPlayerStatus === 'active' ? 'active' : 'lobby', joinedAt: firebase.database.ServerValue.TIMESTAMP };
+  // a teamId csak akkor kerülhet vissza, ha még tagja vagyunk a csapatnak (a Rules a members-bejegyzéshez köti)
+  const myTeam = myTeamId && teamScores[myTeamId];
+  if (gameMode === 'teams' && myTeam && myTeam.members && myTeam.members[playerId] === true) data.teamId = myTeamId;
+  const ref = roomRef;
+  try {
+    await ref.child('players').child(playerId).set(data);
+  } catch (e) {
+    selfHealInFlight = false;
+    if (code === roomCode && inRoom) handleSelfDrop();   // közben elindult a kör — a Rules elutasította
+    return;
+  }
+  selfHealInFlight = false;
+  if (code !== roomCode || !inRoom) return;
+  armPlayerNodeOnDisconnect();
+}
+// A megerősített, nem visszaírható hiány kezelése: eredmény képernyő (a félbemaradt kör állása és az "Eredményeim" megmarad), érthető sáv.
+// (a showResults() maga állítja le a kérdés visszaszámlálóját)
+// A "Vissza a játékba" a következő körnél (waiting fázis) a meglévő útvonalon aktiválódik.
+function handleSelfDrop() {
+  if (selfDropped || !inRoom || amIRoomHost) return;
+  selfDropped = true;
+  clearSelfLossTimer();
+  pendingQuestion = null;   // a félbemaradt kérdés nem zárult le — nem kerül az előzménybe (F1 minta)
+  showResults();
+  refreshHostLostUI();
+}
+
 function backToMenu() {
   stopTimer();
+  inRoom = false;
+  resetSelfPresenceMonitor();
   resetHostLossMonitor();
   if (roomRef) {
     roomRef.child('gameState').off();
@@ -3688,6 +3804,8 @@ async function connectAsPlayerToRoom(code) {
     roomRef.child('players').off();
     roomRef.child('answered').off();
   }
+  inRoom = false;
+  resetSelfPresenceMonitor();
   resetHostLossMonitor();
   totalQuestions = 0;
   roomCode = code;
@@ -3707,7 +3825,8 @@ async function connectAsPlayerToRoom(code) {
     name: playerName, score: 0, color: myColor, status: 'lobby',
     joinedAt: firebase.database.ServerValue.TIMESTAMP
   });
-  roomRef.child('players').child(playerId).onDisconnect().remove();
+  armPlayerNodeOnDisconnect();
+  inRoom = true;
 
   // F1: a szoba irányítójának azonosítója — ebből tudjuk figyelni, hogy él-e még a szoba. Ha nem
   // sikerül lekérni, a figyelés egyszerűen kimarad (soha nem lépünk ki bizonytalan alapon).
@@ -4370,7 +4489,7 @@ async function hostStartNewRound() {
     };
     if (hostGameMode === 'teams' && myTeamId) rejoinData.teamId = myTeamId;
     await roomRef.child('players').child(playerId).set(rejoinData);
-    roomRef.child('players').child(playerId).onDisconnect().remove();
+    armPlayerNodeOnDisconnect();
 
     hasAnswered = false; currentQIndex = -1; answeredNamesThisRound = new Set();
     pendingQuestion = null; myScore = 0; myQuestionHistory = [];
@@ -4643,7 +4762,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.23</div>
+<div class="version-badge">Játék verzió: 3.24</div>
 
 </body>
 </html>
