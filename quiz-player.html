@@ -21,9 +21,9 @@
 <meta name="description" content="QuizMaster multiplayer kvíz játék">
 <meta name="mobile-web-app-capable" content="yes">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" integrity="sha384-yuGdyIzzYtOBlBG6JOWn+Ey9kpq7HocusNuxEGyyohr1eEyXpeEyehIIXC/hznw4" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js" integrity="sha384-M6AmjBRXEjkdGzRN1Y94xtkmblFbYBSLkqzyZ8rPvpRM2c48nhjIRFXVvUM/VATL" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js" integrity="sha384-lI+CxEx/bCvWP1b0OK13j5HTrTZP7yf1xle8TVOFq2smz6KC1RChTarRV/RHP5PP" crossorigin="anonymous"></script>
 <script>
 const FIREBASE_CONFIG = {
   apiKey:        "AIzaSyDUFXHdzdn6DaehVN44vRPGaNV3x-jhHXA",
@@ -730,7 +730,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.24</div><div><div class="cl-desc">Ha a kapcsolatod megszakad, majd visszatér, a váróteremben automatikusan visszakerülsz a szobába; játék közben érthető üzenetet kapsz, és az eddigi eredményed megmarad az Eredményeim képernyőn. Emellett pontosabb lett az Online játékosok listán a „Játékban” jelzés.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.25</div><div><div class="cl-desc">Belső biztonsági finomítás a külső komponensek betöltésében. A játékmenetet ez a frissítés nem érinti.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.24</div><div><div class="cl-desc">Ha a kapcsolatod megszakad, majd visszatér, a váróteremben automatikusan visszakerülsz a szobába; játék közben érthető üzenetet kapsz, és az eddigi eredményed megmarad az Eredményeim képernyőn. Emellett pontosabb lett az Online játékosok listán a „Játékban” jelzés.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.23</div><div><div class="cl-desc">Gyorsabb szobához csatlakozás: a játék már nem tölti le feleslegesen a szoba összes kérdését. Javítva egy hiba, amely miatt a fiók törlése félúton elakadhatott, és törléskor a fiókhoz kötött naplóbejegyzések is eltűnnek. Emellett több belső finomítás készült.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.22</div><div><div class="cl-desc">Ha a szoba irányítója kilépett vagy megszakadt a kapcsolata, a játék többé nem ragad be: érthető üzenetet kapsz, a félbemaradt játék eredménye pedig megmarad az Eredményeim képernyőn. Emellett javítva egy ritka hiba, amely miatt egy helyes válasz hibásként jelenhetett meg a felfedéskor.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.21</div><div><div class="cl-desc">Belső biztonsági finomítás a pontozás és a válaszküldés folyamatában. A játékmenetet ez a frissítés nem érinti.</div></div></div>
@@ -4762,7 +4763,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.24</div>
+<div class="version-badge">Játék verzió: 3.25</div>
 
 </body>
 </html>
