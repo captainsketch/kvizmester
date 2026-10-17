@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="QuizMaster">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
 <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png">
 <link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128.png">
@@ -17,7 +18,7 @@
 <link rel="apple-touch-icon" sizes="72x72"   href="icons/icon-72.png">
 <link rel="apple-touch-icon"                 href="icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="32x32"   href="icons/icon-96.png">
+<link rel="icon" type="image/png" sizes="96x96"   href="icons/icon-96.png">
 <meta name="description" content="QuizMaster multiplayer kvíz játék">
 <meta name="mobile-web-app-capable" content="yes">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -65,7 +66,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   .menu-logo { font-family:var(--font-display); font-size:64px; letter-spacing:5px; color:var(--accent); line-height:1; margin-bottom:4px; text-shadow:0 0 40px rgba(240,192,64,0.3); }
   .menu-sub { color:var(--muted); font-size:11px; letter-spacing:4px; text-transform:uppercase; margin-bottom:28px; }
   .menu-name-wrap { width:100%; margin-bottom:28px; }
-  .menu-name-label { display:block; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; text-align:center; }
+  .menu-name-label { display:block; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; text-align:center; cursor:default; }
   .menu-name-input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 18px; color:var(--text); font-family:var(--font-body); font-size:18px; font-weight:600; outline:none; transition:border-color 0.2s; text-align:center; }
   .menu-name-input:focus { border-color:var(--accent); }
   .menu-buttons { display:flex; flex-direction:column; gap:14px; width:100%; margin-bottom:16px; }
@@ -535,11 +536,11 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <!-- Bejelentkezés -->
   <div id="auth-form-login" style="width:100%;">
     <div class="auth-field-wrap">
-      <label class="auth-field-label">E-mail cím</label>
+      <label class="auth-field-label" for="login-email">E-mail cím</label>
       <input type="email" class="auth-input" id="login-email" autocomplete="username" placeholder="pelda@email.hu">
     </div>
     <div class="auth-field-wrap">
-      <label class="auth-field-label">Jelszó</label>
+      <label class="auth-field-label" for="login-password">Jelszó</label>
       <input type="password" class="auth-input" id="login-password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div class="auth-submit-wrap">
@@ -553,19 +554,19 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <!-- Regisztráció -->
   <div id="auth-form-register" style="width:100%; display:none;">
     <div class="auth-field-wrap">
-      <label class="auth-field-label">A neved</label>
+      <label class="auth-field-label" for="register-name">A neved</label>
       <input type="text" class="auth-input" id="register-name" autocomplete="name" maxlength="40" placeholder="pl. Kovács Anna">
     </div>
     <div class="auth-field-wrap">
-      <label class="auth-field-label">Gyülekezet</label>
+      <label class="auth-field-label" for="register-gyulekezet">Gyülekezet</label>
       <input type="text" class="auth-input" id="register-gyulekezet" autocomplete="off" maxlength="60" placeholder="pl. Keszthely">
     </div>
     <div class="auth-field-wrap">
-      <label class="auth-field-label">E-mail cím</label>
+      <label class="auth-field-label" for="register-email">E-mail cím</label>
       <input type="email" class="auth-input" id="register-email" autocomplete="username" placeholder="pelda@email.hu">
     </div>
     <div class="auth-field-wrap">
-      <label class="auth-field-label">Jelszó</label>
+      <label class="auth-field-label" for="register-password">Jelszó</label>
       <input type="password" class="auth-input" id="register-password" autocomplete="new-password" placeholder="Legalább 6 karakter" onkeydown="if(event.key==='Enter')doRegister()">
     </div>
     <div class="auth-submit-wrap">
@@ -627,7 +628,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div class="pending-title">GYÜLEKEZETED</div>
   <div class="pending-text">Mostantól minden játékosnál nyilvántartjuk a gyülekezetet is.<br>Kérjük, add meg a sajátodat a folytatáshoz!</div>
   <div class="auth-field-wrap" style="max-width:280px;">
-    <label class="auth-field-label">Gyülekezet</label>
+    <label class="auth-field-label" for="gyulekezet-gate-input">Gyülekezet</label>
     <input type="text" class="auth-input" id="gyulekezet-gate-input" maxlength="60" placeholder="pl. Keszthely" onkeydown="if(event.key==='Enter')submitGyulekezetGate()">
   </div>
   <div class="auth-error" id="gyulekezet-gate-error"></div>
@@ -641,7 +642,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div class="menu-logo">QUIZ</div>
   <div class="menu-sub">Multiplayer Kvíz Játék</div>
   <div class="menu-name-wrap">
-    <label class="menu-name-label">A neved</label>
+    <label class="menu-name-label" for="menu-name-input">A neved</label>
     <input type="text" class="menu-name-input" id="menu-name-input"
       readonly tabindex="-1" style="cursor:default;opacity:0.85;">
   </div>
@@ -663,15 +664,15 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div class="guide-title">ÚJ SZOBA</div>
   <div class="guide-subtitle">Válassz játékmódot és témakört</div>
   <div class="menu-name-wrap">
-    <label class="menu-name-label">Játékmód</label>
-    <div id="cr-mode-list" class="cr-mode-list"></div>
+    <div class="menu-name-label" id="cr-mode-label">Játékmód</div>
+    <div id="cr-mode-list" class="cr-mode-list" role="group" aria-labelledby="cr-mode-label"></div>
   </div>
   <div class="menu-name-wrap">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <label class="menu-name-label" style="margin-bottom:0;">Témakör</label>
+      <div class="menu-name-label" id="cr-topic-label" style="margin-bottom:0;">Témakör</div>
       <button type="button" id="cr-topic-refresh-btn" onclick="loadTopicOptionsForCreate(true)" title="Kérdésbank frissítése a Firebase-ből" style="background:none;border:none;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;padding:2px 4px;letter-spacing:0.5px;">🔄 Frissítés</button>
     </div>
-    <div id="cr-topic-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div id="cr-topic-list" role="group" aria-labelledby="cr-topic-label" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
   <!-- ALKATEGÓRIA (Fázis 24) — csak akkor látszik, ha a kiválasztott témakörön belül
        ténylegesen több, egymástól eltérő alkategória is előfordul a kérdésbankban
@@ -679,11 +680,11 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
        renderCrSubtypeOptions(). Mindig a Firebase-ben ténylegesen jelen lévő
        alkategóriákból épül fel, sosem egy kódba írt fix listából. -->
   <div class="menu-name-wrap hidden" id="cr-subtype-wrap">
-    <label class="menu-name-label">Alkategória</label>
-    <div id="cr-subtype-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div class="menu-name-label" id="cr-subtype-label">Alkategória</div>
+    <div id="cr-subtype-list" role="group" aria-labelledby="cr-subtype-label" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
   <div class="menu-name-wrap">
-    <label class="menu-name-label">Kérdések száma</label>
+    <label class="menu-name-label" for="cr-count-select">Kérdések száma</label>
     <select class="menu-name-input" id="cr-count-select" style="text-align:center;">
       <option value="5">5 kérdés</option>
       <option value="10" selected>10 kérdés</option>
@@ -718,8 +719,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
 
   <div class="guide-divider"></div>
 
-  <label class="menu-name-label" style="margin-bottom:10px;display:block;">BE NEM OSZTOTT JÁTÉKOSOK</label>
-  <div id="ts-unassigned-container"></div>
+  <div class="menu-name-label" id="ts-unassigned-label" style="margin-bottom:10px;display:block;">BE NEM OSZTOTT JÁTÉKOSOK</div>
+  <div id="ts-unassigned-container" role="group" aria-labelledby="ts-unassigned-label"></div>
 
   <button class="menu-btn-primary" onclick="tsHideSetupScreen()" style="margin-top:20px;">✓ KÉSZ — VISSZA A VÁRÓTEREMBE</button>
 </div>
@@ -730,7 +731,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.25</div><div><div class="cl-desc">Belső biztonsági finomítás a külső komponensek betöltésében. A játékmenetet ez a frissítés nem érinti.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.26</div><div><div class="cl-desc">Az alkalmazás ismét telepíthető a főképernyőre, új ikonnal; internetkapcsolat nélkül érthető tájékoztató oldal jelenik meg. Az űrlapok feliratára koppintva mostantól a hozzá tartozó mezőbe kerül a kurzor.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.25</div><div><div class="cl-desc">Belső biztonsági finomítás a külső komponensek betöltésében. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.24</div><div><div class="cl-desc">Ha a kapcsolatod megszakad, majd visszatér, a váróteremben automatikusan visszakerülsz a szobába; játék közben érthető üzenetet kapsz, és az eddigi eredményed megmarad az Eredményeim képernyőn. Emellett pontosabb lett az Online játékosok listán a „Játékban” jelzés.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.23</div><div><div class="cl-desc">Gyorsabb szobához csatlakozás: a játék már nem tölti le feleslegesen a szoba összes kérdését. Javítva egy hiba, amely miatt a fiók törlése félúton elakadhatott, és törléskor a fiókhoz kötött naplóbejegyzések is eltűnnek. Emellett több belső finomítás készült.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.22</div><div><div class="cl-desc">Ha a szoba irányítója kilépett vagy megszakadt a kapcsolata, a játék többé nem ragad be: érthető üzenetet kapsz, a félbemaradt játék eredménye pedig megmarad az Eredményeim képernyőn. Emellett javítva egy ritka hiba, amely miatt egy helyes válasz hibásként jelenhetett meg a felfedéskor.</div></div></div>
@@ -807,11 +809,11 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <div class="guide-divider"></div>
 
   <div class="auth-field-wrap">
-    <label class="auth-field-label">A neved</label>
+    <label class="auth-field-label" for="profil-name-input">A neved</label>
     <input type="text" class="auth-input" id="profil-name-input" maxlength="40">
   </div>
   <div class="auth-field-wrap">
-    <label class="auth-field-label">Gyülekezet</label>
+    <label class="auth-field-label" for="profil-gyulekezet-input">Gyülekezet</label>
     <input type="text" class="auth-input" id="profil-gyulekezet-input" maxlength="60">
   </div>
   <div class="auth-error" id="profil-basic-error"></div>
@@ -820,18 +822,18 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
 
   <div class="guide-divider"></div>
 
-  <label class="auth-field-label">E-mail cím</label>
+  <label class="auth-field-label" for="profil-email-display">E-mail cím</label>
   <div class="profil-email-row">
     <input type="email" class="auth-input" id="profil-email-display" disabled style="opacity:0.65;">
     <button class="menu-btn-secondary" style="width:auto;padding:0 16px;font-size:13px;" onclick="toggleProfilSection('email-change-form')">Módosítás</button>
   </div>
   <div id="email-change-form" class="hidden profil-section-box">
     <div class="auth-field-wrap">
-      <label class="auth-field-label">Új e-mail cím</label>
+      <label class="auth-field-label" for="profil-new-email-input">Új e-mail cím</label>
       <input type="email" class="auth-input" id="profil-new-email-input" placeholder="uj@email.hu">
     </div>
     <div class="auth-field-wrap">
-      <label class="auth-field-label">Jelenlegi jelszavad (megerősítéshez)</label>
+      <label class="auth-field-label" for="profil-email-currentpw-input">Jelenlegi jelszavad (megerősítéshez)</label>
       <input type="password" class="auth-input" id="profil-email-currentpw-input" placeholder="••••••••">
     </div>
     <div class="auth-error" id="profil-email-error"></div>
@@ -852,15 +854,15 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="menu-btn-secondary" style="font-size:16px;padding:14px;margin-bottom:8px;" onclick="toggleProfilSection('password-change-form')">🔑 JELSZÓ MEGVÁLTOZTATÁSA</button>
   <div id="password-change-form" class="hidden profil-section-box">
     <div class="auth-field-wrap">
-      <label class="auth-field-label">Jelenlegi jelszó</label>
+      <label class="auth-field-label" for="profil-currentpw-input">Jelenlegi jelszó</label>
       <input type="password" class="auth-input" id="profil-currentpw-input" placeholder="••••••••">
     </div>
     <div class="auth-field-wrap">
-      <label class="auth-field-label">Új jelszó</label>
+      <label class="auth-field-label" for="profil-newpw-input">Új jelszó</label>
       <input type="password" class="auth-input" id="profil-newpw-input" placeholder="Legalább 6 karakter">
     </div>
     <div class="auth-field-wrap">
-      <label class="auth-field-label">Új jelszó megerősítése</label>
+      <label class="auth-field-label" for="profil-newpw2-input">Új jelszó megerősítése</label>
       <input type="password" class="auth-input" id="profil-newpw2-input" placeholder="••••••••">
     </div>
     <div class="auth-error" id="profil-password-error"></div>
@@ -4763,7 +4765,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.25</div>
+<div class="version-badge">Játék verzió: 3.26</div>
 
 </body>
 </html>

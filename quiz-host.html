@@ -195,8 +195,8 @@
   <div class="setup-card">
     <h2>ADMIN BEJELENTKEZÉS</h2>
     <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">A szerkesztő és jóváhagyó felület csak bejelentkezett adminisztrátori fióknak érhető el.</p>
-    <div class="field"><label>E-mail cím</label><input type="email" id="admin-login-email" autocomplete="username" placeholder="admin@email.hu"></div>
-    <div class="field"><label>Jelszó</label><input type="password" id="admin-login-password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"></div>
+    <div class="field"><label for="admin-login-email">E-mail cím</label><input type="email" id="admin-login-email" autocomplete="username" placeholder="admin@email.hu"></div>
+    <div class="field"><label for="admin-login-password">Jelszó</label><input type="password" id="admin-login-password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"></div>
     <button class="btn" onclick="doAdminLogin()">BEJELENTKEZÉS →</button>
     <div id="admin-login-error" style="color:var(--red);font-size:13px;margin-top:12px;min-height:18px;line-height:1.5;"></div>
   </div>
@@ -347,7 +347,7 @@
   <div class="modal">
     <h3>⬇ EXPORTÁLÁS</h3>
     <div class="modal-field">
-      <label>Melyik kategóriát exportálod?</label>
+      <label for="export-cat-select">Melyik kategóriát exportálod?</label>
       <select id="export-cat-select" onchange="updateExportInfo()">
         <option value="all">Összes kérdés</option>
       </select>
@@ -1749,7 +1749,7 @@ async function migrateAnswerKeys() {
 initFirebase();
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.20</div>
+<div class="version-badge">Admin panel verzió: 3.21</div>
 
 <script>
 // ============================================================
