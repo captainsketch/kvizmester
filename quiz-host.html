@@ -1060,8 +1060,14 @@ function openInlineEdit(id) {
   const q=questions.find(x=>x.id===id);
   if(!q)return;
   inlineCorrectOpt=q.correct;
-  const catOptions=['Általános','Bibliai','Filmek','Természet','Történelem','Sport','Tudomány','Zene','Földrajz'];
-  const timeOptions=[20,30,45,60];
+  // F31/H4: a kérdés tényleges kategóriája és ideje akkor is választható marad, ha az alaplistában nem szerepel
+  // (pl. importált "Egyéb" kategória, 25 mp) — különben a böngésző az első opciót választaná, és a mentés némán átírná.
+  const baseCats=['Általános','Bibliai','Filmek','Természet','Történelem','Sport','Tudomány','Zene','Földrajz'];
+  const baseTimes=[20,30,45,60];
+  const catOptions=(!q.category||baseCats.includes(q.category))?baseCats:baseCats.concat([q.category]);
+  const qTime=Number(q.time);
+  const selTime=qTime>0?qTime:30;
+  const timeOptions=baseTimes.includes(selTime)?baseTimes:baseTimes.concat([selTime]).sort((a,b)=>a-b);
   const form=document.createElement('div');
   form.className='inline-edit-form';
   form.id='inline-form-'+id;
@@ -1077,10 +1083,10 @@ function openInlineEdit(id) {
     </div>
     <div class="form-row">
       <select class="form-input" id="ie-cat">
-        ${catOptions.map(c=>`<option${q.category===c?' selected':''}>${c}</option>`).join('')}
+        ${catOptions.map(c=>`<option value="${escHtmlHost(c)}"${q.category===c?' selected':''}>${escHtmlHost(c)}</option>`).join('')}
       </select>
       <select class="form-input" id="ie-time">
-        ${timeOptions.map(t=>`<option${q.time===t?' selected':''}>${t}</option>`).join('')}
+        ${timeOptions.map(t=>`<option value="${t}"${t===selTime?' selected':''}>${t}</option>`).join('')}
       </select>
     </div>
     <input class="form-input" type="text" id="ie-type" list="subtype-datalist" autocomplete="off"
@@ -1751,7 +1757,7 @@ async function migrateAnswerKeys() {
 initFirebase();
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.22</div>
+<div class="version-badge">Admin panel verzió: 3.23</div>
 
 <script>
 // ============================================================

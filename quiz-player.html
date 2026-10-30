@@ -390,6 +390,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s;
   }
   .invite-notif-decline:active { border-color:var(--red); color:var(--red); }
+  .invite-notif-decline-all { width:100%; padding:6px; background:none; border:none; color:var(--muted); font-size:12px; font-weight:600; text-decoration:underline; cursor:pointer; }
+  .invite-notif-decline-all:active { color:var(--red); }
 
   /* VERSION BADGE */
   .version-badge {
@@ -731,7 +733,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.26</div><div><div class="cl-desc">Az alkalmazás ismét telepíthető a főképernyőre, új ikonnal; internetkapcsolat nélkül érthető tájékoztató oldal jelenik meg. Az űrlapok feliratára koppintva mostantól a hozzá tartozó mezőbe kerül a kurzor.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.27</div><div><div class="cl-desc">Javítva: ha két játékosnak azonos a neve, a „ki válaszolt már” jelzés, a helyezés és a ranglista kiemelése már nem keveredik össze. Egyetlen gombbal elutasíthatod az összes függő meghívót, és a meghívás elfogadása nem kérdez rá feleslegesen a kilépésre. A kérdések kisorsolása is egyenletesebb lett.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.26</div><div><div class="cl-desc">Az alkalmazás ismét telepíthető a főképernyőre, új ikonnal; internetkapcsolat nélkül érthető tájékoztató oldal jelenik meg. Az űrlapok feliratára koppintva mostantól a hozzá tartozó mezőbe kerül a kurzor.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.25</div><div><div class="cl-desc">Belső biztonsági finomítás a külső komponensek betöltésében. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.24</div><div><div class="cl-desc">Ha a kapcsolatod megszakad, majd visszatér, a váróteremben automatikusan visszakerülsz a szobába; játék közben érthető üzenetet kapsz, és az eddigi eredményed megmarad az Eredményeim képernyőn. Emellett pontosabb lett az Online játékosok listán a „Játékban” jelzés.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.23</div><div><div class="cl-desc">Gyorsabb szobához csatlakozás: a játék már nem tölti le feleslegesen a szoba összes kérdését. Javítva egy hiba, amely miatt a fiók törlése félúton elakadhatott, és törléskor a fiókhoz kötött naplóbejegyzések is eltűnnek. Emellett több belső finomítás készült.</div></div></div>
@@ -1113,6 +1116,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     <button class="invite-notif-accept" onclick="acceptInvite()">CSATLAKOZÁS</button>
     <button class="invite-notif-decline" onclick="dismissInviteNotification()">Elutasítás</button>
   </div>
+  <button class="invite-notif-decline-all hidden" id="invite-notif-decline-all" onclick="declineAllInvites()"></button>
 </div>
 
 <!-- PWA BANNER -->
@@ -1134,7 +1138,7 @@ let timerInterval = null, timerValue = 30, totalTime = 30;
 // FÁZIS 28 (F3): a kérdések listáját a játékos többé nem tölti le (a Rules csak a szoba irányítójának engedi) —
 // a kérdések számát a gameState.questionCount hordozza (a progress-pontokhoz).
 let totalQuestions = 0, players = {};
-let answeredNamesThisRound = new Set();
+let answeredUidsThisRound = new Set();
 const LETTERS = ['A','B','C','D'];
 const COLORS = ['#f0c040','#e05a2b','#3ecf8e','#5a8fe0','#c05ae0','#e05a8f','#5ae0d4','#e0c05a'];
 const CIRCUMFERENCE = 175.9;
@@ -1665,8 +1669,10 @@ let profilAvatarPickerOpen = false;
 // Ha az avatarId nem létezik (pl. még nincs választva), null-t ad vissza -
 // a hívó fél ilyenkor a renderMonogramBadge() régi, betű-alapú megjelenítésre esik vissza.
 function renderAvatarBadge(avatarId, sizePx) {
-  const def = AVATAR_DEFS[avatarId];
-  if (!def) return null;
+  // F31/H7: az avatarId külső adat (publicProfiles) — "constructor" / "__proto__" az objektum-prototípuson át
+  // truthy értéket adna és üres képet rajzolna; csak a saját kulcsokat fogadjuk el
+  const def = Object.prototype.hasOwnProperty.call(AVATAR_DEFS, avatarId) ? AVATAR_DEFS[avatarId] : null;
+  if (!def || typeof def.svg !== 'string') return null;
   const sz = sizePx || 64;
   return `<svg width="${sz}" height="${sz}" viewBox="0 0 16 16" style="display:block;">${def.svg}</svg>`;
 }
@@ -2374,11 +2380,14 @@ function showInviteNotification(inviteRoomCode, inviteData) {
 function updateInviteQueueHint() {
   const hintEl = document.getElementById('invite-notif-queue-hint');
   if (!hintEl) return;
+  const allBtn = document.getElementById('invite-notif-decline-all');
   if (inviteQueue.length > 0) {
     hintEl.textContent = '+' + inviteQueue.length + (inviteQueue.length === 1 ? ' további meghívás vár' : ' további meghívás vár');
     hintEl.classList.remove('hidden');
+    if (allBtn) { allBtn.textContent = 'Összes meghívó elutasítása (' + (inviteQueue.length + 1) + ')'; allBtn.classList.remove('hidden'); }
   } else {
     hintEl.classList.add('hidden');
+    if (allBtn) allBtn.classList.add('hidden');
   }
 }
 
@@ -2388,38 +2397,60 @@ function showNextQueuedInviteIfAny() {
   showInviteNotification(next.roomCode, next.data);
 }
 
+// Egy függő meghívó lezárása (elutasítás / már bent vagyunk). FONTOS SORREND: a host-visszajelzést
+// (status) MINDIG a meghívó törlése ELŐTT írjuk — az inviteStatus Rules-ág ellenőrzi, hogy az
+// invites/{uid}/{roomCode} még létezik-e az írás pillanatában (l. database_rules.json), tehát ha
+// megfordítanánk a sorrendet, a szabály elutasítaná a write-ot.
+function resolveInvite(room, status) {
+  const uid = playerId;
+  if (!uid || !room) return Promise.resolve();
+  return firebase.database().ref('rooms/' + room + '/inviteStatus/' + uid).set({
+    status: status,
+    ts: firebase.database.ServerValue.TIMESTAMP
+  }).catch(e => console.warn('[QuizMaster] inviteStatus "' + status + '" írási hiba:', e))
+    .then(() => firebase.database().ref('invites/' + uid + '/' + room).remove())
+    .catch(() => {});
+}
+
 function dismissInviteNotification() {
   document.getElementById('invite-notification-banner').classList.add('hidden');
-  if (pendingInviteRoomCode && playerId) {
-    const roomForStatus = pendingInviteRoomCode;
-    const uidForStatus = playerId;
-    // FONTOS SORREND: a "declined" visszajelzést MINDIG a meghívó törlése ELŐTT
-    // írjuk — az inviteStatus Rules-ág ellenőrzi, hogy az invites/{uid}/{roomCode}
-    // még létezik-e az írás pillanatában (l. database_rules.json), tehát ha
-    // megfordítanánk a sorrendet, a szabály elutasítaná a write-ot.
-    firebase.database().ref('rooms/' + roomForStatus + '/inviteStatus/' + uidForStatus).set({
-      status: 'declined',
-      ts: firebase.database.ServerValue.TIMESTAMP
-    }).catch(e => console.warn('[QuizMaster] inviteStatus "declined" írási hiba:', e))
-      .finally(() => {
-        firebase.database().ref('invites/' + uidForStatus + '/' + roomForStatus).remove().catch(() => {});
-      });
-  }
+  const room = pendingInviteRoomCode;
   pendingInviteRoomCode = null;
+  resolveInvite(room, 'declined');
   showNextQueuedInviteIfAny();
 }
 
-// Igaz, ha épp valamelyik "szobához kötött" képernyőn vagyunk — ez dönti el,
-// hogy meghívás elfogadásakor kell-e megerősítést kérni (elveszik-e valódi
-// előrehaladás), vagy egyenesen csatlakozhatunk.
+// F31: az összes függő meghívó (a látható és a sorban várakozók) elutasítása egyetlen gombbal
+function declineAllInvites() {
+  document.getElementById('invite-notification-banner').classList.add('hidden');
+  const rooms = [pendingInviteRoomCode].concat(inviteQueue.map(inv => inv.roomCode)).filter(Boolean);
+  pendingInviteRoomCode = null;
+  inviteQueue = [];
+  updateInviteQueueHint();
+  rooms.forEach(room => resolveInvite(room, 'declined'));
+}
+
+// Igaz, ha ténylegesen egy szobában vagyunk (a saját players-csomópontunk él) — ez dönti el,
+// hogy meghívás elfogadásakor kell-e megerősítést kérni (elveszik-e valódi előrehaladás), vagy
+// egyenesen csatlakozhatunk. F31/H3: korábban a látható képernyőből következtettünk, így a főmenüből
+// nyitott "Online játékosok" képernyőn is feleslegesen megkérdezte, hogy kilépünk-e a játékból.
 function isCurrentlyInARoom() {
-  const roomScreenIds = ['lobby-screen','online-players-screen','team-setup-screen','waiting-screen','game-screen','result-screen','history-screen'];
-  return roomScreenIds.some(id => document.getElementById(id).style.display !== 'none');
+  return inRoom;
 }
 
 async function acceptInvite() {
   if (!pendingInviteRoomCode) return;
   const targetRoom = pendingInviteRoomCode;
+
+  // F31/H3-c: a meghívó arra a szobára szól, amelyben már benne vagyunk — nincs mit csatlakozni (korábban
+  // kilépett és újracsatlakozott, játék közben pedig az "elérhetetlen" képernyőre futott és elveszítette a játékát)
+  if (inRoom && targetRoom === roomCode) {
+    document.getElementById('invite-notification-banner').classList.add('hidden');
+    pendingInviteRoomCode = null;
+    resolveInvite(targetRoom, 'accepted');
+    showNextQueuedInviteIfAny();
+    return;
+  }
 
   const doJoin = async () => {
     document.getElementById('invite-notification-banner').classList.add('hidden');
@@ -2581,7 +2612,7 @@ function setupListeners() {
       if (myPlayerStatus === 'active') {
         currentQIndex = state.questionIndex;
         hasAnswered = false;
-        answeredNamesThisRound = new Set();
+        answeredUidsThisRound = new Set();
         showQuestion(state.question, state.questionIndex);
       }
     } else if (state.phase === 'revealed') {
@@ -2632,7 +2663,7 @@ function setupListeners() {
   roomRef.child('players').on('value', snap => {
     players = snap.val() || {};
     updateRank();
-    updatePlayersChips(answeredNamesThisRound);
+    updatePlayersChips(answeredUidsThisRound);
     if (amIRoomHost) {
       updateLobbyJoinedCount();
       tsRefreshIfVisible();
@@ -2677,17 +2708,18 @@ function setupListeners() {
   // választott opcióval — kizárólag a szoba hostja/admin számára olvasható.
   roomRef.child('answered').on('child_added', snap => {
     const ans = snap.val();
-    if (ans && ans.playerName) {
+    if (ans) {
       // Elavult válasz kizárása a chip megjelenítéstől is
       if (typeof ans.qIndex === 'number' && ans.qIndex !== currentQIndex) return;
-      answeredNamesThisRound.add(ans.playerName);
-      updatePlayersChips(answeredNamesThisRound);
+      // F31/H1: a kulcs a játékos uid-ja — két azonos nevű játékos nem keveredhet össze
+      answeredUidsThisRound.add(snap.key);
+      updatePlayersChips(answeredUidsThisRound);
     }
   });
   roomRef.child('answered').on('value', snap => {
     if (!snap.val()) {
-      answeredNamesThisRound = new Set();
-      updatePlayersChips(answeredNamesThisRound);
+      answeredUidsThisRound = new Set();
+      updatePlayersChips(answeredUidsThisRound);
     }
   });
 
@@ -2942,18 +2974,19 @@ function showResults() {
 
 function showNormalResults() {
   document.getElementById('final-score').textContent = myScore;
-  const sorted = Object.values(players).sort((a,b) => (b.score||0)-(a.score||0));
-  const rank = sorted.findIndex(p => p.name === playerName) + 1;
+  // F31/H1: [pid, játékos] párok — a saját sorunkat az uid azonosítja, nem a név
+  const sorted = Object.entries(players).sort((a,b) => (b[1].score||0)-(a[1].score||0));
+  const rank = sorted.findIndex(([pid]) => pid === playerId) + 1;
   // F7: ha a saját csomópontunk hiányzik (kiesett játékos), nincs helyezés — "—" jelenik meg, nem "#0"
   document.getElementById('final-rank').innerHTML = 'Végső helyezés: <strong>' + (rank > 0 ? '#' + rank : '—') + '</strong>';
   const emojis = ['🏆','🥈','🥉','🎖️','⭐'];
   document.getElementById('result-emoji').textContent = rank > 0 ? emojis[Math.min(rank-1, emojis.length-1)] : '🎮';
   const medals = ['🥇','🥈','🥉'];
   let sbHTML = '<h4>RANGLISTA</h4>';
-  sbHTML += Object.values(players).sort((a,b)=>(b.score||0)-(a.score||0)).map((p, i) => `
-    <div class="rsb-row${p.name === playerName ? ' me' : ''}">
+  sbHTML += sorted.map(([pid, p], i) => `
+    <div class="rsb-row${pid === playerId ? ' me' : ''}">
       <div class="rsb-rank">${medals[i] || (i+1) + '.'}</div>
-      <div class="rsb-name">${escHtml(p.name || 'Névtelen')}${p.name === playerName ? ' 👤' : ''}</div>
+      <div class="rsb-name">${escHtml(p.name || 'Névtelen')}${pid === playerId ? ' 👤' : ''}</div>
       <div class="rsb-pts">${p.score || 0} pt</div>
     </div>`).join('');
   document.getElementById('result-scoreboard').innerHTML = sbHTML;
@@ -2991,16 +3024,16 @@ function showTeamResults() {
   if(myTeam){
     const memberIds = Object.keys(myTeam.members||{});
     const memberData = memberIds
-      .map(pid=>players[pid])
-      .filter(Boolean)
-      .sort((a,b)=>(b.score||0)-(a.score||0));
+      .map(pid=>[pid, players[pid]])
+      .filter(([, p])=>p)
+      .sort((a,b)=>(b[1].score||0)-(a[1].score||0));
 
     if(memberData.length>0){
       sbHTML += `<h4 style="margin-top:16px;">A TE CSAPATOD: ${escHtml(myTeamName||'')}${isWinner?' 🏆':''}</h4>`;
-      sbHTML += memberData.map(p=>`
-        <div class="rsb-row${p.name===playerName?' me':''}">
+      sbHTML += memberData.map(([pid, p])=>`
+        <div class="rsb-row${pid===playerId?' me':''}">
           <div class="rsb-rank" style="font-size:13px;color:var(--muted);">👤</div>
-          <div class="rsb-name">${escHtml(p.name||'Névtelen')}${p.name===playerName?' (te)':''}</div>
+          <div class="rsb-name">${escHtml(p.name||'Névtelen')}${pid===playerId?' (te)':''}</div>
           <div class="rsb-pts">${p.score||0} pt</div>
         </div>`).join('');
     }
@@ -3175,7 +3208,7 @@ async function returnToGame() {
     // Teljes state reset az új körre
     hasAnswered = false;
     currentQIndex = -1;
-    answeredNamesThisRound = new Set();
+    answeredUidsThisRound = new Set();
     pendingQuestion = null;
     myPlayerStatus = 'active';
     hostReadyForRejoin = false;
@@ -3405,22 +3438,28 @@ function handleSelfDrop() {
   refreshHostLostUI();
 }
 
+// F31/H2: a szobához kötött MINDEN élő figyelő leszedése egy helyen (kilépés és új szobához csatlakozás előtt)
+function detachRoomListeners() {
+  if (!roomRef) return;
+  if (hostAnswersRef && hostAnswersHandler) hostAnswersRef.off('child_added', hostAnswersHandler);
+  hostAnswersRef = null; hostAnswersHandler = null; hostScoringListenerAttached = false;
+  roomRef.child('gameState').off();
+  roomRef.child('players').off();
+  roomRef.child('answered').off();
+  roomRef.child('teams').off();
+  if (playerId) {
+    roomRef.child('players').child(playerId).child('status').off();
+    roomRef.child('players').child(playerId).child('score').off();
+  }
+}
+
 function backToMenu() {
   stopTimer();
   inRoom = false;
   resetSelfPresenceMonitor();
   resetHostLossMonitor();
-  if (roomRef) {
-    roomRef.child('gameState').off();
-    roomRef.child('players').off();
-    roomRef.child('answered').off();
-    roomRef.child('teams').off();
-    if (playerId) {
-      roomRef.child('players').child(playerId).child('status').off();
-      roomRef.child('players').child(playerId).child('score').off();
-      roomRef.child('players').child(playerId).remove();
-    }
-  }
+  detachRoomListeners();
+  if (roomRef && playerId) roomRef.child('players').child(playerId).remove();
   // Ha a szoba nyitója vagyunk, de még el sem indítottuk a játékot (pl. meggondoltuk
   // magunkat és visszalépünk), a szoba-index bejegyzést is töröljük — különben egy
   // "szellem" szoba maradna a listán, amit már senki nem tud elindítani.
@@ -3432,7 +3471,7 @@ function backToMenu() {
   // database_rules.json) tovább élne egy már elhagyott szobára hivatkozva.
   clearActiveHost();
   hasAnswered = false; myScore = 0; currentQIndex = -1;
-  players = {}; totalQuestions = 0; answeredNamesThisRound = new Set();
+  players = {}; totalQuestions = 0; answeredUidsThisRound = new Set();
   myQuestionHistory = []; pendingQuestion = null;
   myPlayerStatus = 'lobby';
   hostReadyForRejoin = false;
@@ -3457,6 +3496,17 @@ function backToMenu() {
 // ══════════════════════════════════════════════════════════════
 // SZOBA-LÉTREHOZÁS ÉS -CSATLAKOZÁS (2. fázis — host-független játék)
 // ══════════════════════════════════════════════════════════════
+
+// F31/H5: Fisher–Yates keverés (egyenletes eloszlás). A korábbi, véletlen összehasonlítóval rendezős keverés
+// torzított: egyes sorrendek többszörösen gyakoribbak voltak másoknál, így a kérdések kisorsolása sem volt igazságos.
+function shuffleCopy(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
 
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // O/0 és I/1 kihagyva a félreolvasás ellen
@@ -3602,7 +3652,7 @@ async function confirmCreateRoom() {
   if (pool.length === 0) { errEl.textContent = 'Nincs kérdés ebben a témakörben!'; return; }
 
   const countVal = document.getElementById('cr-count-select').value;
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const shuffled = shuffleCopy(pool);
   const count = countVal === 'all' ? shuffled.length : Math.min(parseInt(countVal), shuffled.length);
   const rawSelected = shuffled.slice(0, count);
 
@@ -3802,11 +3852,7 @@ async function connectAsPlayerToRoom(code) {
   if (roomListListenerRef) { roomListListenerRef.off(); roomListListenerRef = null; }
   if (onlinePlayersListenerRef) { onlinePlayersListenerRef.off(); onlinePlayersListenerRef = null; }
   stopInviteStatusListener();
-  if (roomRef) {
-    roomRef.child('gameState').off();
-    roomRef.child('players').off();
-    roomRef.child('answered').off();
-  }
+  detachRoomListeners();
   inRoom = false;
   resetSelfPresenceMonitor();
   resetHostLossMonitor();
@@ -4236,9 +4282,13 @@ function hostStartTimer(seconds) {
   }, 1000);
 }
 
+// F31/H2: a host `answers` figyelőjét el kell tárolni, hogy kilépéskor leszedhető legyen — korábban egy már
+// elhagyott szoba figyelője tovább élt (és egy későbbi saját szobánál az új szoba állapotával dolgozott).
+let hostAnswersRef = null, hostAnswersHandler = null;
 function hostSetupScoringListener() {
   if (!roomRef) return;
-  roomRef.child('answers').on('child_added', snap => {
+  hostAnswersRef = roomRef.child('answers');
+  hostAnswersHandler = snap => {
     if (!amIRoomHost || hostGamePhase === 'waiting' || hostGamePhase === 'ended') return;
     const ans = snap.val(); if (!ans) return;
     const pid = snap.key;
@@ -4296,7 +4346,8 @@ function hostSetupScoringListener() {
         else { setTimeout(() => hostRevealAnswer(false), 500); }
       }
     });
-  });
+  };
+  hostAnswersRef.on('child_added', hostAnswersHandler);
 }
 
 function hostRevealAnswer(fromTimer) {
@@ -4383,7 +4434,7 @@ async function hostStartNewRound() {
 
     let selected;
     if (pool.length > 0) {
-      const shuffled = [...pool].sort(() => Math.random() - 0.5);
+      const shuffled = shuffleCopy(pool);
       const rawSelected = shuffled.slice(0, Math.min(desiredCount, shuffled.length));
       // Fázis 22: itt is a kiválasztott részhalmazhoz KÜLÖN, célzottan kérjük le a
       // válaszkulcsokat a védett answerKeys ágból — l. confirmCreateRoom() ugyanerről.
@@ -4494,7 +4545,7 @@ async function hostStartNewRound() {
     await roomRef.child('players').child(playerId).set(rejoinData);
     armPlayerNodeOnDisconnect();
 
-    hasAnswered = false; currentQIndex = -1; answeredNamesThisRound = new Set();
+    hasAnswered = false; currentQIndex = -1; answeredUidsThisRound = new Set();
     pendingQuestion = null; myScore = 0; myQuestionHistory = [];
     myPlayerStatus = 'lobby'; hostReadyForRejoin = false;
     document.getElementById('my-score').textContent = '0';
@@ -4512,21 +4563,20 @@ async function hostStartNewRound() {
 function updatePlayersChips(answeredSet) {
   const container = document.getElementById('players-chips');
   if (!container) return;
+  // [pid, játékos] párok: az azonosítás MINDIG uid alapú (két játékosnak lehet azonos a neve)
   let displayPlayers;
   if(gameMode === 'teams' && myTeamId){
-    // Csak a saját csapat tagjait mutatjuk (magunkat kizárva) — pid (Firebase UID) alapján,
-    // NEM név alapján, mert két játékosnak lehet azonos a neve.
+    // Csak a saját csapat tagjait mutatjuk (magunkat kizárva)
     const myTeam = teamScores[myTeamId];
     const memberIds = myTeam ? Object.keys(myTeam.members||{}) : [];
     displayPlayers = Object.entries(players)
-      .filter(([pid, p]) => p.status === 'active' && memberIds.includes(pid) && pid !== playerId)
-      .map(([, p]) => p);
+      .filter(([pid, p]) => p.status === 'active' && memberIds.includes(pid) && pid !== playerId);
     // Ha üres a lista (csak mi vagyunk a csapatban), ne mutassunk semmit
   } else {
-    displayPlayers = Object.values(players).filter(p => p.status === 'active');
+    displayPlayers = Object.entries(players).filter(([, p]) => p.status === 'active');
   }
-  container.innerHTML = displayPlayers.map(p => {
-    const isAnswered = answeredSet && answeredSet.has(p.name);
+  container.innerHTML = displayPlayers.map(([pid, p]) => {
+    const isAnswered = answeredSet && answeredSet.has(pid);
     return `<div class="p-chip${isAnswered ? ' answered' : ''}">
       <div class="p-chip-dot"></div>${escHtml(p.name)}
     </div>`;
@@ -4544,10 +4594,10 @@ function showScoreDelta(text, isCorrect = true) {
 }
 
 function updateRank() {
-  const activeSorted = Object.values(players)
-    .filter(p => p.status === 'active')
-    .sort((a,b) => (b.score||0)-(a.score||0));
-  const rank = activeSorted.findIndex(p => p.name === playerName) + 1;
+  const activeSorted = Object.entries(players)
+    .filter(([, p]) => p.status === 'active')
+    .sort((a,b) => (b[1].score||0)-(a[1].score||0));
+  const rank = activeSorted.findIndex(([pid]) => pid === playerId) + 1;
   document.getElementById('my-rank').textContent = '#' + (rank > 0 ? rank : '—');
 }
 
@@ -4765,7 +4815,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.26</div>
+<div class="version-badge">Játék verzió: 3.27</div>
 
 </body>
 </html>
