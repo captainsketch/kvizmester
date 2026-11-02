@@ -733,7 +733,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.27</div><div><div class="cl-desc">Javítva: ha két játékosnak azonos a neve, a „ki válaszolt már” jelzés, a helyezés és a ranglista kiemelése már nem keveredik össze. Egyetlen gombbal elutasíthatod az összes függő meghívót, és a meghívás elfogadása nem kérdez rá feleslegesen a kilépésre. A kérdések kisorsolása is egyenletesebb lett.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.28</div><div><div class="cl-desc">Ha egy játék indulásának pillanatában csatlakozol, érthető üzenetet kapsz: vagy a váróteremben jelezzük, hogy a következő körben léphetsz be, vagy azt látod, hogy a játék már elindult. A „nem elérhető” képernyő szövege is pontosabb lett, a játék indítása pedig megbízhatóbb.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.27</div><div><div class="cl-desc">Javítva: ha két játékosnak azonos a neve, a „ki válaszolt már” jelzés, a helyezés és a ranglista kiemelése már nem keveredik össze. Egyetlen gombbal elutasíthatod az összes függő meghívót, és a meghívás elfogadása nem kérdez rá feleslegesen a kilépésre. A kérdések kisorsolása is egyenletesebb lett.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.26</div><div><div class="cl-desc">Az alkalmazás ismét telepíthető a főképernyőre, új ikonnal; internetkapcsolat nélkül érthető tájékoztató oldal jelenik meg. Az űrlapok feliratára koppintva mostantól a hozzá tartozó mezőbe kerül a kurzor.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.25</div><div><div class="cl-desc">Belső biztonsági finomítás a külső komponensek betöltésében. A játékmenetet ez a frissítés nem érinti.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.24</div><div><div class="cl-desc">Ha a kapcsolatod megszakad, majd visszatér, a váróteremben automatikusan visszakerülsz a szobába; játék közben érthető üzenetet kapsz, és az eddigi eredményed megmarad az Eredményeim képernyőn. Emellett pontosabb lett az Online játékosok listán a „Játékban” jelzés.</div></div></div>
@@ -984,7 +985,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
 <div id="unavailable-screen">
   <div class="unavail-icon">🎮</div>
   <div class="unavail-title">NEM ELÉRHETŐ</div>
-  <div class="unavail-text">Jelenleg a játék nem elérhető,<br>kérjük gyere vissza később.</div>
+  <div class="unavail-text" id="unavail-text">Jelenleg a játék nem elérhető,<br>kérjük gyere vissza később.</div>
   <button class="unavail-btn" onclick="retryJoinRoom()">↺ ÚJRAPRÓBÁLÁS</button>
   <button class="unavail-back" onclick="showMenu()">← Vissza a főmenübe</button>
 </div>
@@ -2505,8 +2506,15 @@ function showChangelog() {
   document.getElementById('changelog-screen').style.display = 'flex';
   window.scrollTo({top:0});
 }
-function showUnavailable() {
+// F31/H6: a "nem elérhető" képernyő szövege az okhoz igazodik (elindult a játék / megszűnt a szoba / egyéb)
+const UNAVAIL_TEXTS = {
+  started: 'Ez a játék már elindult, ezért nem tudtál csatlakozni.<br>Válassz másik szobát, vagy próbáld újra, ha véget ér a kör.',
+  gone: 'Ez a szoba már nem létezik.',
+  other: 'Jelenleg a játék nem elérhető,<br>kérjük gyere vissza később.'
+};
+function showUnavailable(reason) {
   hideAll();
+  document.getElementById('unavail-text').innerHTML = UNAVAIL_TEXTS[reason] || UNAVAIL_TEXTS.other;
   document.getElementById('unavailable-screen').style.display = 'flex';
 }
 function showLobby() {
@@ -2521,9 +2529,19 @@ function showLobby() {
     updateLobbyJoinedCount();
     tsUpdateLobbyControls();
   } else {
-    if (subEl) subEl.innerHTML = 'A host hamarosan beenged a játékba.<br>Kérjük, várakozz türelmesen!';
+    refreshLobbySub();
     if (hostControls) hostControls.classList.add('hidden');
   }
+}
+// F31/H6: ha a játék már fut, de a saját státuszom még 'lobby' (a kör indulása után csatlakoztam, vagy csapat nélkül
+// maradtam), az "A host hamarosan beenged" szöveg félrevezető lenne — ilyenkor a következő körre várunk.
+function refreshLobbySub() {
+  const subEl = document.getElementById('lobby-sub');
+  if (!subEl || amIRoomHost) return;
+  const roundRunning = lastRoomPhase === 'question' || lastRoomPhase === 'revealed' || lastRoomPhase === 'ended';
+  subEl.innerHTML = (myPlayerStatus === 'lobby' && roundRunning)
+    ? 'Ez a kör már elindult, mielőtt beléptél.<br>A következő körben tudsz majd csatlakozni.'
+    : 'A host hamarosan beenged a játékba.<br>Kérjük, várakozz türelmesen!';
 }
 function showWaiting() {
   hideAll();
@@ -2562,6 +2580,7 @@ function setupListeners() {
   roomRef.child('players').child(playerId).child('status').on('value', snap => {
     const status = snap.val();
     myPlayerStatus = status || 'lobby';
+    refreshLobbySub();
     if (status) lastKnownPlayerStatus = status;   // F7: a törléskor ('lobby'-ra billenő myPlayerStatus helyett) ebből írjuk vissza a státuszt
     if (status === 'active') {
       const lobbyVisible = document.getElementById('lobby-screen').style.display !== 'none';
@@ -2586,6 +2605,7 @@ function setupListeners() {
     if (typeof state.questionCount === 'number') totalQuestions = state.questionCount;
     updateGameModeUI();
     lastRoomPhase = state.phase;
+    refreshLobbySub();
 
     // F1: ha az irányító már eltűnt (a "szoba megszűnt" állapot), egy későn érkező új kérdés
     // (pl. az irányító újracsatlakozás után kiürülő, sorban álló írásai) nem rántja vissza a
@@ -3738,14 +3758,7 @@ async function confirmCreateRoom() {
 
     // Nyilvános szoba-index bejegyzés — csak nem-titkos mezőket tartalmaz, hogy a
     // szobalista NE kelljen a teljes rooms fát olvasnia (lásd database.rules.json).
-    const roomIndexRef = db.ref('roomIndex/' + newCode);
-    await roomIndexRef.set({
-      topicLabel: hostRoomTopicLabel,
-      mode: hostGameMode,
-      hostName: playerName,
-      createdAt: firebase.database.ServerValue.TIMESTAMP
-    });
-    roomIndexRef.onDisconnect().remove();
+    await publishRoomIndex(newCode);
 
     amIRoomHost = true;
     hostQuestionsPool = selected;
@@ -3863,17 +3876,26 @@ async function connectAsPlayerToRoom(code) {
 
   const snap = await roomRef.child('gameState').once('value');
   const gameState = snap.val();
-  if (!gameState) { showUnavailable(); return; }
+  if (!gameState) { showUnavailable('gone'); return; }
   // Meghívás-alapú csatlakozás közvetlen roomCode-dal megkerüli a roomIndex-
   // alapú "csak várakozó szobák látszanak" szűrést — ha időközben elindult a
   // kör (fázis már nem 'waiting'), ne engedjünk csatlakozni, mert holtvágányba
   // kerülne a játékos (sosem kapna kérdést, hiszen 'lobby' státusszal ragadna).
-  if (gameState.phase !== 'waiting') { showUnavailable(); return; }
+  if (gameState.phase !== 'waiting') { showUnavailable('started'); return; }
 
-  await roomRef.child('players').child(playerId).set({
-    name: playerName, score: 0, color: myColor, status: 'lobby',
-    joinedAt: firebase.database.ServerValue.TIMESTAMP
-  });
+  try {
+    await roomRef.child('players').child(playerId).set({
+      name: playerName, score: 0, color: myColor, status: 'lobby',
+      joinedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+  } catch (e) {
+    // F31/H6: a játék a gameState-olvasás és az írás között elindulhatott — a Rules ilyenkor elutasítja a belépést.
+    // Nyers hibaüzenet helyett érthető képernyő; ha a fázis mégis 'waiting', a régi hibaág marad.
+    let started = false;
+    try { const gs = (await roomRef.child('gameState').once('value')).val(); started = !!gs && gs.phase !== 'waiting'; } catch (e2) {}
+    if (started) { showUnavailable('started'); return; }
+    throw e;
+  }
   armPlayerNodeOnDisconnect();
   inRoom = true;
 
@@ -4170,8 +4192,35 @@ function tsUnassign(pid) {
 // 'normal' és 'teams' módra működik (hostGameMode dönti el).
 // ══════════════════════════════════════════════════════════════
 
+// Aktiválja a váróteremben lévő (lobby) játékosokat. Csapatmódban csak azt, akinek már van csapata: a csapat nélküli
+// játékos aktiválva a "Várakozás csapat beosztásra…" képernyőn ragadna a játék végéig — ő a váróteremben marad.
+async function hostActivateLobbyPlayers() {
+  const snap = await roomRef.child('players').once('value');
+  const all = snap.val() || {};
+  const updates = {};
+  Object.entries(all).forEach(([pid, p]) => {
+    if (!p || p.status !== 'lobby') return;
+    if (hostGameMode === 'teams' && !p.teamId) return;
+    updates['players/' + pid + '/status'] = 'active';
+  });
+  if (Object.keys(updates).length > 0) await roomRef.update(updates);
+}
+
+// A nyilvános szobalista-bejegyzés (csak nem-titkos mezők) — a szoba létrehozásakor, új körnél és az indítás hibaágán.
+async function publishRoomIndex(code) {
+  const ref = db.ref('roomIndex/' + code);
+  await ref.set({
+    topicLabel: hostRoomTopicLabel,
+    mode: hostGameMode,
+    hostName: playerName,
+    createdAt: firebase.database.ServerValue.TIMESTAMP
+  });
+  ref.onDisconnect().remove();
+}
+
+let hostStartInFlight = false;   // F31/H6: a dupla koppintás ne indítson két párhuzamos indítási folyamatot
 async function hostStartQuiz() {
-  if (!amIRoomHost || !roomRef) return;
+  if (!amIRoomHost || !roomRef || hostStartInFlight) return;
   // Csapatmód: extra ellenőrzés indítás előtt — védelem esetleges race condition ellen
   // (pl. ha valaki épp a gomb megnyomásának pillanatában csatlakozik be nem osztottként)
   if (hostGameMode === 'teams' && !tsIsSetupReady()) {
@@ -4200,22 +4249,29 @@ async function hostStartQuiz() {
   }
   if (hostQuestionsPool.length === 0) { alert('Nincs kérdés ebben a szobában!'); return; }
 
-  const playersSnap = await roomRef.child('players').once('value');
-  const allPlayers = playersSnap.val() || {};
-  const updates = {};
-  Object.keys(allPlayers).forEach(pid => {
-    if (allPlayers[pid].status === 'lobby') updates['players/' + pid + '/status'] = 'active';
-  });
-  if (Object.keys(updates).length > 0) await roomRef.update(updates);
-
-  // A szoba lekerül a nyilvános listáról, amint elindul a játék — a Rules szerint ezt is
-  // csak a szoba hostUid-ja (mi) tehetjük meg.
-  if (db && roomCode) db.ref('roomIndex/' + roomCode).remove().catch(() => {});
-
-  hostCurrentQIndex = -1;
-  hostCorrectOptionIndex = -1;
-  hostGamePhase = 'waiting';
-  hostNextQuestion();
+  hostStartInFlight = true;
+  const startBtn = document.getElementById('lobby-start-btn');
+  if (startBtn) startBtn.disabled = true;
+  try {
+    // F31/H6: a szoba ELŐSZÖR lekerül a nyilvános listáról (a Rules szerint ezt csak a szoba hostUid-ja teheti) —
+    // innentől a listából senki nem csatlakozhat; csak az érkezhet még, aki már a gameState-olvasáson túl van.
+    if (db && roomCode) await db.ref('roomIndex/' + roomCode).remove().catch(() => {});
+    // két "söprés": az első aktiválja a váróteremben lévőket, a második a közben érkezőt is elkapja
+    await hostActivateLobbyPlayers();
+    await hostActivateLobbyPlayers();
+    hostCurrentQIndex = -1;
+    hostCorrectOptionIndex = -1;
+    hostGamePhase = 'waiting';
+    hostNextQuestion();
+  } catch (e) {
+    console.warn('[QuizMaster] a játék indítása nem sikerült:', e);
+    // az indítás elbukott: a szoba még nyitott váróterem, ezért visszakerül a nyilvános listára
+    if (db && roomCode) publishRoomIndex(roomCode).catch(() => {});
+    alert('Nem sikerült elindítani a játékot: ' + (e && e.message ? e.message : e));
+  } finally {
+    hostStartInFlight = false;
+    tsUpdateLobbyControls();
+  }
 }
 
 function hostNextQuestion() {
@@ -4513,15 +4569,8 @@ async function hostStartNewRound() {
     // korábbi résztvevői térhettek volna vissza (playerId alapján, "Vissza a
     // játékba" gombbal). Ugyanazt az invariánst állítjuk helyre, amit
     // confirmCreateRoom() a szoba első létrehozásakor felállít: roomIndex
-    // bejegyzés akkor és csak akkor létezik, ha gameState.phase === 'waiting'.
-    const roomIndexRef = db.ref('roomIndex/' + roomCode);
-    await roomIndexRef.set({
-      topicLabel: hostRoomTopicLabel,
-      mode: hostGameMode,
-      hostName: playerName,
-      createdAt: firebase.database.ServerValue.TIMESTAMP
-    });
-    roomIndexRef.onDisconnect().remove();
+    // bejegyzés csak akkor létezik, ha gameState.phase === 'waiting' (F31: indításkor a bejegyzés a fázisváltás ELŐTT kerül le).
+    await publishRoomIndex(roomCode);
 
     hostQuestionsPool = selected;
     hostCurrentQIndex = -1;
@@ -4815,7 +4864,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.27</div>
+<div class="version-badge">Játék verzió: 3.28</div>
 
 </body>
 </html>
