@@ -733,7 +733,8 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
   <button class="changelog-back" onclick="showInfoScreen()">← Vissza</button>
   <div class="changelog-title">VERZIÓ</div>
   <div class="changelog-subtitle">Fejlesztési előzmények</div>
-  <div class="cl-item"><div class="cl-ver current">3.28</div><div><div class="cl-desc">Ha egy játék indulásának pillanatában csatlakozol, érthető üzenetet kapsz: vagy a váróteremben jelezzük, hogy a következő körben léphetsz be, vagy azt látod, hogy a játék már elindult. A „nem elérhető” képernyő szövege is pontosabb lett, a játék indítása pedig megbízhatóbb.</div></div></div>
+  <div class="cl-item"><div class="cl-ver current">3.29</div><div><div class="cl-desc">A kérdésekhez írt jelentések mostantól közvetlenül a játékból érkeznek meg a fejlesztőhöz, e-mail alkalmazás nélkül. Ha nincs kapcsolat, vagy túl gyorsan küldenél egymás után kettőt, érthető üzenetet kapsz.</div></div></div>
+  <div class="cl-item"><div class="cl-ver">3.28</div><div><div class="cl-desc">Ha egy játék indulásának pillanatában csatlakozol, érthető üzenetet kapsz: vagy a váróteremben jelezzük, hogy a következő körben léphetsz be, vagy azt látod, hogy a játék már elindult. A „nem elérhető” képernyő szövege is pontosabb lett, a játék indítása pedig megbízhatóbb.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.27</div><div><div class="cl-desc">Javítva: ha két játékosnak azonos a neve, a „ki válaszolt már” jelzés, a helyezés és a ranglista kiemelése már nem keveredik össze. Egyetlen gombbal elutasíthatod az összes függő meghívót, és a meghívás elfogadása nem kérdez rá feleslegesen a kilépésre. A kérdések kisorsolása is egyenletesebb lett.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.26</div><div><div class="cl-desc">Az alkalmazás ismét telepíthető a főképernyőre, új ikonnal; internetkapcsolat nélkül érthető tájékoztató oldal jelenik meg. Az űrlapok feliratára koppintva mostantól a hozzá tartozó mezőbe kerül a kurzor.</div></div></div>
   <div class="cl-item"><div class="cl-ver">3.25</div><div><div class="cl-desc">Belső biztonsági finomítás a külső komponensek betöltésében. A játékmenetet ez a frissítés nem érinti.</div></div></div>
@@ -1096,7 +1097,7 @@ if (FIREBASE_CONFIG.apiKey !== "IDE_ILLESZD_BE") {
     <div class="report-modal-body">
       <div class="report-modal-qtext" id="report-modal-qtext">—</div>
       <div class="report-modal-label">Kérjük írd le a meglátásod a kérdéssel kapcsolatban!</div>
-      <textarea class="report-modal-textarea" id="report-modal-textarea"
+      <textarea class="report-modal-textarea" id="report-modal-textarea" maxlength="1000"
         placeholder="Ide írhatod a meglátásaidat — pl. hibás kérdés, helytelenül megjelölt helyes válasz, elírás, pontatlanság..."></textarea>
     </div>
     <div class="report-status hidden" id="report-status"></div>
@@ -4688,11 +4689,13 @@ function updateTimerUI() {
 
 // ── JELENTÉS MODAL ────────────────────────────────────────────
 let reportCurrentQuestion = null;
+let reportPendingId = null;   // F32: egy megnyitott jelentés = egy azonosító; az újrapróbálás ugyanazt használja, így nem duplázódik
 
 function openReportModal(qIndex) {
   const h = myQuestionHistory[qIndex];
   if (!h) return;
   reportCurrentQuestion = { qIndex, ...h };
+  reportPendingId = null;
 
   // Fejléc: sorszám + kérdés száma
   const qNumLabel = h.qNum
@@ -4721,6 +4724,24 @@ function openReportModal(qIndex) {
 function closeReportModal() {
   document.getElementById('report-modal-overlay').classList.add('hidden');
   reportCurrentQuestion = null;
+  reportPendingId = null;
+}
+
+// F32: a jelentés közvetlenül a Firebase-be kerül (reports/{uid}/{jelentésId}); a korábbi külső e-mail-szolgáltatás és az e-mail-alkalmazásos tartalék megszűnt.
+// A Rules-ban rögzített korlátok: az üzenet 1–1000 karakter; két jelentés között legalább 10 mp; csak a saját uid alatt, csak jóváhagyott fiókkal.
+const REPORT_MAX_LEN = 1000;
+const REPORT_SEND_TIMEOUT_MS = 15000;
+function withReportTimeout(promise, ms) {
+  let t;
+  const timeout = new Promise((_, reject) => { t = setTimeout(() => reject(Object.assign(new Error('nem érkezett visszaigazolás'), { code: 'report/timeout' })), ms); });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
+}
+function _reportFail(status, btn, text) {
+  status.className = 'report-status error-msg';
+  status.textContent = '❌ ' + text;
+  status.classList.remove('hidden');
+  btn.disabled = false;
+  btn.textContent = '📤 KÜLDÉS';
 }
 
 async function submitReport() {
@@ -4742,87 +4763,47 @@ async function submitReport() {
   const btn = document.getElementById('report-submit-btn');
   const status = document.getElementById('report-status');
   const h = reportCurrentQuestion;
+  if (!h) return;
+  status.className = 'report-status hidden';
+
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) { _reportFail(status, btn, 'A munkameneted lejárt — jelentkezz be újra, és próbáld újra!'); return; }
+  // Kapcsolat nélkül a Firebase az írást sorba állítaná, és a gomb örökre "Küldés..." maradna — ezért előre megállunk.
+  if (!isConnected) { _reportFail(status, btn, 'Nincs internetkapcsolat — a jelentést csak akkor tudjuk elküldeni, ha újra van kapcsolat. Próbáld újra, ha visszatért.'); return; }
 
   btn.disabled = true;
   btn.textContent = '⏳ Küldés...';
-  status.className = 'report-status hidden';
 
-  // Email tartalom összeállítása
-  const qNumLabel = h.qNum ? `#${h.qNum}` : `(${h.qIndex + 1}. kérdés)`;
   const isTimeout = h.myAnswer === -1;
-  const isCorrect = !isTimeout && h.myAnswer === h.correctAnswer;
-  const resultText = isTimeout ? 'Lejárt az idő' : isCorrect ? 'Helyes válasz' : 'Helytelen válasz';
-  const myAnswerText = h.myAnswer >= 0 && h.options ? h.options[h.myAnswer] : '—';
-  const correctAnswerText = h.correctAnswer >= 0 && h.options ? h.options[h.correctAnswer] : '—';
-  const timestamp = new Date().toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' });
+  const keyKnown = h.correctAnswer >= 0;
+  const result = isTimeout ? 'timeout' : !keyKnown ? 'unknown' : (h.myAnswer === h.correctAnswer ? 'correct' : 'wrong');
+  const rec = {
+    message: message.slice(0, REPORT_MAX_LEN),
+    qText: String(h.qText || '').slice(0, 2000),
+    playerName: playerName,
+    result: result,
+    ts: firebase.database.ServerValue.TIMESTAMP
+  };
+  if (h.qNum > 0) rec.qNum = h.qNum;
+  if (h.options && h.myAnswer >= 0 && typeof h.options[h.myAnswer] === 'string') rec.myAnswerText = h.options[h.myAnswer].slice(0, 300);
+  if (h.options && keyKnown && typeof h.options[h.correctAnswer] === 'string') rec.correctAnswerText = h.options[h.correctAnswer].slice(0, 300);
 
-  const emailSubject = `QuizMaster Jelentés — ${qNumLabel}: ${h.qText.substring(0, 55)}${h.qText.length > 55 ? '…' : ''}`;
-
-  const emailBody = [
-    '=== QuizMaster Kérdés Jelentés ===',
-    '',
-    `Játékos neve:       ${playerName}`,
-    `Kérdés sorszáma:    ${qNumLabel}`,
-    `Eredmény:           ${resultText} (+${h.pts || 0} pont)`,
-    '',
-    `KÉRDÉS: ${h.qText}`,
-    '',
-    `Saját válasz:       ${myAnswerText}`,
-    `Helyes válasz:      ${correctAnswerText}`,
-    '',
-    '--- Játékos meglátása ---',
-    message,
-    '',
-    `Küldés ideje: ${timestamp}`,
-  ].join('\n');
-
-  // Elsődleges küldés: FormSubmit.co AJAX API
   try {
-    const response = await fetch('https://formsubmit.co/ajax/fiokplusz004@gmail.com', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
-        _subject: emailSubject,
-        name: `${playerName} (QuizMaster játékos)`,
-        email: 'noreply@quizmaster.app',
-        'Kérdés sorszáma': qNumLabel,
-        'Kérdés szövege': h.qText,
-        'Saját válasz': myAnswerText,
-        'Helyes válasz': correctAnswerText,
-        'Eredmény': resultText,
-        'Meglátás': message,
-        'Küldés ideje': timestamp,
-        _template: 'table',
-        _captcha: 'false',
-      })
-    });
-
-    let data = {};
-    try { data = await response.json(); } catch (_) {}
-
-    const success = data.success === 'true' || data.success === true || response.ok;
-    if (success) {
-      _reportSuccess(status, btn);
-      return;
-    }
-    throw new Error('Sikertelen küldés');
-
-  } catch (networkErr) {
-    // Tartalék: mailto: link megnyitása
-    try {
-      const mailtoHref = `mailto:fiokplusz004@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-      window.location.href = mailtoHref;
-      status.className = 'report-status success';
-      status.textContent = '📧 Email alkalmazás megnyílt — kérlek küldd el manuálisan!';
-      status.classList.remove('hidden');
-      btn.disabled = false;
-      btn.textContent = '📤 KÜLDÉS';
-    } catch (_) {
-      status.className = 'report-status error-msg';
-      status.textContent = '❌ Küldési hiba — kérlek próbáld újra!';
-      status.classList.remove('hidden');
-      btn.disabled = false;
-      btn.textContent = '📤 KÜLDÉS';
+    const ref = firebase.database().ref('reports/' + currentUser.uid);
+    if (!reportPendingId) reportPendingId = ref.push().key;
+    // A jelentés és a sebességkorlát-jelző EGYETLEN, atomi írásban megy fel (a Rules mindkettőt megköveteli).
+    const upd = { lastAt: firebase.database.ServerValue.TIMESTAMP };
+    upd[reportPendingId] = rec;
+    await withReportTimeout(ref.update(upd), REPORT_SEND_TIMEOUT_MS);
+    _reportSuccess(status, btn);
+  } catch (e) {
+    if (e && e.code === 'report/timeout') {
+      _reportFail(status, btn, 'Nem érkezett visszaigazolás — lassú vagy megszakadt a kapcsolat. Próbáld újra; ugyanazt a jelentést nem küldjük el kétszer.');
+    } else if (/permission_denied/i.test(String((e && e.code) || '') + ' ' + String((e && e.message) || ''))) {
+      _reportFail(status, btn, 'A jelentést most nem sikerült elküldeni. Lehet, hogy az előző jelentésed óta még nem telt el elég idő (várj néhány másodpercet), vagy ezt a jelentést már elküldted.');
+    } else {
+      console.warn('[QuizMaster] jelentés küldése sikertelen:', e);
+      _reportFail(status, btn, 'Küldési hiba — kérlek próbáld újra!');
     }
   }
 }
@@ -4864,7 +4845,7 @@ window.addEventListener('appinstalled', () => hideBanner());
 </script>
 
 <!-- VERSION BADGE -->
-<div class="version-badge">Játék verzió: 3.28</div>
+<div class="version-badge">Játék verzió: 3.29</div>
 
 </body>
 </html>
