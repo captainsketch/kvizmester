@@ -157,8 +157,8 @@
   .bulk-bar-fill{height:100%;width:0%;background:var(--accent);transition:width 0.15s linear;}
 
   /* ── PANEL TABS ─────────────────────────────────────────── */
-  .panel-tabs { display:flex; border-bottom:1px solid var(--border); flex-shrink:0; background:var(--surface); }
-  .panel-tab { flex:1; padding:10px 6px; background:transparent; border:none; border-bottom:3px solid transparent; color:var(--muted); font-family:var(--font-body); font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+  .panel-tabs { display:flex; border-bottom:1px solid var(--border); flex-shrink:0; background:var(--surface); overflow-x:auto; scrollbar-width:thin; }
+  .panel-tab { flex:1 0 auto; padding:10px 6px; background:transparent; border:none; border-bottom:3px solid transparent; color:var(--muted); font-family:var(--font-body); font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
   .panel-tab.active { color:var(--accent2); border-bottom-color:var(--accent2); }
   .panel-tab-content { display:none; flex-direction:column; flex:1; overflow:hidden; min-height:0; }
   .panel-tab-content.active { display:flex; }
@@ -175,6 +175,20 @@
   .loginlog-meta { color:var(--muted);font-size:12px;line-height:1.6; }
   .loginlog-count-badge { font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--border);color:var(--text);white-space:nowrap;flex-shrink:0; }
   .loginlog-blocked-tag { font-size:11px;font-weight:700;color:var(--red); }
+
+  /* ── JELENTÉSEK (Fázis 32) ─────────────────────────────── */
+  .rep-card { background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:10px;padding:11px 13px;margin-bottom:8px; }
+  .rep-top { display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px; }
+  .rep-name { font-weight:700;font-size:14px;word-break:break-word; }
+  .rep-result { font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--border);color:var(--muted);white-space:nowrap;flex-shrink:0; }
+  .rep-result.correct { background:rgba(62,207,142,0.15);color:var(--green); }
+  .rep-result.wrong { background:rgba(224,90,90,0.15);color:var(--red); }
+  .rep-meta { color:var(--muted);font-size:12px;line-height:1.6;margin-bottom:8px; }
+  .rep-q { font-size:13px;line-height:1.5;margin-bottom:6px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;word-break:break-word; }
+  .rep-q-num { color:var(--accent);font-family:var(--font-display);letter-spacing:1px;margin-right:6px; }
+  .rep-ans { font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:8px;word-break:break-word; }
+  .rep-msg { font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;margin-bottom:10px; }
+  .rep-actions { display:flex;justify-content:flex-end; }
 
 </style>
 </head>
@@ -227,6 +241,7 @@
         <button class="panel-tab active" id="tab-questions" onclick="switchPanelTab('questions')">Kvíz kérdések</button>
         <button class="panel-tab" id="tab-registrations" onclick="switchPanelTab('registrations')">Regisztrációk <span class="tag" id="reg-pending-badge" style="display:none;background:var(--accent2);color:#fff;margin-left:3px;">0</span></button>
         <button class="panel-tab" id="tab-loginlog" onclick="switchPanelTab('loginlog')">Bejelentkezett eszközök</button>
+        <button class="panel-tab" id="tab-reports" onclick="switchPanelTab('reports')">Jelentések <span class="tag" id="reports-count-badge" style="display:none;background:var(--accent2);color:#fff;margin-left:3px;">0</span></button>
       </div>
 
       <!-- TAB: KÉRDÉSEK -->
@@ -328,6 +343,25 @@
           <div id="loginlog-rejected-list"></div>
           <div class="hidden" id="loginlog-rejected-more-wrap">
             <button id="loginlog-rejected-more-btn" class="loginlog-more-btn" onclick="toggleLoginLogShowAll('rejected')"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- JELENTÉSEK (Fázis 32) — a játékosok jelentései a kérdésekről; a játékos a reports/{uid}/{id} ágba ír,
+           olvasni és törölni csak admin tud. A legújabb jelentés van felül. -->
+      <div class="panel-tab-content" id="tabcontent-reports">
+        <div class="panel-header">
+          <h3 style="color:var(--accent);">JELENTÉSEK</h3>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span class="tag tag-yellow" id="reports-count-tag">0 db</span>
+            <button class="btn-danger" id="reports-delete-all-btn" onclick="deleteAllReports()">🗑 Mind törlése</button>
+          </div>
+        </div>
+        <div class="panel-content" id="reports-panel-content" style="padding:8px 10px;">
+          <div class="hidden" id="reports-error-banner" style="background:rgba(224,90,90,0.1);border:1px solid rgba(224,90,90,0.35);color:var(--red);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;line-height:1.6;"></div>
+          <div id="reports-list"></div>
+          <div class="hidden" id="reports-more-wrap">
+            <button id="reports-more-btn" class="loginlog-more-btn" onclick="toggleReportsShowAll()"></button>
           </div>
         </div>
       </div>
@@ -486,7 +520,7 @@ function requireAdminLogin(){
       const snap = await db.ref('users/'+user.uid+'/role').once('value');
       if(snap.val()==='admin'){
         document.getElementById('admin-login-screen').style.display='none';
-        setupListeners(); showMain(); loadPendingRegistrations(); startLoginLogListeners();
+        setupListeners(); showMain(); loadPendingRegistrations(); startLoginLogListeners(); startReportsListener();
         logAdminAccess('success', user.uid);
       }else{
         document.getElementById('admin-login-error').textContent='Ez a fiók nincs admin-jogosultsággal felruházva.';
@@ -510,8 +544,9 @@ function requireAdminLogin(){
 // Minden admin-bejelentkezési KÍSÉRLET (siker VAGY egy már regisztrált,
 // jóváhagyott, de nem-admin fiók elutasítása) egy rekordot kap az
 // adminLoginLog/{success|rejected}/{uid}/{deviceKey} ágban. A deviceKey egy
-// egyszerű, determinisztikus hash az (IP+eszközleírás) párból — ugyanattól
-// a személytől, ugyanarról az eszközről/helyről érkező ISMÉTELT próbálkozás
+// egyszerű, determinisztikus hash az eszközleírásból (operációs rendszer +
+// böngésző + képernyőméret + időzóna; IP-címet szándékosan nem gyűjtünk) —
+// ugyanarról az eszközről érkező ISMÉTELT próbálkozás
 // UGYANAZT a rekordot frissíti (count+1, lastSeen), nem hoz létre új sort —
 // enélkül egy kíváncsi látogató néhány tucat kattintása percek alatt
 // olvashatatlanná tenné a listát (l. Dani kérése, PROJEKT_ALLAPOT.md Fázis 19).
@@ -553,33 +588,22 @@ function describeDevice(ua) {
 }
 
 // Nem kriptográfiai célú, rövid determinisztikus hash — csak arra kell,
-// hogy ugyanaz az (ip+eszköz) pár mindig ugyanazt a Firebase-kulcsot adja.
+// hogy ugyanaz az eszközleírás mindig ugyanazt a Firebase-kulcsot adja.
 function simpleHash(str) {
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
   return (h >>> 0).toString(36);
 }
 
-// IP + hozzávetőleges (VÁROS/ORSZÁG szintű, NEM pontos cím) hely lekérdezése
-// az ipapi.co ingyenes, API-kulcs nélküli szolgáltatásával (kb. 1000
-// lekérdezés/nap keret — ennél a projektméretnél ez bőven elég). Csak a
-// munkameneten belül EGYSZER hívjuk (cache), és soha nem dobunk hibát
-// kifelé: ha a szolgáltatás elérhetetlen/rate-limitelt, "ismeretlen" marad —
-// ez NEM akadályozhatja/lassíthatja a tényleges bejelentkezést.
-let cachedIpLocation = null;
-async function resolveIpLocation() {
-  if (cachedIpLocation) return cachedIpLocation;
-  try {
-    const resp = await fetch('https://ipapi.co/json/');
-    const data = await resp.json();
-    if (data && data.error) throw new Error(data.reason || 'ipapi.co hiba');
-    const parts = [data.city, data.country_name].filter(Boolean);
-    cachedIpLocation = { ip: (data && data.ip) || null, location: parts.length ? parts.join(', ') : null };
-  } catch (e) {
-    console.warn('[QuizMaster] IP-helymeghatározás sikertelen (ipapi.co):', e);
-    cachedIpLocation = { ip: null, location: null };
-  }
-  return cachedIpLocation;
+// Az eszközleírás a naplóhoz: operációs rendszer · böngésző · képernyőméret · időzóna
+// (pl. "Windows PC · Chrome · 1920×1080 · Europe/Budapest"). Külső szolgáltatás nincs benne: csak a böngésző
+// saját, helyben elérhető adatai. A képernyőméret és az időzóna segít megkülönböztetni két azonos típusú eszközt,
+// az IP-cím és a hely gyűjtése viszont megszűnt. A Rules a device mezőt 100 karakterre korlátozza.
+function deviceFingerprintText() {
+  const parts = [describeDevice(navigator.userAgent)];
+  try { if (typeof screen !== 'undefined' && screen.width && screen.height) parts.push(screen.width + '×' + screen.height); } catch (e) {}
+  try { const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; if (tz) parts.push(tz); } catch (e) {}
+  return parts.join(' · ').slice(0, 100);
 }
 
 // Korábban egy sikertelen írás/olvasás (pl. egy még nem publikált Rules-
@@ -615,9 +639,8 @@ function renderLoginLogErrorBanner() {
 
 async function logAdminAccess(category, uid) {
   try {
-    const device = describeDevice(navigator.userAgent);
-    const { ip, location } = await resolveIpLocation();
-    const deviceKey = simpleHash((ip || 'ismeretlen') + '|' + device);
+    const device = deviceFingerprintText();
+    const deviceKey = simpleHash(device);
     const ref = db.ref('adminLoginLog/' + category + '/' + uid + '/' + deviceKey);
     const snap = await ref.once('value');
     const prev = snap.val();
@@ -625,8 +648,6 @@ async function logAdminAccess(category, uid) {
       lastSeen: firebase.database.ServerValue.TIMESTAMP,
       count: (prev && typeof prev.count === 'number' ? prev.count : 0) + 1,
       device: device,
-      ip: ip || 'ismeretlen',
-      location: location || 'ismeretlen',
     };
     if (!prev) updates.firstSeen = firebase.database.ServerValue.TIMESTAMP;
     await ref.update(updates);
@@ -713,7 +734,7 @@ function buildLoginLogCard(cat, r) {
   const meta = document.createElement('div');
   meta.className = 'loginlog-meta';
   const line1 = document.createElement('div');
-  line1.textContent = '📱 ' + (r.device || 'ismeretlen eszköz') + '  ·  📍 ' + (r.location || 'ismeretlen hely');
+  line1.textContent = '📱 ' + (r.device || 'ismeretlen eszköz') + ((r.location && r.location !== 'ismeretlen') ? '  ·  📍 ' + r.location : '');
   const line2 = document.createElement('div');
   line2.textContent = '🕒 Utoljára: ' + fmtLoginLogTime(r.lastSeen) +
     (r.count > 1 ? '  ·  Először: ' + fmtLoginLogTime(r.firstSeen) : '');
@@ -787,6 +808,169 @@ function blockLoginLogUser(uid) {
   rejectUser(uid);
 }
 
+// ══════════════════════════════════════════════════════════════
+// JELENTÉSEK (Fázis 32) — a játékosok jelentései a kérdésekről
+// A játékos a reports/{uid}/{jelentésId} alá ír (l. database_rules.json); olvasni és törölni csak az admin tud.
+// A reports/{uid}/lastAt a játékos saját sebességkorlát-jelzője, NEM jelentés — a listából kimarad.
+// FONTOS: a név, a kérdés szövege, a válaszok és az üzenet játékos által megadott, nem megbízható szöveg —
+// mindig textContent-tel kerül a DOM-ba (pontosan úgy, mint a buildRegCard()/buildLoginLogCard() esetén).
+// ══════════════════════════════════════════════════════════════
+let reportsCache = {};
+let reportsShowAll = false;
+let reportsListenerRef = null;
+const REPORTS_COLLAPSE_AT = 20;
+const REPORT_RESULT_LABELS = { correct: '✓ Helyes választ adott', wrong: '✗ Helytelen választ adott', timeout: '⏰ Lejárt az idő', unknown: '❔ Nem ellenőrizhető' };
+
+function setReportsError(msg) {
+  const el = document.getElementById('reports-error-banner');
+  if (!el) return;
+  if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
+  el.textContent = '⚠️ ' + msg;
+  el.classList.remove('hidden');
+}
+
+function startReportsListener() {
+  if (!db || reportsListenerRef) return;
+  // A host a reports ágat EGYBEN (bulk) olvassa — a Rules .read-je pontosan ezen az útvonalon van (l. database_rules.json).
+  reportsListenerRef = db.ref('reports');
+  reportsListenerRef.on('value', snap => {
+    setReportsError(null);
+    reportsCache = snap.val() || {};
+    renderReports();
+  }, err => {
+    console.warn('[QuizMaster] reports olvasási hiba:', err);
+    setReportsError('Nem sikerült betölteni a jelentéseket (' + (err && err.message ? err.message : err) + '). Ha ez "permission_denied", valószínűleg a database_rules.json Fázis 32-es frissítése nincs publikálva.');
+  });
+}
+
+// Lapos, legújabb-elöl sorrendű tömb a {uid: {jelentésId: rekord, lastAt: szám}} fából.
+function flattenReports() {
+  const rows = [];
+  Object.entries(reportsCache || {}).forEach(([uid, items]) => {
+    if (!items || typeof items !== 'object') return;
+    Object.entries(items).forEach(([rid, rec]) => {
+      if (rid === 'lastAt' || !rec || typeof rec !== 'object') return;
+      rows.push(Object.assign({ uid, rid }, rec));
+    });
+  });
+  // A jelentés-azonosító (push-ID) időrendben rendezhető — azonos időbélyegnél ez dönt.
+  rows.sort((a, b) => ((b.ts || 0) - (a.ts || 0)) || (a.rid < b.rid ? 1 : a.rid > b.rid ? -1 : 0));
+  return rows;
+}
+
+function buildReportCard(r) {
+  const u = allUsersCache[r.uid] || {};
+  const card = document.createElement('div');
+  card.className = 'rep-card';
+
+  const top = document.createElement('div');
+  top.className = 'rep-top';
+  const nameEl = document.createElement('div');
+  nameEl.className = 'rep-name';
+  nameEl.textContent = r.playerName || u.name || '(névtelen)';
+  top.appendChild(nameEl);
+  const resEl = document.createElement('span');
+  resEl.className = 'rep-result' + (r.result === 'correct' ? ' correct' : r.result === 'wrong' ? ' wrong' : '');
+  resEl.textContent = REPORT_RESULT_LABELS[r.result] || '';
+  if (resEl.textContent) top.appendChild(resEl);
+  card.appendChild(top);
+
+  const meta = document.createElement('div');
+  meta.className = 'rep-meta';
+  meta.textContent = (u.gyulekezet ? '🏠 ' + u.gyulekezet + '  ·  ' : '') + '🕒 ' + fmtLoginLogTime(r.ts);
+  card.appendChild(meta);
+
+  const q = document.createElement('div');
+  q.className = 'rep-q';
+  if (r.qNum > 0) {
+    const num = document.createElement('span');
+    num.className = 'rep-q-num';
+    num.textContent = '#' + r.qNum;
+    q.appendChild(num);
+  }
+  q.appendChild(document.createTextNode(r.qText || ''));
+  card.appendChild(q);
+
+  const ansParts = [];
+  if (r.myAnswerText) ansParts.push('Saját válasz: ' + r.myAnswerText);
+  if (r.correctAnswerText) ansParts.push('Megjelölt helyes válasz: ' + r.correctAnswerText);
+  if (ansParts.length) {
+    const ans = document.createElement('div');
+    ans.className = 'rep-ans';
+    ans.textContent = ansParts.join('  ·  ');
+    card.appendChild(ans);
+  }
+
+  const msg = document.createElement('div');
+  msg.className = 'rep-msg';
+  msg.textContent = r.message || '';
+  card.appendChild(msg);
+
+  const actions = document.createElement('div');
+  actions.className = 'rep-actions';
+  const del = document.createElement('button');
+  del.className = 'btn-danger';
+  del.textContent = '🗑 Törlés';
+  del.onclick = () => deleteReport(r.uid, r.rid);
+  actions.appendChild(del);
+  card.appendChild(actions);
+  return card;
+}
+
+function renderReports() {
+  const listEl = document.getElementById('reports-list');
+  if (!listEl) return;
+  const rows = flattenReports();
+  const total = rows.length;
+  const badge = document.getElementById('reports-count-badge');
+  const countTag = document.getElementById('reports-count-tag');
+  const delAllBtn = document.getElementById('reports-delete-all-btn');
+  const moreWrap = document.getElementById('reports-more-wrap');
+  const moreBtn = document.getElementById('reports-more-btn');
+  if (countTag) countTag.textContent = total + ' db';
+  if (badge) { if (total > 0) { badge.style.display = 'inline-block'; badge.textContent = String(total); } else { badge.style.display = 'none'; } }
+  if (delAllBtn) delAllBtn.disabled = total === 0;
+
+  listEl.innerHTML = '';
+  if (total === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'color:var(--muted);font-size:13px;padding:12px 2px;';
+    empty.textContent = 'Nincs jelentés.';
+    listEl.appendChild(empty);
+    if (moreWrap) moreWrap.classList.add('hidden');
+    return;
+  }
+  const visible = reportsShowAll ? rows : rows.slice(0, REPORTS_COLLAPSE_AT);
+  visible.forEach(r => listEl.appendChild(buildReportCard(r)));
+  if (moreWrap && moreBtn) {
+    if (total > REPORTS_COLLAPSE_AT) {
+      moreWrap.classList.remove('hidden');
+      moreBtn.textContent = reportsShowAll ? 'Kevesebb mutatása ▲' : ('+' + (total - REPORTS_COLLAPSE_AT) + ' további megjelenítése ▶');
+    } else {
+      moreWrap.classList.add('hidden');
+    }
+  }
+}
+
+function toggleReportsShowAll() {
+  reportsShowAll = !reportsShowAll;
+  renderReports();
+}
+
+function deleteReport(uid, rid) {
+  if (!db) return;
+  if (!confirm('Törlöd ezt a jelentést?')) return;
+  db.ref('reports/' + uid + '/' + rid).remove().catch(e => alert('❌ A törlés nem sikerült: ' + (e && e.message ? e.message : e)));
+}
+
+function deleteAllReports() {
+  if (!db) return;
+  const n = flattenReports().length;
+  if (n === 0) return;
+  if (!confirm('Biztosan törlöd AZ ÖSSZES jelentést (' + n + ' db)? Ez nem visszavonható!')) return;
+  db.ref('reports').remove().catch(e => alert('❌ A törlés nem sikerült: ' + (e && e.message ? e.message : e)));
+}
+
 async function doAdminLogin(){
   const email=document.getElementById('admin-login-email').value.trim();
   const password=document.getElementById('admin-login-password').value;
@@ -822,6 +1006,7 @@ function loadPendingRegistrations(){
     // (users vagy adminLoginLog) frissült elsőként.
     renderLoginLog('success');
     renderLoginLog('rejected');
+    renderReports();   // F32: a jelentés-kártyák a gyülekezetet ebből a gyorsítótárból veszik
   });
 }
 
@@ -1757,14 +1942,14 @@ async function migrateAnswerKeys() {
 initFirebase();
 </script>
 <!-- VERSION BADGE -->
-<div class="version-badge">Admin panel verzió: 3.23</div>
+<div class="version-badge">Admin panel verzió: 3.24</div>
 
 <script>
 // ============================================================
 // PANEL TAB SWITCHING
 // ============================================================
 function switchPanelTab(tab) {
-  ['questions','registrations','loginlog'].forEach(t => {
+  ['questions','registrations','loginlog','reports'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('tabcontent-'+t).classList.toggle('active', t===tab);
   });
